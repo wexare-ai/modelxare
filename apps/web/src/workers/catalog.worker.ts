@@ -68,6 +68,7 @@ let store: CatalogStore;
 let pool: { getFileNames(): string[]; wipeFiles(): Promise<void>; OpfsSAHPoolDb: new (f: string) => Db } | null = null;
 let sqliteVersion = '';
 let persistent = false;
+let notPersistentReason: string | undefined;
 const staged = new Map<string, { releases: VerifiedRelease[]; builder: string; meta: StagedImport; announcement: NostrEvent | null }>();
 
 type Sqlite3 = {
@@ -95,28 +96,60 @@ async function installPool(sqlite3: Sqlite3): Promise<NonNullable<typeof pool>> 
   throw last;
 }
 
-async function open() {
+/**
+ * Hold the `wexare-catalog` Web Lock for this worker's lifetime. The browser
+ * releases it when the worker ends, so a new tab knows exactly when the
+ * previous owner has let go of the pool files.
+ */
+function holdCatalogLock(timeoutMs: number): Promise<boolean> {
+  if (!navigator.locks) return Promise.resolve(true);
+  const signal = AbortSignal.timeout(timeoutMs);
+  return new Promise((resolve) => {
+    navigator.locks
+      .request('wexare-catalog', { signal }, () => {
+        resolve(true);
+        return new Promise<never>(() => {});
+      })
+      .catch(() => resolve(false));
+  });
+}
+
+async function open(memoryOnly: boolean) {
   const sqlite3 = (await sqlite3InitModule()) as unknown as Sqlite3;
   sqliteVersion = sqlite3.version.libVersion;
-  try {
-    pool = await installPool(sqlite3);
-    db = new WasmSqliteDatabase(new pool.OpfsSAHPoolDb(DB_FILE));
-    persistent = true;
-  } catch (e) {
-    console.warn('OPFS SAH pool unavailable; using an in-memory catalog', e);
-    db = new WasmSqliteDatabase(new sqlite3.oo1.DB(':memory:', 'c'));
+  if (!memoryOnly) {
+    try {
+      // The page has already asked other tabs to step aside; give them a moment.
+      if (!(await holdCatalogLock(5000))) throw new Error('another tab or window of this app still has the catalog open and did not release it');
+      pool = await installPool(sqlite3);
+      db = new WasmSqliteDatabase(new pool.OpfsSAHPoolDb(DB_FILE));
+      persistent = true;
+    } catch (e) {
+      notPersistentReason = (e as Error)?.message ?? String(e);
+      console.warn('OPFS SAH pool unavailable; using an in-memory catalog', e);
+    }
   }
+  if (!persistent) db = new WasmSqliteDatabase(new sqlite3.oo1.DB(':memory:', 'c'));
   // 64 MiB page cache: a 10,000-record catalog (~55 MB) stays in memory once warm.
   db.exec('PRAGMA foreign_keys = OFF; PRAGMA cache_size = -65536; PRAGMA temp_store = MEMORY;');
   store = new CatalogStore(db);
   return store.migrate();
 }
 
-const ready = open();
+// The first `init` call opens the catalog; calls that arrive earlier wait for it.
+let openAs!: (memoryOnly: boolean) => void;
+const ready = new Promise<boolean>((r) => (openAs = r)).then(open);
 
 const api: CatalogApi = {
   init() {
-    return { persistent, vfs: persistent ? 'opfs-sahpool' : 'memory', sqliteVersion, schemaVersion: Number(db.get<{ value: string }>(`SELECT value FROM meta WHERE key='schema_version'`)?.value ?? 0), stats: store.stats() };
+    return {
+      persistent,
+      vfs: persistent ? 'opfs-sahpool' : 'memory',
+      sqliteVersion,
+      schemaVersion: Number(db.get<{ value: string }>(`SELECT value FROM meta WHERE key='schema_version'`)?.value ?? 0),
+      stats: store.stats(),
+      ...(notPersistentReason ? { error: notPersistentReason } : {}),
+    };
   },
   query(q) {
     const t0 = performance.now();
@@ -234,6 +267,7 @@ const api: CatalogApi = {
 
 self.onmessage = async (ev: MessageEvent<WorkerRequest>) => {
   const { id, method, args } = ev.data;
+  if (method === 'init') openAs(Boolean(args[0]));
   let res: WorkerResponse;
   try {
     await ready;

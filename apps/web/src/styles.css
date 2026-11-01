@@ -223,6 +223,25 @@ nav {
   background: var(--warn-bg);
   color: var(--warn);
 }
+.notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  background: var(--warn-bg);
+  color: var(--warn);
+  border-radius: 12px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+}
+.notice p {
+  flex: 1 1 24rem;
+  margin: 0;
+}
+.stepped-aside {
+  max-width: 34rem;
+  margin: 15vh auto 0;
+}
 footer {
   margin-top: 30px;
   color: var(--muted);

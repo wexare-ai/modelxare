@@ -8,7 +8,7 @@ import { capabilities, runtime } from '../lib/runtime.ts';
 import { exportSettings, sanitize, type Settings } from '../lib/settings.ts';
 import { formatBytes, shortId, when } from '../lib/format.ts';
 import type { StagedImport } from '../workers/catalog-api.ts';
-import { Badge, Fingerprint, Progress, Section } from '../components/common.tsx';
+import { Badge, Fingerprint, Progress, Section, confirmReset } from '../components/common.tsx';
 
 const lines = (s: string) => s.split('\n').map((x) => x.trim()).filter(Boolean);
 
@@ -27,7 +27,7 @@ function ListEditor({ label, value, onSave, testid }: { label: string; value: st
 }
 
 export function Sources() {
-  const { settings, updateSettings, live, catalog, catalogVersion, bump, artifacts } = useApp();
+  const { settings, updateSettings, live, catalog, catalogVersion, bump, artifacts, resetLocalData } = useApp();
   useChanges(live);
   useChanges(artifacts);
   const [sources, setSources] = useState<SourceRecord[]>([]);
@@ -250,6 +250,9 @@ export function Sources() {
             }}
           >
             Reset local catalog
+          </button>
+          <button onClick={() => confirmReset(resetLocalData)} data-testid="reset-local-data">
+            Reset local data
           </button>
         </div>
         <p className="hint">Exports contain public configuration only (relays, gateways, trusted catalog builders, preferences). Publishing keys never enter the browser.</p>

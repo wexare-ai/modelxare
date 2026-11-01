@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
-import { createCatalogClient, type CatalogClient } from './catalog-client.ts';
+import { createCatalogClient, type CatalogClient, type CatalogSession } from './catalog-client.ts';
 import { LiveDiscovery } from './live.ts';
 import { ArtifactManager } from './artifacts.ts';
 import { loadSettings, saveSettings, type Settings } from './settings.ts';
@@ -11,6 +11,10 @@ interface AppState {
   settings: Settings;
   updateSettings: (fn: (s: Settings) => Settings) => void;
   catalog: CatalogClient;
+  /** Owns the catalog worker: tab takeover, storage fallback, local data reset. */
+  session: CatalogSession;
+  /** Stop syncing and downloads, delete this site's local data in this browser, reload. */
+  resetLocalData: () => Promise<void>;
   live: LiveDiscovery;
   artifacts: ArtifactManager;
   init: InitResult | null;
@@ -25,21 +29,21 @@ interface AppState {
 
 const Ctx = createContext<AppState | null>(null);
 
-let singletons: { catalog: CatalogClient; live: LiveDiscovery; artifacts: ArtifactManager } | null = null;
+let singletons: { catalog: CatalogClient; session: CatalogSession; live: LiveDiscovery; artifacts: ArtifactManager } | null = null;
 let currentSettings: () => Settings = () => loadSettings();
 function services(getSettings: () => Settings) {
   currentSettings = getSettings;
   if (!singletons) {
-    const catalog = createCatalogClient();
-    singletons = { catalog, live: new LiveDiscovery(catalog), artifacts: new ArtifactManager(catalog, () => currentSettings()) };
+    const { client: catalog, session } = createCatalogClient();
+    singletons = { catalog, session, live: new LiveDiscovery(catalog), artifacts: new ArtifactManager(catalog, () => currentSettings()) };
   }
   return singletons;
 }
 
 let initPromise: Promise<InitResult> | null = null;
-function initOnce(catalog: CatalogClient, artifacts: ArtifactManager): Promise<InitResult> {
-  initPromise ??= catalog.init().then(async (r) => {
-    await artifacts.init().catch((e) => console.warn('artifact cache init', e));
+function initOnce(session: CatalogSession, artifacts: ArtifactManager): Promise<InitResult> {
+  initPromise ??= session.open().then(async (r) => {
+    await artifacts.init(r.persistent).catch((e) => console.warn('artifact cache init', e));
     return r;
   });
   return initPromise;
@@ -59,7 +63,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   settingsRef.current = settings;
   // Module-level singletons: the OPFS SAH pool allows one connection, so the
   // catalog worker must never be created twice (e.g. by StrictMode re-renders).
-  const { catalog, live, artifacts } = services(() => settingsRef.current);
+  const { catalog, session, live, artifacts } = services(() => settingsRef.current);
   const [init, setInit] = useState<InitResult | null>(null);
   const [catalogVersion, setVersion] = useState(0);
   const [route, setRoute] = useState<Route>(parseHash);
@@ -67,11 +71,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const bump = useCallback(() => setVersion((v) => v + 1), []);
 
   useEffect(() => {
-    void initOnce(catalog, artifacts).then((r) => {
-      setInit(r);
-      bump();
-    });
-  }, [catalog, artifacts, bump]);
+    void initOnce(session, artifacts).then(
+      (r) => {
+        setInit(r);
+        bump();
+      },
+      (e) => console.warn('catalog not opened', e),
+    );
+  }, [session, artifacts, bump]);
+
+  // Another tab took the catalog over: stop working in the background.
+  useEffect(() => {
+    const onChange = () => {
+      if (session.state !== 'released') return;
+      live.stop();
+      artifacts.cancelAll();
+    };
+    session.addEventListener('change', onChange);
+    return () => session.removeEventListener('change', onChange);
+  }, [session, live, artifacts]);
+
+  const resetLocalData = useCallback(async () => {
+    live.stop();
+    artifacts.cancelAll();
+    await session.resetLocalData();
+  }, [session, live, artifacts]);
 
   useEffect(() => {
     const onHash = () => setRoute(parseHash());
@@ -114,7 +138,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     location.hash = typeof r === 'string' ? r : r.page === 'model' ? `#/model/${r.id}` : `#/${r.page}`;
   }, []);
 
-  const value: AppState = { settings, updateSettings, catalog, live, artifacts, init, catalogVersion, bump, route, go, playgroundPreset, setPlaygroundPreset };
+  const value: AppState = { settings, updateSettings, catalog, session, resetLocalData, live, artifacts, init, catalogVersion, bump, route, go, playgroundPreset, setPlaygroundPreset };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

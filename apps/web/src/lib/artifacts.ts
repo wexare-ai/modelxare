@@ -66,9 +66,18 @@ export class ArtifactManager extends EventTarget {
     return this.cache;
   }
 
-  /** Reconcile catalog cache marks with OPFS contents; never trust an unverified mark. */
-  async init(): Promise<void> {
+  /**
+   * Reconcile catalog cache marks with OPFS contents; never trust an unverified mark.
+   * With an in-memory catalog the marks are missing and another tab may own these
+   * files, so delete nothing: list what is on disk (re-hashed before any use).
+   */
+  async init(persistentCatalog = true): Promise<void> {
     const cache = await this.getCache();
+    if (!persistentCatalog) {
+      for (const f of await cache.list()) this.cached.add(f.sha256);
+      this.changed();
+      return;
+    }
     await cache.clearTemp();
     const onDisk = new Map((await cache.list()).map((f) => [f.sha256, f.size]));
     for (const a of await this.catalog.cachedArtifacts()) {

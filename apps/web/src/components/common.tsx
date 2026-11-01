@@ -63,3 +63,12 @@ export function Section({ title, children, actions }: { title: string; children:
     </section>
   );
 }
+
+/** Ask before deleting local data; on failure, explain and reload into a working state. */
+export function confirmReset(reset: () => Promise<void>): void {
+  if (!confirm("Delete this browser's local catalog and downloaded models for this site, then reload? Settings and trusted builders are kept.")) return;
+  reset().catch((e: Error) => {
+    alert(e.message);
+    location.reload();
+  });
+}

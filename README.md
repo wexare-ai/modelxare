@@ -144,7 +144,10 @@ disposable. Private keys stay in the CLI and never reach the browser.
 
 ## Known limitations
 
-- The app should be open in one tab at a time: the OPFS SQLite VFS holds an exclusive handle.
+- Only one tab at a time uses the local catalog, because the OPFS SQLite VFS holds exclusive
+  handles. Opening the app in a new tab moves the catalog there, and the previous tab offers **Use
+  here**. If storage still can't be opened, the app says why, falls back to an in-memory catalog, and
+  offers **Reset local data**.
 - The indexer resumes from a `created_at` cursor. A running indexer receives every new event, but if
   an event signed long before it is published arrives while the indexer is stopped, only a rescan
   collects it: `curl -X POST http://127.0.0.1:8791/rescan`.

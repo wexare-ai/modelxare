@@ -8,6 +8,7 @@ export interface InitResult {
   sqliteVersion: string;
   schemaVersion: number;
   stats: CatalogStats;
+  /** Why the catalog is not persistent, when it is not. */
   error?: string;
 }
 
@@ -39,7 +40,8 @@ export interface CandidateRow {
 }
 
 export interface CatalogApi {
-  init(): InitResult;
+  /** Opens the catalog (the first call decides how); every other call waits for it. */
+  init(memoryOnly?: boolean): InitResult;
   query(q: CatalogQuery): QueryPage & { ms: number };
   getRelease(eventId: string): ReleaseDetail | null;
   /** Non-synthetic runtime-family releases with full manifests, for planning. */
