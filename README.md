@@ -13,16 +13,22 @@ entirely inside the browser.
 There is no central registry, account, search API or remote inference. See [docs/protocol.md](docs/protocol.md)
 for the data contract and [docs/acceptance.md](docs/acceptance.md) for what has been verified, and how.
 
+![The publisher, catalog operator and browser exchange signed metadata through Nostr relays and bytes through storage](docs/architecture.svg)
+
 ## Prerequisites
 
-- Node.js 22.12 or later, below 23 (`.nvmrc` pins 22.22.2), and pnpm 11 (`corepack enable`).
-- Docker Engine with Compose v2, for the two strfry relays, two Kubo nodes and the tracker. On Ubuntu:
-  `sudo apt-get install -y docker.io docker-compose-v2 && sudo usermod -aG docker $USER`. The infra
-  script falls back to `sg docker` until you log in again.
+- Node.js 22.12 or later, below 23 (`.nvmrc` pins 22.22.2), and pnpm 11 (`corepack enable`). With
+  nvm, run `nvm install && nvm use` in the repository. Newer Node versions print an "Unsupported
+  engine" warning and are untested.
+- Docker with Compose v2, for the two strfry relays, two Kubo nodes and the tracker. It must be
+  running before `pnpm infra:up`.
+  - macOS: Docker Desktop, OrbStack or Colima. The pinned images support Apple Silicon.
+  - Ubuntu: `sudo apt-get install -y docker.io docker-compose-v2 && sudo usermod -aG docker $USER`.
+    The infra script falls back to `sg docker` until you log in again.
 - About 5 GB of free disk. The four pinned model fixtures total 0.97 GB, and they are copied into
   IPFS, the mirror and the browser.
 - Network access the first time, to download the pinned fixtures from Hugging Face. No accounts are needed.
-- Chromium with WebAssembly SIMD for the app. `pnpm --filter @wexare/tests exec playwright install chromium` provides one for tests.
+- Chrome or Chromium for the app; other browsers are untested. `pnpm --filter @wexare/tests exec playwright install chromium` provides one for tests.
 
 ## Quick start
 
@@ -43,6 +49,11 @@ demonstration, including relay failure, offline reload and a second operator.
 
 The first `demo:prepare` downloads 0.97 GB and signs 10,000 synthetic records, which takes about 90 s.
 Later runs reuse everything: unchanged manifests keep their signed events.
+
+`pnpm dev` does not start the docker services. If the indexer logs `connection failed (is the relay
+running? pnpm infra:up)`, start Docker, then run `pnpm infra:up`. It is safe to repeat, and it
+prints a ✓ for each service once it answers. Relay and IPFS data live in docker volumes, so events
+you published earlier are still there after a restart.
 
 ## Commands
 
@@ -69,7 +80,8 @@ Later runs reuse everything: unchanged manifests keep their signed events.
   on :4173, with the service worker. Tests start their own indexers on :8793 to :8795, with data under
   `.data/e2e/<run>/`. Evidence is written as JSON to `tests/results/`. The e2e run stops and restarts the
   relay containers for A16, and publishes labeled synthetic records to both relays for A17.
-- `pnpm vitest run --project integration` runs the Node-side checks against the same services.
+- `pnpm vitest run --project integration` runs the Node-side checks against the same services. The
+  mirror and torrent checks also need the artifacts server on :8790, which `pnpm dev` starts.
   `WEXARE_TEST_ARWEAVE=1` adds the public Arweave gateway test, which needs internet access.
 
 ## Repository layout
@@ -133,6 +145,9 @@ disposable. Private keys stay in the CLI and never reach the browser.
 ## Known limitations
 
 - The app should be open in one tab at a time: the OPFS SQLite VFS holds an exclusive handle.
+- The indexer resumes from a `created_at` cursor. A running indexer receives every new event, but if
+  an event signed long before it is published arrives while the indexer is stopped, only a rescan
+  collects it: `curl -X POST http://127.0.0.1:8791/rescan`.
 - Peers-first torrent transfer needs a seeder that has finished hashing. The HTTP web-seed fallback,
   4 s by default and configurable, keeps imports usable meanwhile.
 - Runtime LoRA execution relies on a wllama 3.8.1 internal. Any other version shows "Adapter execution

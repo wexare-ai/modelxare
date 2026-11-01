@@ -10,7 +10,7 @@ const root = join(import.meta.dirname, '..');
 const compose = ['compose', '-f', join(root, 'infra/docker-compose.yml')];
 const endpoints = JSON.parse(readFileSync(join(root, 'infra/dev-endpoints.json'), 'utf8'));
 
-/** Run docker; fall back to `sg docker` when the user's new docker group is not active in this shell yet. */
+/** Run docker; on Linux, fall back to `sg docker` when the user's new docker group is not active in this shell yet. */
 function docker(args, { capture = false } = {}) {
   const opts = { stdio: capture ? ['ignore', 'pipe', 'pipe'] : 'inherit', encoding: 'utf8' };
   let r = spawnSync('docker', args, opts);
@@ -20,6 +20,10 @@ function docker(args, { capture = false } = {}) {
   }
   const denied = r.status !== 0 && /permission denied/i.test(`${r.stderr ?? ''}`);
   if (denied || (r.status !== 0 && !capture && !canTalkToDocker())) {
+    if (process.platform !== 'linux') {
+      console.error('Docker is installed but not reachable. Start Docker Desktop (or OrbStack / Colima), wait until it is running, then retry.');
+      process.exit(1);
+    }
     const quoted = ['docker', ...args].map((a) => `'${a.replace(/'/g, `'\\''`)}'`).join(' ');
     r = spawnSync('sg', ['docker', '-c', quoted], opts);
   }

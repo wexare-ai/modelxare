@@ -1,0 +1,153 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1100" viewBox="0 0 1800 1100" font-family="Liberation Sans, Arial, Helvetica, sans-serif">
+<defs><marker id="m-meta" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6b4fd8"/></marker><marker id="m-bytes" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0e8a7a"/></marker><marker id="m-plain" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8a867c"/></marker></defs>
+<rect width="1800" height="1100" fill="#f7f6f2"/>
+<text x="40" y="58" font-size="30" font-weight="700" fill="#1f1d1a" text-anchor="start">weXare micro-model marketplace: the big picture</text>
+<text x="40" y="90" font-size="16" font-weight="400" fill="#5b5852" text-anchor="start">No central registry, account, search API or inference server. Everything is signed, hash-checked and runs in your browser.</text>
+<line x1="1330" y1="50" x2="1392" y2="50" stroke="#6b4fd8" stroke-width="3.2" marker-end="url(#m-meta)"/>
+<text x="1404" y="55" font-size="15" font-weight="400" fill="#1f1d1a" text-anchor="start">signed metadata (Nostr events)</text>
+<line x1="1330" y1="82" x2="1392" y2="82" stroke="#0e8a7a" stroke-width="3.2" stroke-dasharray="9 6" marker-end="url(#m-bytes)"/>
+<text x="1404" y="87" font-size="15" font-weight="400" fill="#1f1d1a" text-anchor="start">bytes (model files, catalog ZIPs)</text>
+<rect x="40" y="130" width="1720" height="120" rx="16" fill="#f2eefe" stroke="#cbbff3" stroke-width="1.5"/>
+<text x="70" y="174" font-size="22" font-weight="700" fill="#4a2fb0" text-anchor="start">Nostr relays</text>
+<text x="70" y="202" font-size="14.5" font-weight="400" fill="#5b5852" text-anchor="start">signed metadata only: release events</text>
+<text x="70" y="222" font-size="14.5" font-weight="400" fill="#5b5852" text-anchor="start">and catalog announcements</text>
+<rect x="470" y="163" width="300" height="54" rx="10" fill="#fff" stroke="#4a2fb0" stroke-width="1.5"/>
+<text x="486" y="185" font-size="15" font-weight="700" fill="#4a2fb0" text-anchor="start">relay A</text>
+<text x="486" y="204" font-size="13.5" font-weight="400" fill="#5b5852" text-anchor="start">ws://127.0.0.1:7777</text>
+<rect x="790" y="163" width="380" height="54" rx="10" fill="#fff" stroke="#4a2fb0" stroke-width="1.5"/>
+<text x="806" y="185" font-size="15" font-weight="700" fill="#4a2fb0" text-anchor="start">relay B</text>
+<text x="806" y="204" font-size="13.5" font-weight="400" fill="#5b5852" text-anchor="start">ws://127.0.0.1:7778 · max 50 events per query</text>
+<text x="1210" y="176" font-size="14.5" font-weight="400" fill="#5b5852" text-anchor="start">Store and forward only. A relay can’t change an</text>
+<text x="1210" y="196" font-size="14.5" font-weight="400" fill="#5b5852" text-anchor="start">event without breaking its signature, and every</text>
+<text x="1210" y="216" font-size="14.5" font-weight="400" fill="#5b5852" text-anchor="start">reader asks several relays at once.</text>
+<rect x="40" y="330" width="400" height="490" rx="16" fill="#fff" stroke="#d9d6cc" stroke-width="1.5"/>
+<path d="M40.75,407.75 V345.75 Q40.75,330.75 55.75,330.75 H424.25 Q439.25,330.75 439.25,345.75 V407.75 Z" fill="#fff2e6"/>
+<text x="64" y="368" font-size="22" font-weight="700" fill="#9a3b0b" text-anchor="start">Publisher</text>
+<text x="64" y="393" font-size="14.5" font-weight="400" fill="#5b5852" text-anchor="start">wexare CLI (apps/cli) · anyone with a key</text>
+<rect x="60" y="426" width="360" height="86" rx="10" fill="#fbfaf7" stroke="#d9d6cc" stroke-width="1.5"/>
+<text x="76" y="452" font-size="15.5" font-weight="700" fill="#1f1d1a" text-anchor="start">keygen</text>
+<text x="76" y="474" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">creates a Nostr key pair; the private</text>
+<text x="76" y="494" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">key never leaves this machine</text>
+<rect x="60" y="522" width="360" height="86" rx="10" fill="#fbfaf7" stroke="#d9d6cc" stroke-width="1.5"/>
+<text x="76" y="548" font-size="15.5" font-weight="700" fill="#1f1d1a" text-anchor="start">release prepare</text>
+<text x="76" y="570" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">hashes the model files, writes the</text>
+<text x="76" y="590" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">manifest, copies the bytes to storage</text>
+<rect x="60" y="618" width="360" height="86" rx="10" fill="#fbfaf7" stroke="#d9d6cc" stroke-width="1.5"/>
+<text x="76" y="644" font-size="15.5" font-weight="700" fill="#1f1d1a" text-anchor="start">sign</text>
+<text x="76" y="666" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">NIP-94 event (kind 1063) with the</text>
+<text x="76" y="686" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">manifest inline; its ID is the release ID</text>
+<rect x="60" y="714" width="360" height="86" rx="10" fill="#fbfaf7" stroke="#d9d6cc" stroke-width="1.5"/>
+<text x="76" y="740" font-size="15.5" font-weight="700" fill="#1f1d1a" text-anchor="start">release publish</text>
+<text x="76" y="762" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">sends the same event to every relay;</text>
+<text x="76" y="782" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">each relay’s answer is reported</text>
+<rect x="540" y="330" width="540" height="490" rx="16" fill="#fff" stroke="#d9d6cc" stroke-width="1.5"/>
+<path d="M540.75,407.75 V345.75 Q540.75,330.75 555.75,330.75 H1064.25 Q1079.25,330.75 1079.25,345.75 V407.75 Z" fill="#ecf2ff"/>
+<text x="564" y="368" font-size="22" font-weight="700" fill="#1f4fb8" text-anchor="start">Catalog operator</text>
+<text x="564" y="393" font-size="14.5" font-weight="400" fill="#5b5852" text-anchor="start">anyone can run one (A, B, …), each with its own builder key</text>
+<rect x="560" y="426" width="236" height="374" rx="10" fill="#fbfaf7" stroke="#d9d6cc" stroke-width="1.5"/>
+<text x="576" y="452" font-size="15.5" font-weight="700" fill="#1f4fb8" text-anchor="start">Indexer</text>
+<text x="576" y="474" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">apps/indexer · status :8791</text>
+<text x="576" y="522" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">• watches several relays</text>
+<text x="588" y="546" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">and survives restarts</text>
+<text x="576" y="570" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">• one row per release,</text>
+<text x="588" y="594" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">with every relay that</text>
+<text x="588" y="618" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">served it</text>
+<text x="576" y="642" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">• rejects invalid events</text>
+<text x="576" y="666" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">• reports coverage honestly:</text>
+<text x="588" y="690" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">caught-up or</text>
+<text x="588" y="714" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">possibly-incomplete</text>
+<rect x="826" y="426" width="234" height="374" rx="10" fill="#fbfaf7" stroke="#d9d6cc" stroke-width="1.5"/>
+<text x="842" y="452" font-size="15.5" font-weight="700" fill="#1f4fb8" text-anchor="start">Archive builder</text>
+<text x="842" y="474" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">wexare archive build</text>
+<text x="842" y="522" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">• freezes the collected</text>
+<text x="854" y="546" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">signed events into a ZIP:</text>
+<text x="854" y="570" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">catalog.json,</text>
+<text x="854" y="594" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">releases.jsonl,</text>
+<text x="854" y="618" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">catalog.sqlite</text>
+<text x="842" y="642" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">• signs an announcement</text>
+<text x="854" y="666" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">with the builder key</text>
+<text x="842" y="690" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">• pins, mirrors and seeds</text>
+<text x="854" y="714" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">the ZIP</text>
+<line x1="798" y1="612" x2="822" y2="612" stroke="#8a867c" stroke-width="2" marker-end="url(#m-plain)"/>
+<rect x="1180" y="330" width="580" height="490" rx="16" fill="#fff" stroke="#d9d6cc" stroke-width="1.5"/>
+<path d="M1180.75,407.75 V345.75 Q1180.75,330.75 1195.75,330.75 H1744.25 Q1759.25,330.75 1759.25,345.75 V407.75 Z" fill="#e9f6ee"/>
+<text x="1204" y="368" font-size="22" font-weight="700" fill="#17703f" text-anchor="start">Your browser</text>
+<text x="1204" y="393" font-size="14.5" font-weight="400" fill="#5b5852" text-anchor="start">apps/web · a static site: no backend, no account</text>
+<rect x="1200" y="418" width="540" height="34" rx="17" fill="#e9f6ee" stroke="#17703f" stroke-width="1.2"/>
+<text x="1470" y="440" font-size="13.5" font-weight="700" fill="#17703f" text-anchor="middle">Prompts, searches and outputs never leave the device · works offline</text>
+<rect x="1200" y="462" width="540" height="56" rx="10" fill="#fbfaf7" stroke="#d9d6cc" stroke-width="1.5"/>
+<text x="1216" y="485" font-size="15.5" font-weight="700" fill="#1f1d1a" text-anchor="start">Verify</text>
+<text x="1216" y="506" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">event signatures, manifest hashes, archive hashes</text>
+<rect x="1200" y="528" width="540" height="56" rx="10" fill="#fbfaf7" stroke="#d9d6cc" stroke-width="1.5"/>
+<text x="1216" y="551" font-size="15.5" font-weight="700" fill="#1f1d1a" text-anchor="start">Local catalog &amp; search</text>
+<text x="1216" y="572" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">SQLite WASM + full-text search on OPFS · Live, Archives or both</text>
+<rect x="1200" y="594" width="540" height="56" rx="10" fill="#fbfaf7" stroke="#d9d6cc" stroke-width="1.5"/>
+<text x="1216" y="617" font-size="15.5" font-weight="700" fill="#1f1d1a" text-anchor="start">Plan</text>
+<text x="1216" y="638" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">picks a compatible model per stage and says why; you can override</text>
+<rect x="1200" y="660" width="290" height="140" rx="10" fill="#fbfaf7" stroke="#d9d6cc" stroke-width="1.5"/>
+<text x="1216" y="686" font-size="15.5" font-weight="700" fill="#17703f" text-anchor="start">Run locally</text>
+<text x="1216" y="708" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">wllama: llama.cpp compiled to</text>
+<text x="1216" y="728" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">WebAssembly, on the CPU</text>
+<text x="1216" y="748" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">classify → summarize</text>
+<text x="1216" y="768" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">LoRA adapters at runtime</text>
+<circle cx="1462" cy="682" r="13" fill="#17703f"/>
+<text x="1462" y="687" font-size="15" font-weight="700" fill="#fff" text-anchor="middle">7</text>
+<rect x="1520" y="660" width="220" height="140" rx="10" fill="#fbfaf7" stroke="#d9d6cc" stroke-width="1.5"/>
+<text x="1536" y="686" font-size="15.5" font-weight="700" fill="#1f1d1a" text-anchor="start">Verified download</text>
+<text x="1536" y="708" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">mirror → IPFS → torrent</text>
+<text x="1536" y="728" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">per file; SHA-256 must</text>
+<text x="1536" y="748" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">match the manifest;</text>
+<text x="1536" y="768" font-size="14" font-weight="400" fill="#5b5852" text-anchor="start">cached in OPFS</text>
+<line x1="1518" y1="730" x2="1494" y2="730" stroke="#8a867c" stroke-width="2" marker-end="url(#m-plain)"/>
+<rect x="40" y="900" width="1720" height="120" rx="16" fill="#e7f5f1" stroke="#b2ddd3" stroke-width="1.5"/>
+<text x="70" y="944" font-size="22" font-weight="700" fill="#0b6b5f" text-anchor="start">Storage</text>
+<text x="70" y="972" font-size="14.5" font-weight="400" fill="#5b5852" text-anchor="start">the same bytes in several places;</text>
+<text x="70" y="992" font-size="14.5" font-weight="400" fill="#5b5852" text-anchor="start">locations are hints, the hash decides</text>
+<rect x="440" y="933" width="290" height="54" rx="10" fill="#fff" stroke="#0b6b5f" stroke-width="1.5"/>
+<text x="456" y="955" font-size="15" font-weight="700" fill="#0b6b5f" text-anchor="start">HTTP mirror</text>
+<text x="456" y="974" font-size="13.5" font-weight="400" fill="#5b5852" text-anchor="start">apps/artifacts :8790</text>
+<rect x="750" y="933" width="320" height="54" rx="10" fill="#fff" stroke="#0b6b5f" stroke-width="1.5"/>
+<text x="766" y="955" font-size="15" font-weight="700" fill="#0b6b5f" text-anchor="start">IPFS</text>
+<text x="766" y="974" font-size="13.5" font-weight="400" fill="#5b5852" text-anchor="start">Kubo A :8080 · replica on Kubo B</text>
+<rect x="1090" y="933" width="360" height="54" rx="10" fill="#fff" stroke="#0b6b5f" stroke-width="1.5"/>
+<text x="1106" y="955" font-size="15" font-weight="700" fill="#0b6b5f" text-anchor="start">BitTorrent over WebRTC</text>
+<text x="1106" y="974" font-size="13.5" font-weight="400" fill="#5b5852" text-anchor="start">seeded by apps/artifacts · tracker :8000</text>
+<rect x="1470" y="933" width="270" height="54" rx="10" fill="#fff" stroke="#0b6b5f" stroke-width="1.5"/>
+<text x="1486" y="955" font-size="15" font-weight="700" fill="#0b6b5f" text-anchor="start">Arweave</text>
+<text x="1486" y="974" font-size="13.5" font-weight="400" fill="#5b5852" text-anchor="start">ar:// links, read only</text>
+<line x1="240" y1="330" x2="240" y2="254" stroke="#6b4fd8" stroke-width="3.2" marker-end="url(#m-meta)"/>
+<circle cx="268" cy="291" r="13" fill="#6b4fd8"/>
+<text x="268" y="296" font-size="15" font-weight="700" fill="#fff" text-anchor="middle">1</text>
+<text x="290" y="286" font-size="14" font-weight="700" fill="#4a2fb0" text-anchor="start">publish the signed</text>
+<text x="290" y="304" font-size="14" font-weight="700" fill="#4a2fb0" text-anchor="start">release event</text>
+<line x1="240" y1="820" x2="240" y2="896" stroke="#0e8a7a" stroke-width="3.2" stroke-dasharray="9 6" marker-end="url(#m-bytes)"/>
+<circle cx="268" cy="858" r="13" fill="#0e8a7a"/>
+<text x="268" y="863" font-size="15" font-weight="700" fill="#fff" text-anchor="middle">2</text>
+<text x="290" y="853" font-size="14" font-weight="700" fill="#0b6b5f" text-anchor="start">upload the</text>
+<text x="290" y="871" font-size="14" font-weight="700" fill="#0b6b5f" text-anchor="start">model files</text>
+<line x1="680" y1="250" x2="680" y2="326" stroke="#6b4fd8" stroke-width="3.2" marker-end="url(#m-meta)"/>
+<circle cx="708" cy="291" r="13" fill="#6b4fd8"/>
+<text x="708" y="296" font-size="15" font-weight="700" fill="#fff" text-anchor="middle">3</text>
+<text x="730" y="296" font-size="14" font-weight="700" fill="#4a2fb0" text-anchor="start">collect events</text>
+<line x1="940" y1="330" x2="940" y2="254" stroke="#6b4fd8" stroke-width="3.2" marker-end="url(#m-meta)"/>
+<circle cx="968" cy="291" r="13" fill="#6b4fd8"/>
+<text x="968" y="296" font-size="15" font-weight="700" fill="#fff" text-anchor="middle">4</text>
+<text x="990" y="286" font-size="14" font-weight="700" fill="#4a2fb0" text-anchor="start">signed catalog</text>
+<text x="990" y="304" font-size="14" font-weight="700" fill="#4a2fb0" text-anchor="start">announcement</text>
+<line x1="940" y1="820" x2="940" y2="896" stroke="#0e8a7a" stroke-width="3.2" stroke-dasharray="9 6" marker-end="url(#m-bytes)"/>
+<circle cx="968" cy="858" r="13" fill="#0e8a7a"/>
+<text x="968" y="863" font-size="15" font-weight="700" fill="#fff" text-anchor="middle">4</text>
+<text x="990" y="863" font-size="14" font-weight="700" fill="#0b6b5f" text-anchor="start">catalog ZIP</text>
+<line x1="1470" y1="250" x2="1470" y2="326" stroke="#6b4fd8" stroke-width="3.2" marker-end="url(#m-meta)"/>
+<circle cx="1498" cy="291" r="13" fill="#6b4fd8"/>
+<text x="1498" y="296" font-size="15" font-weight="700" fill="#fff" text-anchor="middle">5</text>
+<text x="1520" y="286" font-size="14" font-weight="700" fill="#4a2fb0" text-anchor="start">discover live releases</text>
+<text x="1520" y="304" font-size="14" font-weight="700" fill="#4a2fb0" text-anchor="start">and announcements</text>
+<line x1="1630" y1="900" x2="1630" y2="804" stroke="#0e8a7a" stroke-width="3.2" stroke-dasharray="9 6" marker-end="url(#m-bytes)"/>
+<circle cx="1602" cy="858" r="13" fill="#0e8a7a"/>
+<text x="1602" y="863" font-size="15" font-weight="700" fill="#fff" text-anchor="middle">6</text>
+<text x="1580" y="853" font-size="14" font-weight="700" fill="#0b6b5f" text-anchor="end">fetch catalog ZIPs</text>
+<text x="1580" y="871" font-size="14" font-weight="700" fill="#0b6b5f" text-anchor="end">and model files</text>
+<text x="40" y="1056" font-size="15" font-weight="400" fill="#1f1d1a" text-anchor="start">Trust comes from keys you choose and from hashes, not from a server: publisher keys sign releases, builder keys sign catalogs, and every byte must match the SHA-256 in a signed manifest.</text>
+<text x="40" y="1080" font-size="13.5" font-weight="400" fill="#5b5852" text-anchor="start">Ports are the local demo defaults (infra/dev-endpoints.json); the protocol requires none of them.</text>
+</svg>

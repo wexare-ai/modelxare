@@ -247,7 +247,11 @@ export class RelayCollector {
           this.op.setStatus(this.url, 'degraded', { connected: true });
           this.log(`[${this.url}] catch-up POSSIBLY INCOMPLETE (gaps at ${r.gaps.join(', ') || 'timeout'})`);
         }
-        const sub = relay.subscribe([releaseRelayFilter({ since: r.startedAt - this.opts.overlapSeconds }) as never], {
+        // Relays apply `since` to live events too, so an event signed earlier and published now
+        // (a republish, or a release prepared ahead of time) would never arrive. The second filter
+        // returns nothing stored (`limit: 0`) and matches every new event, whatever its created_at.
+        const live = [releaseRelayFilter({ since: r.startedAt - this.opts.overlapSeconds }), releaseRelayFilter({ limit: 0 })];
+        const sub = relay.subscribe(live as never, {
           onevent: (e) => this.handle(e),
           oninvalidevent: (e) => this.handle(e),
           oneose: () => {
@@ -272,8 +276,11 @@ export class RelayCollector {
         if (!this.abort.signal.aborted) this.log(`[${this.url}] disconnected`);
       } catch (e) {
         if (!this.abort.signal.aborted) {
-          this.op.recordError(this.url, (e as Error).message || 'connection failed');
-          this.log(`[${this.url}] error: ${(e as Error).message}`);
+          // nostr-tools rejects a failed connect with a plain string, not an Error.
+          const msg = (e instanceof Error ? e.message : String(e ?? '')) || 'connection failed';
+          this.op.recordError(this.url, msg);
+          const hint = this.attempt === 0 && /connection failed|websocket closed|ECONNREFUSED/i.test(msg) ? ' (is the relay running? pnpm infra:up)' : '';
+          this.log(`[${this.url}] error: ${msg}${hint}`);
         }
       }
       this.relay = null;
