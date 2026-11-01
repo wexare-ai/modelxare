@@ -16,6 +16,8 @@ export interface TorrentDownloaderOptions {
   seed?: boolean;
   /** Fail when no bytes arrive for this long. */
   stallTimeoutMs?: number;
+  /** Re-announce this often while no peer is connected. */
+  reannounceMs?: number;
   /** Additional WebSocket trackers to announce to. */
   trackers?: string[];
 }
@@ -60,9 +62,16 @@ export class TorrentDownloader {
     return await new Promise((resolve, reject) => {
       let stallTimer: ReturnType<typeof setTimeout> | undefined;
       let seedTimer: ReturnType<typeof setTimeout> | undefined;
+      // A seeder that registers with the tracker after our announce is never
+      // introduced to us until the next scheduled announce (minutes away), so
+      // keep announcing, with fresh WebRTC offers, until a peer connects.
+      const reannounce = setInterval(() => {
+        if (!torrent.wires?.some((w: WT) => w.type !== 'webSeed')) torrent.discovery?.tracker?.update?.();
+      }, this.opts.reannounceMs ?? 5000);
       const cleanup = () => {
         clearTimeout(stallTimer);
         clearTimeout(seedTimer);
+        clearInterval(reannounce);
         o.signal?.removeEventListener('abort', onAbort);
       };
       const fail = (e: Error) => {

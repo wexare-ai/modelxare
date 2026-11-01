@@ -3,38 +3,52 @@
 Each criterion links to the automated test that checks it. The status records what has actually been
 run, where and when. Machine-readable evidence from each run is written to `tests/results/<ID>.json`.
 
-**Environment of the runs below:** Ubuntu 24.04 VM, x86_64, 4 vCPU, 7.8 GiB RAM, no GPU/WebGPU;
-Chromium headless shell 156 (Playwright 1.64.1); Node 22.22.2. This is **not** the reference Apple
-Silicon laptop. Real-model evidence on that hardware is still required before P0 can be declared
-complete (spec §14).
+**Environment of the runs below (2026-11-01):** Ubuntu 24.04 VM, x86_64, 4 vCPU, 7.8 GiB RAM, no
+GPU; Docker 29.1.3 running strfry `1.1.2-148-g4cd3cf6` ×2, Kubo 0.43.1 ×2 and the WebSocket tracker
+from `infra/`; Chromium headless shell 156.0.8078.4 (Playwright 1.64.1); Node 22.22.2; wllama 3.8.1.
+This is **not** the reference Apple Silicon laptop. Real-model evidence on that hardware is still
+required before P0 can be declared complete (spec §14).
 
-Status legend:
-- ✅ passed in the run noted.
-- 🟡 the automated test exists, and only part of it has run so far (noted).
-- ⏳ the automated test exists but has not yet run against the full services.
+Final runs: `pnpm test` (85 unit tests), `pnpm vitest run --project integration` (10 tests, Arweave
+included), `pnpm test:e2e` (19 tests) and `pnpm test:models` (6 tests). All passed.
 
-| ID | Criterion | Automated check | Status |
+| ID | Criterion | Automated check | Status and evidence |
 | --- | --- | --- | --- |
-| A01 | One-repo setup | README quick start, end to end | ⏳ Docker was not available on the build VM. `pnpm install`, `pnpm build`, `pnpm test` and `demo:prepare --no-ipfs` ran. |
-| A02 | Real signed publication | [`e2e/01-publish-discover`](../tests/e2e/01-publish-discover.spec.ts), [`integration/relays`](../tests/integration/relays.test.ts) | ⏳ |
-| A03 | Correct tag queries | Unit: [`protocol.test.ts`](../packages/protocol/test/protocol.test.ts), 20 golden queries in [`catalog.test.ts`](../packages/catalog/test/catalog.test.ts). Real relay: [`integration/relays`](../tests/integration/relays.test.ts), [`e2e/01`](../tests/e2e/01-publish-discover.spec.ts) | 🟡 unit ✅ (2026-11-01). Relay checks ⏳ |
-| A04 | Durable indexing | Unit (mock relay): [`collector.test.ts`](../apps/indexer/test/collector.test.ts). Real: [`e2e/02-indexer-archive`](../tests/e2e/02-indexer-archive.spec.ts) | 🟡 unit ✅. Real relays ⏳ |
-| A05 | Archive round trip | [`e2e/02-indexer-archive`](../tests/e2e/02-indexer-archive.spec.ts) | 🟡 manual browser run (2026-10-31): a 7-record archive was imported over the torrent path with no indexer call. The automated test ⏳ |
-| A06 | Real torrent transfer | [`e2e/02-indexer-archive`](../tests/e2e/02-indexer-archive.spec.ts) (web seeds disabled) | 🟡 manual run (2026-10-31): 22,701 B from WebRTC peers, 0 B from web seeds. The automated test ⏳ |
-| A07 | IPFS retrieval | [`e2e/03-downloads`](../tests/e2e/03-downloads.spec.ts), [`integration/storage`](../tests/integration/storage.test.ts) | ⏳ |
-| A08 | Local search | [`e2e/04-search-offline`](../tests/e2e/04-search-offline.spec.ts) | ✅ 2026-11-01. 10,000 records; import verification 37.8 s plus commit 14.8 s; database 53.6 MiB. After a reload, with networking off, the warm queries were: all records 112 ms, FTS "heron" 24 ms, FTS prefix "summar" 49 ms, capability intersection 26 ms, FTS + capability 20 ms. |
-| A09 | Invalid data | Unit: protocol vectors and archive rejection tests. Browser: [`e2e/01`](../tests/e2e/01-publish-discover.spec.ts) (altered manifest, live) and [`e2e/02`](../tests/e2e/02-indexer-archive.spec.ts) (tampered, traversal, oversized, malformed, forged) | 🟡 unit ✅. Browser ⏳ |
-| A10 | File fallback | [`e2e/03-downloads`](../tests/e2e/03-downloads.spec.ts), which includes altering a cached file before load | 🟡 manual run (2026-10-31): the corrupt primary was rejected and the next source verified. The automated test ⏳ |
-| A11 | Real inference | [`models/workflow`](../tests/models/workflow.spec.ts) | 🟡 manual run on the VM (2026-10-31). Qwen2.5-0.5B Q4_K_M classified `maintenance`, and SmolLM2-360M Q8_0 summarized "Water leak near entrance."; wllama 3.8.1, about 43 s. The automated run ⏳. **Reference laptop ⏳** |
-| A12 | Dynamic composition | Plan level: [`e2e/06-composition`](../tests/e2e/06-composition.spec.ts). Execution: [`models/workflow`](../tests/models/workflow.spec.ts) | 🟡 missing stage ✅ (2026-11-01). Release switch and trace ⏳ |
-| A13 | LoRA handling | [`e2e/03-downloads`](../tests/e2e/03-downloads.spec.ts) | ⏳ |
-| A14 | Offline reload | Tiny model: [`e2e/04-search-offline`](../tests/e2e/04-search-offline.spec.ts). Two-stage: [`models/workflow`](../tests/models/workflow.spec.ts) | ⏳ |
-| A15 | Operator replacement | [`e2e/05-operator-b`](../tests/e2e/05-operator-b.spec.ts) | ⏳ |
-| A16 | Relay failure | [`e2e/07-relay-failure`](../tests/e2e/07-relay-failure.spec.ts) | ⏳ |
-| A17 | Bounded collection | Unit (mock relay with a hidden cap, ties and reconnect overlap): [`collector.test.ts`](../apps/indexer/test/collector.test.ts). Real relay B (limit 50): [`e2e/02`](../tests/e2e/02-indexer-archive.spec.ts) | 🟡 unit ✅. Real relay ⏳ |
-| A18 | Runtime LoRA (P1) | [`models/lora`](../tests/models/lora.spec.ts), compatibility spike | 🟡 spike and manual run ✅ (2026-10-31): base sha256 `1240dfc1…` + adapter `d1e0617d…`; scale 1 and scale 0 give different outputs, matching upstream; native llama.cpp adapter log captured. The automated run ⏳ |
-| — | Prompts and outputs stay local | [`models/workflow`](../tests/models/workflow.spec.ts) (requests and WebSocket frames) | ⏳ |
-| — | Arweave `ar://` resolution | [`integration/arweave`](../tests/integration/arweave.test.ts) (`WEXARE_TEST_ARWEAVE=1`) | ✅ 2026-11-01: `ar://Edj83od3…` through arweave.net; 1,047 bytes, SHA-256 verified, CORS present |
+| A01 | One-repo setup | README quick start | ✅ On this VM, following the README literally: `pnpm install`, `infra:up` (relays, Kubo and tracker healthy; Kubo B connected to A), `demo:prepare` (4 min 35 s, including 10,000 synthetic signatures), `pnpm dev`, `demo:publish`, and `catalog:build`. The indexer collected 99 releases and rejected the altered manifest. The snapshot of 99 records was pinned, mirrored, seeded and announced to both relays. Relay B's coverage is `possibly-incomplete` because of the A17 records the e2e run leaves there. `build` and every test command also ran. **Clean-clone run on a second machine ⏳** |
+| A02 | Real signed publication | [`e2e/01`](../tests/e2e/01-publish-discover.spec.ts), [`integration/relays`](../tests/integration/relays.test.ts) | ✅ A freshly generated publisher's release was `accepted` by relay A and relay B, reported separately. A republish returned `duplicate` from both. A clean browser verified the signature and manifest hash and showed "2 relays". |
+| A03 | Correct tag queries | Unit (20 golden queries), [`integration/relays`](../tests/integration/relays.test.ts), [`e2e/01`](../tests/e2e/01-publish-discover.spec.ts) | ✅ A real relay returns the union for one `#t` filter (tiny-summarizer matches a classification+summarization OR query). Locally, classification ∩ summarization = 1 release, summarization = 4, and an impossible pair = 0. |
+| A04 | Durable indexing | [`e2e/02`](../tests/e2e/02-indexer-archive.spec.ts), unit collector tests | ✅ Each fixture release is one row with observations `relay:…7777` and `relay:…7778`. The altered-manifest event was rejected (`manifest_hash_mismatch`). Restart: 95 releases and 95 events before and after; the reconnect overlap only produced duplicates. |
+| A05 | Archive round trip | [`e2e/02`](../tests/e2e/02-indexer-archive.spec.ts) | ✅ A snapshot of 92 records was built from the indexer, signed by a fresh builder key, and published with IPFS, mirror and torrent locations. A clean browser recovered exactly the indexer's release-ID set. Browser calls to an indexer API: none. |
+| A06 | Real torrent transfer | [`e2e/02`](../tests/e2e/02-indexer-archive.spec.ts) (web seeds disabled) | ✅ Transport `torrent`: 159,677 bytes from WebRTC peers and 0 from HTTP web seeds. The seeder reported 159,677 bytes uploaded over `webrtc`. |
+| A07 | IPFS retrieval | [`e2e/03`](../tests/e2e/03-downloads.spec.ts), [`integration/storage`](../tests/integration/storage.test.ts) | ✅ With the HTTP mirrors unreachable, story-base (70.1 MiB) came from `http://127.0.0.1:8080/ipfs/bafybeigg2m7…` and was verified in the browser. In Node, the bytes matched the manifest through Kubo A and through Kubo B's pinned replica. |
+| A08 | Local search | [`e2e/04`](../tests/e2e/04-search-offline.spec.ts) | ✅ 10,000 records: verification 20.5 s, commit 6.8 s, database 54.0 MiB. After a reload, with networking off, the warm queries were: all records 120 ms, FTS "heron" 23 ms, prefix "summar" 55 ms, capability intersection 16 ms, FTS + capability 23 ms. The target is under 500 ms. |
+| A09 | Invalid data | Unit vectors, [`e2e/01`](../tests/e2e/01-publish-discover.spec.ts), [`e2e/02`](../tests/e2e/02-indexer-archive.spec.ts) | ✅ Live: `manifest_hash_mismatch` was shown and the release was never stored. Archives rejected: `archive_hash_mismatch` (one flipped byte), `archive_path_traversal` (`../evil.txt`), `archive_too_large` (declared size), `archive_malformed`, and a forged announcement. Catalog statistics were identical before and after. |
+| A10 | File fallback | [`e2e/03`](../tests/e2e/03-downloads.spec.ts) | ✅ The corrupted primary (368.5 MiB) was rejected with `SHA-256 mismatch`, then the next source verified. A cached file altered after verification failed re-verification before loading: nothing was loaded and the file was evicted. |
+| A11 | Real inference | [`models/workflow`](../tests/models/workflow.spec.ts) | ✅ on the VM: Qwen2.5-0.5B Q4_K_M (`74a4da8c…`) gave `maintenance` and SmolLM2-360M Q8_0 (`48ab3034…`) gave "Water leak near entrance.", in 54 s. The Spanish sample was routed to Qwen for both stages, because SmolLM2 declares only `en`. Runtime: wllama 3.8.1, multithreaded (3 threads), CPU/WASM. **Reference laptop ⏳** |
+| A12 | Dynamic composition | [`e2e/06`](../tests/e2e/06-composition.spec.ts), [`models/workflow`](../tests/models/workflow.spec.ts) | ✅ Choosing Qwen for summarization changed the plan and the executed trace (`0db4e379…` → `7331bb53…`). Both stage outputs appear in the result. The unknown-runtime release is listed but disabled, with its reason. Missing stages are shown as "missing" and the Run button is disabled. |
+| A13 | LoRA handling | [`e2e/03`](../tests/e2e/03-downloads.spec.ts) | ✅ The adapter and its exact base were downloaded and verified. The wrong-base adapter was blocked: "declared base weights c7aa6863… are not part of the base release". Adapter execution is reported as supported only on wllama 3.8.1, where A18 passes. |
+| A14 | Offline reload | [`e2e/04`](../tests/e2e/04-search-offline.spec.ts), [`models/workflow`](../tests/models/workflow.spec.ts) | ✅ Offline reload with networking off: search worked, the stories15M run worked, and the two-stage workflow completed. 17 requests, all served by the service worker; 0 external, 0 failed. |
+| A15 | Operator replacement | [`e2e/05`](../tests/e2e/05-operator-b.spec.ts) | ✅ A second indexer and builder ran with its own key, data directory, port 8794 and mirror root. A clean browser found the announcement by event ID on the relays, verified it and imported 95 records. The exported configuration names the new builder and holds no key material, and a second browser imported that file. |
+| A16 | Relay failure | [`e2e/07`](../tests/e2e/07-relay-failure.spec.ts) | ✅ With relay A stopped, its publish outcome was `disconnected` and relay B's `accepted`; a clean browser discovered the release through relay B. With both relays stopped, archive search still found the records after a reload. |
+| A17 | Bounded collection | [`e2e/02`](../tests/e2e/02-indexer-archive.spec.ts), unit collector tests | ✅ Relay B (limit 50) held 60 records sharing one timestamp. An indexer watching only relay B collected 70 of 80 and recorded "response limit (50) reached with every event at created_at=1767225600; more may exist". With both relays it recovered 80 of 80, with coverage relay A `caught-up` and relay B `possibly-incomplete`, never claiming completeness. |
+| A18 | Runtime LoRA (P1) | [`models/lora`](../tests/models/lora.spec.ts) | ✅ The base `1240dfc1…` and the adapter `d1e0617d…` were both re-verified, then loaded unmerged. Scale 1 produced " in love of the eye: That's when when the eye see thy on the sun's shining bright"; scale 0 produced " was a little girl. She was only three years old…". The native log shows `llama_adapter_lora_init: loading lora adapter from '/models/wexare-adapter-0.gguf'`. |
+| — | Prompts and outputs stay local | [`models/workflow`](../tests/models/workflow.spec.ts) | ✅ None of the 3 sample inputs or 3 summaries appeared in any of 25 HTTP requests or any WebSocket frame. HTTP hosts: `localhost:4173` (the app) and `127.0.0.1:8790` (the mirror). WebSocket hosts: the two relays. |
+| — | Arweave `ar://` resolution | [`integration/arweave`](../tests/integration/arweave.test.ts) | ✅ `ar://Edj83od3…` resolved through arweave.net: 1,047 bytes, SHA-256 verified, CORS present. |
+
+## Observations
+
+- **Model quality is not evaluated.** The tests check execution and the output contracts, not the
+  model's judgement (spec §14). Qwen2.5-0.5B classified the loud-music sample as `maintenance`;
+  the fixture lists `noise` as representative. Its summary of that sample was close to a copy of the
+  input.
+- **Bugs found by these runs and fixed:**
+  - after a reload, the catalog fell back to memory, and sqlite's default deletes the OPFS pool when it
+    fails to open;
+  - warm searches over 10,000 records were slow;
+  - built operator binaries didn't start;
+  - a browser that announced a torrent before the seeder registered never connected;
+  - offline, the service worker missed every asset because of `Vary: Origin`;
+  - an approved plan switched releases mid-download.
 
 ## Running the checks
 

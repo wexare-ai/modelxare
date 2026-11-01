@@ -92,6 +92,7 @@ export function selectRelease(
   language: string,
   prefs: Preferences,
   isCached: (sha256: string) => boolean,
+  isPending: (sha256: string) => boolean = () => false,
 ): StageSelection {
   const evaluated = candidates.map((c) => ({ c, ...compatibility(c, stage, language) }));
   const considered = evaluated.map((e) => ({ eventId: e.c.eventId, name: e.c.name, pubkey: e.c.pubkey, compatible: e.ok, why: e.why }));
@@ -109,24 +110,34 @@ export function selectRelease(
   const preferred = pool.filter((c) => prefs.preferredPublishers?.includes(c.pubkey));
   if (preferred.length) pool = preferred;
   const cached = (c: CandidateRelease) => c.manifest.files.every((f) => isCached(f.sha256));
+  // Files of an approved, in-progress download rank as cached, so the plan the
+  // user approved does not switch releases as individual files finish.
+  const available = (c: CandidateRelease) => c.manifest.files.every((f) => isCached(f.sha256) || isPending(f.sha256));
   pool.sort(
     (a, b) =>
-      Number(cached(b)) - Number(cached(a)) ||
+      Number(available(b)) - Number(available(a)) ||
       totalBytes(a.manifest) - totalBytes(b.manifest) ||
       (a.pubkey < b.pubkey ? -1 : a.pubkey > b.pubkey ? 1 : 0) ||
       (a.eventId < b.eventId ? -1 : 1),
   );
   const winner = pool[0]!;
   const runnerUp = pool[1];
-  let reason = cached(winner) ? 'compatible and already cached' : 'smallest compatible download';
-  if (runnerUp && cached(winner) === cached(runnerUp) && totalBytes(winner.manifest) === totalBytes(runnerUp.manifest)) reason = 'stable publisher / release-ID tie-break';
+  let reason = cached(winner) ? 'compatible and already cached' : available(winner) ? 'compatible, download in progress' : 'smallest compatible download';
+  if (runnerUp && available(winner) === available(runnerUp) && totalBytes(winner.manifest) === totalBytes(runnerUp.manifest)) reason = 'stable publisher / release-ID tie-break';
   if (preferred.length) reason += ' (preferred publisher)';
   return { stage, release: winner, reason, considered };
 }
 
-export function planWorkflow(input: string, candidates: CandidateRelease[], prefs: Preferences, isCached: (sha256: string) => boolean): WorkflowPlan {
+export function planWorkflow(
+  input: string,
+  candidates: CandidateRelease[],
+  prefs: Preferences,
+  isCached: (sha256: string) => boolean,
+  /** Files queued or downloading: they rank as cached but still block execution. */
+  isPending?: (sha256: string) => boolean,
+): WorkflowPlan {
   const language = prefs.language ?? detectLanguage(input);
-  const stages = STAGES.map((s) => selectRelease(s, candidates, language, prefs, isCached));
+  const stages = STAGES.map((s) => selectRelease(s, candidates, language, prefs, isCached, isPending));
   const downloads = new Map<string, PlannedDownload>();
   for (const s of stages) {
     for (const f of s.release?.manifest.files ?? []) {

@@ -10,11 +10,11 @@ test.describe.configure({ mode: 'serial' });
 
 let app: AppHandle;
 
-test.afterAll(async () => app?.context.close());
+test.afterAll(async () => app?.close());
 
-test('A08: 10,000 synthetic records import, survive reload, and search locally with networking disabled', async ({ browser }) => {
+test('A08: 10,000 synthetic records import, survive reload, and search locally with networking disabled', async () => {
   const synth = JSON.parse(readFileSync(join(DATA, 'synthetic/count-10000.json'), 'utf8')) as { zip: string; announcement: string };
-  app = await openApp(browser);
+  app = await openApp();
   const { page, context } = app;
   const t0 = Date.now();
   const r = await importArchive(page, readFileSync(synth.announcement, 'utf8'), { zipPath: synth.zip, timeoutMs: 300_000 });
@@ -26,7 +26,8 @@ test('A08: 10,000 synthetic records import, survive reload, and search locally w
   await page.reload();
   await expect(page.getByText('catalog: OPFS')).toBeVisible({ timeout: 30_000 });
   const stats = await catalogStats(page);
-  expect(stats.text).toMatch(/10000 synthetic/);
+  // Live discovery may add the labeled A17 records too; the archive alone holds 10,000.
+  expect(Number(/\((\d+) synthetic\)/.exec(stats.text)?.[1])).toBeGreaterThanOrEqual(10_000);
 
   // Networking off: the app's sync switch and the browser itself.
   await page.getByTestId('network-toggle').uncheck();
@@ -67,6 +68,7 @@ test('A08: 10,000 synthetic records import, survive reload, and search locally w
 
 test('A14: offline reload, local search and a cached real model run with no network calls', async () => {
   const { page, context } = app;
+  await gotoPage(page, 'sources');
   await page.getByTestId('network-toggle').check();
   // Live discovery fills in the fixtures; then cache one real model.
   await expect.poll(async () => (await search(page, { mode: 'Live', text: 'Bedtime story' })).total, { timeout: 30_000 }).toBeGreaterThan(0);

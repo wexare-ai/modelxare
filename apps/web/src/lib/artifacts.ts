@@ -80,6 +80,8 @@ export class ArtifactManager extends EventTarget {
   }
 
   isCached = (sha256: string) => this.cached.has(sha256);
+  /** Queued or downloading right now. */
+  isPending = (sha256: string) => ['queued', 'downloading'].includes(this.downloads.get(sha256)?.status ?? '');
 
   private applyTorrentSettings() {
     const t = this.settings().torrent;

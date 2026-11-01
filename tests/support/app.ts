@@ -1,8 +1,11 @@
-// Browser helpers for the real web app. Each fresh context is a clean browser:
-// empty OPFS, empty localStorage, no service worker.
-import { readFileSync } from 'node:fs';
-import { expect, type Browser, type BrowserContext, type Page, type Request } from '@playwright/test';
-import { WEB } from './env.ts';
+// Browser helpers for the real web app. Each handle is a clean browser: a new,
+// empty on-disk profile (empty OPFS and localStorage, no service worker). An
+// on-disk profile gets a normal storage quota; incognito-style contexts cannot
+// hold the real model files.
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+import { chromium, expect, type BrowserContext, type Page, type Request } from '@playwright/test';
+import { WEB, runDir } from './env.ts';
 
 export interface AppHandle {
   context: BrowserContext;
@@ -10,15 +13,18 @@ export interface AppHandle {
   requests: Request[];
   /** Text of every WebSocket frame the page sent, per socket URL. */
   wsSent: { url: string; payload: string }[];
+  /** Close the browser and delete its profile. */
+  close(): Promise<void>;
 }
 
 /**
- * Open the app in a clean context. `settings` (public client configuration,
+ * Open the app in a clean browser. `settings` (public client configuration,
  * the same JSON the Sources page imports/exports) is written to localStorage
  * before the app boots.
  */
-export async function openApp(browser: Browser, opts: { settings?: Record<string, unknown>; path?: string } = {}): Promise<AppHandle> {
-  const context = await browser.newContext({ serviceWorkers: 'allow' });
+export async function openApp(opts: { settings?: Record<string, unknown>; path?: string } = {}): Promise<AppHandle> {
+  const profile = mkdtempSync(join(runDir(), 'profile-'));
+  const context = await chromium.launchPersistentContext(profile, { headless: true, serviceWorkers: 'allow', acceptDownloads: true });
   if (opts.settings) {
     await context.addInitScript((s) => {
       try {
@@ -28,8 +34,17 @@ export async function openApp(browser: Browser, opts: { settings?: Record<string
       }
     }, JSON.stringify(opts.settings));
   }
-  const page = await context.newPage();
-  const handle: AppHandle = { context, page, requests: [], wsSent: [] };
+  const page = context.pages()[0] ?? (await context.newPage());
+  const handle: AppHandle = {
+    context,
+    page,
+    requests: [],
+    wsSent: [],
+    close: async () => {
+      await context.close();
+      rmSync(profile, { recursive: true, force: true });
+    },
+  };
   page.on('request', (r) => handle.requests.push(r));
   page.on('websocket', (ws) => ws.on('framesent', (f) => handle.wsSent.push({ url: ws.url(), payload: typeof f.payload === 'string' ? f.payload : f.payload.toString('utf8') })));
   page.on('pageerror', (e) => console.log(`[pageerror] ${e.message}`));

@@ -15,13 +15,13 @@ const samples = JSON.parse(readFileSync(join(ROOT, 'fixtures/messages.json'), 'u
 let app: AppHandle;
 const runs: Record<string, unknown>[] = [];
 
-test.beforeAll(async ({ browser }) => {
-  app = await openApp(browser, { path: 'discover' });
+test.beforeAll(async () => {
+  app = await openApp({ path: 'discover' });
   await expect.poll(async () => (await search(app.page, { mode: 'Live', capabilities: ['summarization'] })).total, { timeout: 30_000 }).toBeGreaterThanOrEqual(4);
 });
 test.afterAll(async () => {
   evidence('A11', { runs });
-  await app?.context.close();
+  await app?.close();
 });
 
 async function runWorkflow(page: Page, label: string) {
@@ -108,11 +108,12 @@ test('privacy: prompts and outputs never leave the browser', async () => {
     ...app.wsSent.map((f) => `${f.url}\n${f.payload}`),
   ];
   const leaks = secrets.filter((s) => bodies.some((b) => b.includes(s) || b.includes(encodeURIComponent(s))));
-  expect(leaks).toEqual([]);
-  const hosts = [...new Set(app.requests.map((r) => new URL(r.url()).host))];
+  // blob:/data: URLs are in-memory and never leave the browser.
+  const hosts = [...new Set(app.requests.map((r) => r.url()).filter((u) => /^https?:/.test(u)).map((u) => new URL(u).host))];
   const wsHosts = [...new Set(app.wsSent.map((f) => new URL(f.url).host))];
-  expect(hosts.every((h) => /^(127\.0\.0\.1|localhost)(:\d+)?$/.test(h))).toBe(true);
   evidence('PRIVACY', { checked_strings: secrets.length, requests: app.requests.length, ws_frames_sent: app.wsSent.length, http_hosts: hosts, ws_hosts: wsHosts, leaks });
+  expect(leaks).toEqual([]);
+  expect(hosts.filter((h) => !/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(h))).toEqual([]);
 });
 
 test('A14: offline reload, local search and the two-stage workflow with no network', async () => {

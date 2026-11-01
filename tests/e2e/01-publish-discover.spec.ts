@@ -20,8 +20,8 @@ test('A02: a new publisher publishes to both relays with separate acknowledgment
   evidence('A02', { event_id: release.eventId, manifest_sha256: release.manifestSha256, publisher: release.pubkey, relay_outcomes: release.outcomes, republish_outcomes: again });
 });
 
-test('A02: a clean browser verifies the signature and manifest hash and shows both relays', async ({ browser }) => {
-  const app = await openApp(browser, { path: 'discover' });
+test('A02: a clean browser verifies the signature and manifest hash and shows both relays', async () => {
+  const app = await openApp({ path: 'discover' });
   const { page } = app;
   await expect
     .poll(async () => (await search(page, { mode: 'Live', text: release.name })).ids, { timeout: 30_000 })
@@ -31,17 +31,17 @@ test('A02: a clean browser verifies the signature and manifest hash and shows bo
   await item.click();
   await expect(page.getByTestId('release-id')).toHaveText(release.eventId);
   await expect(page.getByText('metadata verified')).toBeVisible();
-  await expect(page.getByText(release.manifestSha256)).toBeVisible();
+  await expect(page.getByText(release.manifestSha256, { exact: true })).toBeVisible();
   const provenance = await page.locator('.detail li').allInnerTexts();
   expect(provenance.filter((t) => /relay/.test(t) && (t.includes(RELAY_A) || t.includes(RELAY_B))).length).toBe(2);
   evidence('A02', { browser_verified: true, browser_sources: provenance });
-  await app.context.close();
+  await app?.close();
 });
 
-test('A03: multi-capability filters require the intersection, locally', async ({ browser }) => {
+test('A03: multi-capability filters require the intersection, locally', async () => {
   const state = demoState();
   const id = (n: string) => state.releases[n]!.event_id;
-  const app = await openApp(browser, { path: 'discover' });
+  const app = await openApp({ path: 'discover' });
   const { page } = app;
   // Wait until live discovery holds every fixture release.
   await expect.poll(async () => (await search(page, { mode: 'Live', capabilities: ['summarization'] })).ids.length, { timeout: 30_000 }).toBeGreaterThanOrEqual(4);
@@ -58,12 +58,12 @@ test('A03: multi-capability filters require the intersection, locally', async ({
   const none = await search(page, { mode: 'Live', capabilities: ['summarization', 'translation'] });
   expect(none.ids).not.toContain(id('community-assistant'));
   evidence('A03', { intersection: both.ids, summarization_only: summ.ids, impossible_pair_total: none.total });
-  await app.context.close();
+  await app?.close();
 });
 
-test('A09: the browser rejects a validly signed event whose inline manifest was altered', async ({ browser }) => {
+test('A09: the browser rejects a validly signed event whose inline manifest was altered', async () => {
   const bad = demoState().releases['_invalid-manifest-hash']!.event_id;
-  const app = await openApp(browser, { path: 'sources' });
+  const app = await openApp({ path: 'sources' });
   const { page } = app;
   const rejected = page.locator('details', { hasText: 'Recently rejected events' });
   await expect(rejected).toBeVisible({ timeout: 30_000 });
@@ -74,5 +74,5 @@ test('A09: the browser rejects a validly signed event whose inline manifest was 
   await gotoPage(page, `model/${bad}`);
   await expect(page.getByText('is not in the local catalog')).toBeVisible();
   evidence('A09', { live_rejection: line });
-  await app.context.close();
+  await app?.close();
 });

@@ -38,6 +38,10 @@ export function Playground() {
     if (playgroundPreset?.explicit) setExplicit(playgroundPreset.explicit as Partial<Record<StageId, string>>);
   }, [playgroundPreset]);
 
+  const pendingKey = [...artifacts.downloads.values()]
+    .filter((d) => d.status === 'queued' || d.status === 'downloading')
+    .map((d) => d.sha256)
+    .join();
   const plan = useMemo(
     () =>
       planWorkflow(
@@ -45,8 +49,9 @@ export function Playground() {
         candidates,
         { explicit, preferredPublishers: settings.preferredPublishers, ...(language !== 'auto' ? { language } : {}) },
         artifacts.isCached,
+        artifacts.isPending,
       ),
-    [input, candidates, explicit, language, settings.preferredPublishers, artifacts, artifacts.cached.size],
+    [input, candidates, explicit, language, settings.preferredPublishers, artifacts, artifacts.cached.size, pendingKey],
   );
   const downloads: DownloadFile[] = plan.downloads.map((d) => {
     const c = candidates.find((x) => x.eventId === d.eventId)!;

@@ -8,7 +8,7 @@ import { RELAY_A, RELAY_B, endpoints, evidence, runDir } from '../support/env.ts
 import { Indexer, cli, waitSeeding } from '../support/procs.ts';
 import { gotoPage, openApp, search } from '../support/app.ts';
 
-test('A15: a second operator exports a catalog the browser imports through settings', async ({ browser }) => {
+test('A15: a second operator exports a catalog the browser imports through settings', async () => {
   const dir = join(runDir(), 'operators/b');
   const key = join(dir, 'builder-b.key.json');
   await cli(['keygen', '--out', key, '--label', 'e2e-builder-b']);
@@ -29,7 +29,7 @@ test('A15: a second operator exports a catalog the browser imports through setti
   await waitSeeding(endpoints.artifacts, infoHash);
 
   // Clean browser: look the announcement up by event ID on the configured relays.
-  const app = await openApp(browser);
+  const app = await openApp();
   const { page } = app;
   await page.getByTestId('announcement-id').fill(announcementId);
   await page.getByTestId('lookup-announcement').click();
@@ -53,13 +53,14 @@ test('A15: a second operator exports a catalog the browser imports through setti
   const exported = readFileSync((await download.path())!, 'utf8');
   const cfg = JSON.parse(exported) as { catalogs: { builderPubkey: string }[] };
   expect(cfg.catalogs.map((c) => c.builderPubkey)).toContain(builder);
-  expect(exported).not.toMatch(/secret|nsec1|private/i);
+  // No key material: no secret-key field and no bech32 private key.
+  expect(exported).not.toMatch(/"[^"]*(secret|private)[^"]*"\s*:|nsec1/i);
 
   // A second clean browser adopts that configuration file as-is.
-  const other = await openApp(browser);
+  const other = await openApp();
   await other.page.getByTestId('import-config').setInputFiles({ name: 'wexare-client-config.json', mimeType: 'application/json', buffer: Buffer.from(exported) });
   await expect.poll(() => other.page.evaluate(() => JSON.parse(localStorage.getItem('wexare.settings.v1') ?? '{}').catalogs?.length ?? 0)).toBeGreaterThan(0);
   evidence('A15', { builder_b: builder, announcement_id: announcementId, records, operator_data: dir, status_port: 8794, exported_catalogs: cfg.catalogs.map((c) => c.builderPubkey) });
-  await other.context.close();
-  await app.context.close();
+  await other?.close();
+  await app?.close();
 });

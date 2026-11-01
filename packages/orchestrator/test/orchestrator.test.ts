@@ -73,6 +73,16 @@ describe('planning (A12)', () => {
     expect(explicit.downloads).toHaveLength(1); // shared file deduplicated
   });
 
+  it('keeps the approved plan while its downloads finish one by one', () => {
+    const cachedQwen = (s: string) => qwen.manifest.files.some((f) => f.sha256 === s);
+    const pendingSmol = (s: string) => smol.manifest.files.some((f) => f.sha256 === s);
+    const p = planWorkflow(MSG, all, {}, cachedQwen, pendingSmol);
+    expect(p.stages.map((s) => s.release!.eventId)).toEqual([qwen.eventId, smol.eventId]);
+    expect(p.stages[1]!.reason).toBe('compatible, download in progress');
+    // Still blocked: the pending file is not verified yet.
+    expect(p.downloads.map((d) => d.eventId)).toEqual([smol.eventId]);
+  });
+
   it('never substitutes an incompatible explicit choice', () => {
     const p = planWorkflow(MSG, all, { explicit: { summarization: onnx.eventId } }, none);
     expect(p.ok).toBe(false);

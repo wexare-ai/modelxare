@@ -3,7 +3,7 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { createWriteStream, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT } from './env.ts';
+import { ROOT, endpoints } from './env.ts';
 
 const TSX = join(ROOT, 'node_modules/.bin/tsx');
 
@@ -142,13 +142,27 @@ export class Indexer {
   }
 }
 
-/** Wait until the artifacts seeder reports the torrent as ready and complete. */
+/**
+ * Wait until the artifacts seeder reports the torrent as ready and complete,
+ * and the tracker lists it as a seeder (scrape `complete` >= 1).
+ */
 export async function waitSeeding(artifacts: string, infoHash: string, timeoutMs = 120_000): Promise<void> {
   await waitFor(
     `seeder ready for ${infoHash}`,
     async () => {
       const s = await getJson<{ seeding: { infoHash: string; ready: boolean; complete: boolean }[] | string }>(`${artifacts}/status`);
       return Array.isArray(s.seeding) && s.seeding.some((t) => t.infoHash === infoHash && t.ready && t.complete);
+    },
+    timeoutMs,
+    1000,
+  );
+  const encoded = [...Buffer.from(infoHash, 'hex')].map((b) => `%${b.toString(16).padStart(2, '0')}`).join('');
+  const scrape = `${endpoints.tracker.http.replace(/\/announce$/, '/scrape')}?info_hash=${encoded}`;
+  await waitFor(
+    `tracker lists a seeder for ${infoHash}`,
+    async () => {
+      const body = Buffer.from(await (await fetch(scrape, { signal: AbortSignal.timeout(5000) })).arrayBuffer()).toString('latin1');
+      return Number(/8:completei(\d+)e/.exec(body)?.[1] ?? 0) >= 1;
     },
     timeoutMs,
     1000,

@@ -18,12 +18,19 @@ self.addEventListener('activate', (e) => {
   );
 });
 
+// Servers may send `Vary: Origin`; module scripts are requested with an Origin
+// header that the precache requests lacked, so ignore Vary. Asset names are
+// content-hashed, so query strings (e.g. sqlite's `?vfs=`) can be ignored too;
+// cached responses are re-wrapped so workers keep their requested URL (query included).
+const MATCH = { cacheName: CACHE, ignoreVary: true, ignoreSearch: true };
+const fresh = (r) => new Response(r.body, r);
+
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== self.location.origin) return;
   if (e.request.mode === 'navigate') {
-    e.respondWith(fetch(e.request).catch(() => caches.match('./', { cacheName: CACHE })));
+    e.respondWith(fetch(e.request).catch(() => caches.match('./', MATCH).then((r) => (r ? fresh(r) : Response.error()))));
     return;
   }
-  e.respondWith(caches.match(e.request, { cacheName: CACHE }).then((r) => r || fetch(e.request)));
+  e.respondWith(caches.match(e.request, MATCH).then((r) => (r ? fresh(r) : fetch(e.request))));
 });

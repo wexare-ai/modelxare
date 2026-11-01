@@ -14,23 +14,23 @@ test.afterAll(async () => {
   await infra('start', 'relay-a', 'relay-b');
 });
 
-test('A16: with relay A down, relay B still supports publication and live discovery', async ({ browser }) => {
+test('A16: with relay A down, relay B still supports publication and live discovery', async () => {
   await infra('stop', 'relay-a');
   const r = await publishNewRelease('a16-relay-a-down');
   expect(r.outcomes[RELAY_A]).toMatch(/disconnected|timed-out/);
   expect(r.outcomes[RELAY_B]).toBe('accepted');
 
-  const app = await openApp(browser, { path: 'discover' });
+  const app = await openApp({ path: 'discover' });
   const { page } = app;
   await expect.poll(async () => (await search(page, { mode: 'Live', text: r.name })).ids, { timeout: 30_000 }).toEqual([r.eventId]);
   await page.evaluate(() => (location.hash = '#/sources'));
   await expect(page.locator(`[data-testid="relay-row"][data-relay="${RELAY_B}"]`)).toHaveAttribute('data-state', 'live');
   await expect(page.locator(`[data-testid="relay-row"][data-relay="${RELAY_A}"]`)).not.toHaveAttribute('data-state', 'live');
   evidence('A16', { relay_a_down: { event_id: r.eventId, outcomes: r.outcomes, discovered_via: RELAY_B } });
-  await app.context.close();
+  await app?.close();
 });
 
-test('A16: with both relays down, archived records stay searchable', async ({ browser }) => {
+test('A16: with both relays down, archived records stay searchable', async () => {
   await infra('start', 'relay-a');
   // A snapshot built directly from preserved signed event files (no indexer involved).
   const dir = join(runDir(), 'archives-events');
@@ -44,7 +44,7 @@ test('A16: with both relays down, archived records stay searchable', async ({ br
   const out = (await cli(['archive', 'build', ...events, '--builder-key', key, '--out', dir, '--publish', '--mirror-name', mirror])).out;
   const annPath = /saved (\S+\.announcement\.json)/.exec(out)![1]!;
 
-  const app = await openApp(browser);
+  const app = await openApp();
   const { page } = app;
   await importArchive(page, readFileSync(annPath, 'utf8'), { zipPath: annPath.replace(/\.announcement\.json$/, '.zip') });
 
@@ -56,5 +56,5 @@ test('A16: with both relays down, archived records stay searchable', async ({ br
   const tagged = await search(page, { mode: 'Archives', capabilities: ['text-classification', 'summarization'] });
   expect(tagged.total).toBeGreaterThan(0);
   evidence('A16', { both_down: { archive_announcement: annPath, archive_hits: found.total, capability_hits: tagged.total } });
-  await app.context.close();
+  await app?.close();
 });

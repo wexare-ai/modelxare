@@ -88,7 +88,7 @@ test('A04: the same event on two relays is one release with two observations; re
   evidence('A17', { two_relays: { bounded_collected: boundedCount(main.db), coverage: s2.coverage, duplicates_after_restart: { relayA: relayRow(s2, RELAY_A).duplicates, relayB: relayRow(s2, RELAY_B).duplicates } } });
 });
 
-test('A05/A06: build, sign and seed a snapshot; a clean browser imports it over WebRTC', async ({ browser }) => {
+test('A05/A06: build, sign and seed a snapshot; a clean browser imports it over WebRTC', async () => {
   const dir = runDir();
   const key = join(dir, 'builder-a.key.json');
   await cli(['keygen', '--out', key, '--label', 'e2e-builder-a']);
@@ -112,7 +112,7 @@ test('A05/A06: build, sign and seed a snapshot; a clean browser imports it over 
   await waitSeeding(endpoints.artifacts, archive.infoHash);
 
   // Clean browser, torrent only: HTTP web seeds disabled for this proof.
-  const app = await openApp(browser, { settings: { torrent: { enabled: true, preferForArchives: true, webSeedDelayMs: -1, seed: false } } });
+  const app = await openApp({ settings: { torrent: { enabled: true, preferForArchives: true, webSeedDelayMs: -1, seed: false } } });
   const t0 = Date.now();
   const r = await importArchive(app.page, announcement);
   const importMs = Date.now() - t0;
@@ -132,10 +132,10 @@ test('A05/A06: build, sign and seed a snapshot; a clean browser imports it over 
   const seeder = await getJson<{ seeding: { infoHash: string; uploadedBytes: number; peers: number }[] }>(`${endpoints.artifacts}/status`);
   evidence('A05', { announcement_id: ev.id, zip_sha256: archive.sha256, records: archive.records, builder, recovered_non_synthetic: got.length, import_ms: importMs, indexer_calls: indexerCalls });
   evidence('A06', { info_hash: archive.infoHash, transport: r.transport, peer_bytes: r.peerBytes, web_seed_bytes: r.webSeedBytes, seeder: seeder.seeding.find((s) => s.infoHash === archive.infoHash) });
-  await app.context.close();
+  await app?.close();
 });
 
-test('A09: tampered, traversal, oversized, malformed and forged archives are rejected without touching the catalog', async ({ browser }) => {
+test('A09: tampered, traversal, oversized, malformed and forged archives are rejected without touching the catalog', async () => {
   const dir = join(runDir(), 'bad-archives');
   mkdirSync(dir, { recursive: true });
   const key = join(runDir(), 'builder-a.key.json');
@@ -144,7 +144,7 @@ test('A09: tampered, traversal, oversized, malformed and forged archives are rej
     if (r.status !== 0) throw new Error(r.stderr);
     return r.stdout;
   };
-  const app = await openApp(browser);
+  const app = await openApp();
   const { page } = app;
   await importArchive(page, archive.announcement, { zipPath: archive.zip });
   const before = await catalogStats(page);
@@ -192,7 +192,7 @@ test('A09: tampered, traversal, oversized, malformed and forged archives are rej
   const after = await catalogStats(page);
   expect(after.text).toBe(before.text);
   evidence('A09', { archive_rejections: { tampered: e1, traversal: e2, oversized: e3, malformed: e4, forged_announcement: 'Announcement rejected' }, catalog_before: before, catalog_after: after });
-  await app.context.close();
+  await app?.close();
 });
 
 /** Page through Discover results and return every event ID. */

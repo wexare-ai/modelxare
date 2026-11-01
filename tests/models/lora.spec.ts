@@ -5,11 +5,11 @@ import { expect, test } from '@playwright/test';
 import { demoState, evidence } from '../support/env.ts';
 import { gotoPage, openApp, search } from '../support/app.ts';
 
-test('A18: the Shakespeare adapter changes generation over the exact stories15M base', async ({ browser }) => {
+test('A18: the Shakespeare adapter changes generation over the exact stories15M base', async () => {
   const ids = demoState().releases;
   const lora = ids['shakespeare-lora']!;
   const base = ids['story-base']!;
-  const app = await openApp(browser, { path: 'discover' });
+  const app = await openApp({ path: 'discover' });
   const { page } = app;
   await expect.poll(async () => (await search(page, { mode: 'Live', text: 'Shakespeare' })).total, { timeout: 30_000 }).toBeGreaterThan(0);
 
@@ -45,5 +45,5 @@ test('A18: the Shakespeare adapter changes generation over the exact stories15M 
     without_adapter: outputs['0'],
     native_adapter_log: native.split('\n').slice(0, 20),
   });
-  await app.context.close();
+  await app?.close();
 });

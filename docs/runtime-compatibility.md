@@ -71,3 +71,21 @@ adapter's GGUF metadata (`general.type = adapter`, `adapter.type = lora`).
 
 **Passed, with the private-API workaround above.** P1 browser adapter execution is implemented for
 wllama 3.8.1 only. Upgrading wllama requires rerunning `pnpm --filter @wexare/tests spike lora`.
+
+## App-level results (2026-11-01, same VM)
+
+These are measured inside the web app through `pnpm test:models`, not in the spike page. Files come
+from the verified OPFS cache and are re-hashed before every load.
+
+| Run | Releases (classification → summarization) | Result | Wall time |
+| --- | --- | --- | --- |
+| English water-leak sample | Qwen2.5-0.5B Q4_K_M → SmolLM2-360M Q8_0 | `maintenance`; "Water leak near entrance." | 54.0 s, including both model loads |
+| Spanish water-leak sample | Qwen → Qwen (SmolLM2 declares only `en`) | `maintenance`; "La residente ha notado una fuga de agua en la entrada." | 45.4 s |
+| English sample, summarization switched to Qwen | Qwen → Qwen (resident model reused) | `maintenance`; "A water leak has been found near the entrance." | 19.5 s |
+| Loud-music sample, offline after reload | Qwen → SmolLM2 | `maintenance` (the fixture lists `noise` as representative); summary close to a copy of the input | 57.6 s |
+| LoRA (one-model mode) | stories15M MoE F16 + Shakespeare adapter, scale 1 / 0 | Matches upstream for both scales; native adapter log captured | load 3.1 s, generate 2.0 s |
+
+The runtime loaded with 3 threads (multithreaded, cross-origin isolated) on 4 logical cores. It
+reports `webgpu ✓` as a browser feature, but runs CPU/WASM only (`n_gpu_layers: 0`). Classification
+uses the bundled contract's choice grammar, so the output is always a valid category; whether that
+category is right is a model-quality question, which is outside acceptance (spec §14).

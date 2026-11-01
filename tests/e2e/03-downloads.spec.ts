@@ -9,12 +9,12 @@ test.describe.configure({ mode: 'serial' });
 let app: AppHandle;
 const rel = (n: string) => demoState().releases[n]!;
 
-test.beforeAll(async ({ browser }) => {
-  app = await openApp(browser, { path: 'discover' });
+test.beforeAll(async () => {
+  app = await openApp({ path: 'discover' });
   // Live discovery fills the local catalog from both relays.
   await expect.poll(async () => (await search(app.page, { mode: 'Live', text: '' })).total, { timeout: 30_000 }).toBeGreaterThanOrEqual(7);
 });
-test.afterAll(async () => app?.context.close());
+test.afterAll(async () => app?.close());
 
 test('A07: a fixture model is fetched through the IPFS gateway and verified against the manifest', async () => {
   const { page, context } = app;
@@ -60,11 +60,12 @@ test('A10: a cached file altered after verification never reaches the inference 
   const out = page.getByTestId('single-output');
   await expect(out).toHaveAttribute('data-state', 'failed', { timeout: 60_000 });
   await expect(out).toContainText('failed re-verification and was removed');
+  const error = (await out.locator('.error').first().textContent()) ?? '';
   await gotoPage(page, 'sources');
   await expect(page.getByTestId('runtime-info')).toContainText(/Resident model\s*none/);
   await gotoPage(page, `model/${story.event_id}`);
   await expect(page.locator(`[data-testid="file-row"][data-sha="${sha}"] [data-testid="file-status"]`)).toContainText('not cached');
-  evidence('A10', { altered_cache: { sha256: sha, outcome: (await out.count()) ? 'run failed before load; file evicted' : 'n/a' } });
+  evidence('A10', { altered_cache: { sha256: sha, run_error: error, resident_model: 'none', file_status: 'not cached (evicted)' } });
 });
 
 test('A13: the real adapter resolves its exact base and verifies; the wrong-base adapter is blocked', async () => {
