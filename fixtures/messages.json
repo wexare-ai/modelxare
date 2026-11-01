@@ -1,0 +1,28 @@
+{
+  "description": "Sample community messages for the two-stage workflow. `representative_category` is what a reasonable classifier is expected to pick; tests validate output shapes and contracts, never exact model prose.",
+  "categories": ["maintenance", "safety", "security", "noise", "cleanliness", "other"],
+  "expected_result_shape": {
+    "category": "one of categories",
+    "summary": "non-empty string, at most 400 characters, one sentence"
+  },
+  "messages": [
+    {
+      "id": "en-water-leak",
+      "language": "en",
+      "text": "There has been a water leak near the entrance since this morning. Can someone inspect it?",
+      "representative_category": "maintenance"
+    },
+    {
+      "id": "es-water-leak",
+      "language": "es",
+      "text": "Hay una fuga de agua cerca de la entrada desde esta mañana. ¿Alguien puede revisarla?",
+      "representative_category": "maintenance"
+    },
+    {
+      "id": "en-loud-music",
+      "language": "en",
+      "text": "The people in apartment 4B have been playing loud music past midnight every night this week. Could someone please talk to them?",
+      "representative_category": "noise"
+    }
+  ]
+}

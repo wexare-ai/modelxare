@@ -1,0 +1,60 @@
+{
+  "fixture": "stories15m-moe-f16",
+  "publisher": "publisher-a",
+  "manifest": {
+    "model_id": "story-base",
+    "name": "Bedtime story base (stories15M MoE F16)",
+    "description": "Tiny story-generation model used as the exact base for the Shakespeare LoRA adapter. Completion only; not a chat model.",
+    "version": "1.0.0",
+    "kind": "model",
+    "capabilities": [
+      "text-generation"
+    ],
+    "languages": [
+      "en"
+    ],
+    "runtime": {
+      "format": "gguf",
+      "family": "wllama",
+      "requirement": ">=3.8.1 <3.9.0",
+      "browser_features": [
+        "wasm-simd"
+      ],
+      "chat_template": {
+        "source": "none"
+      }
+    },
+    "operations": [
+      {
+        "id": "text-generation",
+        "prompt": {
+          "mode": "completion",
+          "template": "{{input}}"
+        },
+        "generation": {
+          "max_tokens": 24,
+          "temperature": 0,
+          "top_k": 1
+        }
+      }
+    ],
+    "requirements": {
+      "context_length": 256,
+      "memory_mb": {
+        "value": 120,
+        "basis": "estimated",
+        "context_length": 256
+      },
+      "hardware_profiles": [
+        "cpu-wasm"
+      ]
+    }
+  },
+  "_comment": "Primary location is a missing mirror path (HTTP 404): clients fall back to the next location.",
+  "locations": [
+    "missing-mirror",
+    "mirror",
+    "ipfs",
+    "torrent"
+  ]
+}

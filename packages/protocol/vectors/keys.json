@@ -1,0 +1,15 @@
+{
+  "warning": "PUBLIC TEST-ONLY KEYS. Never use for real publication.",
+  "keys": [
+    {
+      "label": "publisher-a",
+      "secret_key_hex": "875c54f0c0031e67ddb39e3cf037615f77b985f855920c340caa893c7a3a33ee",
+      "pubkey": "1cc30377c92ae0e34d39a78c1f54e5ca6517e5081660051725d35c9ed2f20075"
+    },
+    {
+      "label": "archive-builder",
+      "secret_key_hex": "9eca23ab51c1d9dffeaf068c3c78a5bbed3674d0d651839e5dab7fd9cb301366",
+      "pubkey": "bdc0d3d5aa2f83b05c6d38ba6557771b43d9785acd1447a5d5781db79dc348ff"
+    }
+  ]
+}

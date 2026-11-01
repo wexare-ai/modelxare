@@ -1,0 +1,33 @@
+{
+  "name": "wexare-modelxare",
+  "private": true,
+  "description": "weXare decentralized micro-model marketplace \u2014 proof of concept",
+  "license": "Apache-2.0",
+  "type": "module",
+  "packageManager": "pnpm@11.0.9",
+  "engines": {
+    "node": ">=22.12 <23"
+  },
+  "scripts": {
+    "infra:up": "node scripts/infra.mjs up",
+    "infra:down": "node scripts/infra.mjs down",
+    "demo:prepare": "tsx --disable-warning=ExperimentalWarning apps/cli/src/main.ts demo prepare",
+    "demo:publish": "tsx --disable-warning=ExperimentalWarning apps/cli/src/main.ts demo publish",
+    "demo:reset": "tsx --disable-warning=ExperimentalWarning apps/cli/src/main.ts demo reset",
+    "catalog:build": "tsx --disable-warning=ExperimentalWarning apps/cli/src/main.ts archive build --publish",
+    "cli": "tsx --disable-warning=ExperimentalWarning apps/cli/src/main.ts",
+    "dev": "pnpm --parallel --filter @wexare/web --filter @wexare/indexer --filter @wexare/artifacts run dev",
+    "indexer:b": "pnpm --filter @wexare/indexer run dev:b",
+    "build": "pnpm -r --filter './apps/*' run build",
+    "typecheck": "pnpm -r run typecheck",
+    "test": "vitest run --project unit",
+    "test:e2e": "pnpm --filter @wexare/tests run e2e",
+    "test:models": "pnpm --filter @wexare/tests run models"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "vitest": "4.1.12"
+  }
+}

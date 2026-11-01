@@ -1,0 +1,54 @@
+{
+  "fixture": "moe-shakespeare15m-lora",
+  "publisher": "publisher-a",
+  "base": "story-base",
+  "manifest": {
+    "model_id": "shakespeare-lora",
+    "name": "Shakespeare style adapter (LoRA for stories15M MoE F16)",
+    "description": "LoRA adapter trained on Shakespeare paragraphs. Applies only to the exact story-base F16 release.",
+    "version": "1.0.0",
+    "kind": "lora",
+    "capabilities": [
+      "text-generation"
+    ],
+    "languages": [
+      "en"
+    ],
+    "runtime": {
+      "format": "gguf",
+      "family": "wllama",
+      "requirement": ">=3.8.1 <3.9.0",
+      "browser_features": [
+        "wasm-simd"
+      ],
+      "chat_template": {
+        "source": "none"
+      }
+    },
+    "operations": [
+      {
+        "id": "text-generation",
+        "prompt": {
+          "mode": "completion",
+          "template": "{{input}}"
+        },
+        "generation": {
+          "max_tokens": 24,
+          "temperature": 0,
+          "top_k": 1
+        }
+      }
+    ],
+    "requirements": {
+      "context_length": 256,
+      "hardware_profiles": [
+        "cpu-wasm"
+      ]
+    }
+  },
+  "locations": [
+    "mirror",
+    "ipfs",
+    "torrent"
+  ]
+}

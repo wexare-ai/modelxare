@@ -1,0 +1,20 @@
+{
+  "name": "@wexare/runtime",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./support": "./src/support.ts",
+    "./gguf": "./src/gguf.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@wexare/protocol": "workspace:*",
+    "@wllama/wllama": "3.8.1",
+    "@wllama/wllama-compat": "3.8.1"
+  }
+}

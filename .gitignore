@@ -1,0 +1,21 @@
+node_modules/
+dist/
+*.tsbuildinfo
+coverage/
+
+# Runtime state: keys, model binaries, archives, databases, service volumes.
+# Never commit any of these (see README.md, "Data and keys").
+.data/
+*.key
+*.nsec
+
+# Test output
+tests/test-results/
+tests/playwright-report/
+tests/results/
+tests/.cache/
+
+.env
+.env.*
+!.env.example
+.DS_Store

@@ -1,0 +1,14 @@
+{
+  "description": "Default local endpoints for the PoC. Every component accepts overrides (flags, env, or browser settings); none of these are required by the protocol.",
+  "relays": ["ws://127.0.0.1:7777", "ws://127.0.0.1:7778"],
+  "kubo": {
+    "a": { "api": "http://127.0.0.1:5001", "gateway": "http://127.0.0.1:8080" },
+    "b": { "api": "http://127.0.0.1:5002", "gateway": "http://127.0.0.1:8081" }
+  },
+  "tracker": { "ws": "ws://127.0.0.1:8000", "http": "http://127.0.0.1:8000/announce" },
+  "artifacts": "http://127.0.0.1:8790",
+  "indexer": { "status": "http://127.0.0.1:8791" },
+  "indexer2": { "status": "http://127.0.0.1:8792" },
+  "web": "http://localhost:5173",
+  "arweaveGateways": ["https://arweave.net"]
+}

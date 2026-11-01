@@ -1,0 +1,49 @@
+{
+  "expect": "valid",
+  "event": {
+    "kind": 1063,
+    "created_at": 1793491300,
+    "tags": [
+      [
+        "t",
+        "wexare-micromodel-catalog"
+      ],
+      [
+        "m",
+        "application/zip"
+      ],
+      [
+        "x",
+        "5b7a2754b389130e138d57ba83f1eae7f05a41c66becacfa2dd2060143ae66db"
+      ],
+      [
+        "size",
+        "9"
+      ],
+      [
+        "url",
+        "ipfs://bafkreigh2akiscaildcqabsyg3dfr6chu3fgpregiymsck7e7aqa4s52zy"
+      ],
+      [
+        "fallback",
+        "http://127.0.0.1:8790/archives/x.zip"
+      ],
+      [
+        "magnet",
+        "magnet:?xt=urn:btih:0123456789abcdef0123456789abcdef01234567&dn=catalog.zip"
+      ],
+      [
+        "wexare-catalog",
+        "0.1"
+      ],
+      [
+        "alt",
+        "weXare micro-model catalog snapshot"
+      ]
+    ],
+    "content": "Test-vector catalog snapshot.",
+    "pubkey": "bdc0d3d5aa2f83b05c6d38ba6557771b43d9785acd1447a5d5781db79dc348ff",
+    "id": "cfe6a8601545b0661b13f13398aa04f02bef457a896c050fcae821ec84f2af44",
+    "sig": "971cc8cec529d0b7c7fefe9de8e3320633233dc75269ff6e919a8bee05152bd83a4402b7f19e7f3e3377c71956fd80bf4e2295d68b214355a7d1f51e56b51b54"
+  }
+}

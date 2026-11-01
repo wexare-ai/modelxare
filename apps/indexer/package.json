@@ -1,0 +1,26 @@
+{
+  "name": "@wexare/indexer",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": {
+    "wexare-indexer": "dist/main.js"
+  },
+  "scripts": {
+    "dev": "tsx --disable-warning=ExperimentalWarning src/main.ts run --data ../../.data/operators/a --name operator-a --port 8791",
+    "dev:b": "tsx --disable-warning=ExperimentalWarning src/main.ts run --data ../../.data/operators/b --name operator-b --port 8792",
+    "start": "node --disable-warning=ExperimentalWarning dist/main.js run",
+    "build": "tsup",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@wexare/catalog": "workspace:*",
+    "@wexare/protocol": "workspace:*",
+    "commander": "14.0.3",
+    "nostr-tools": "2.25.4"
+  },
+  "devDependencies": {
+    "tsup": "8.5.1"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@wexare/artifacts",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": { "wexare-artifacts": "dist/main.js" },
+  "scripts": {
+    "dev": "tsx src/main.ts --roots-dir ../../.data/artifacts --port 8790",
+    "start": "node dist/main.js",
+    "build": "tsup",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@wexare/storage": "workspace:*",
+    "commander": "14.0.3",
+    "webtorrent": "3.0.21"
+  },
+  "devDependencies": {
+    "tsup": "8.5.1"
+  }
+}

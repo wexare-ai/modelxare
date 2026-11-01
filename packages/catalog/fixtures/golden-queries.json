@@ -1,0 +1,603 @@
+{
+  "description": "Golden catalog queries. Every binding (node:sqlite, SQLite WASM) must return exactly these release sets. TEST-ONLY keys.",
+  "events": [
+    {
+      "kind": 1063,
+      "created_at": 1793491200,
+      "tags": [
+        [
+          "t",
+          "wexare-micromodel"
+        ],
+        [
+          "t",
+          "task:summarization"
+        ],
+        [
+          "t",
+          "task:text-classification"
+        ],
+        [
+          "t",
+          "lang:en"
+        ],
+        [
+          "t",
+          "lang:es"
+        ],
+        [
+          "t",
+          "runtime:wllama"
+        ],
+        [
+          "t",
+          "artifact:model"
+        ],
+        [
+          "m",
+          "application/json"
+        ],
+        [
+          "x",
+          "3952f085669a5bb7fe57cf2c77ffa23fa0f23fdef5b7d84eaf2d9dc44764979c"
+        ],
+        [
+          "size",
+          "1529"
+        ],
+        [
+          "alt",
+          "weXare micro-model release: Community classifier 1.0.0"
+        ],
+        [
+          "wexare-manifest",
+          "{\"capabilities\":[\"summarization\",\"text-classification\"],\"description\":\"Classifies community messages and writes short summaries.\",\"files\":[{\"locations\":[],\"path\":\"model.gguf\",\"role\":\"weights\",\"sha256\":\"dd70d7536ca0e4b6db03b122993b41e9ce4a1631a6f78ef25df4e48ed6d8f234\",\"size\":491000000}],\"kind\":\"model\",\"languages\":[\"en\",\"es\"],\"license\":{\"id\":\"Apache-2.0\"},\"model_id\":\"qwen-like\",\"name\":\"Community classifier\",\"operations\":[{\"id\":\"summarization\",\"input_schema\":{\"additionalProperties\":false,\"properties\":{\"text\":{\"maxLength\":4000,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"text\"],\"type\":\"object\"},\"output_schema\":{\"additionalProperties\":false,\"properties\":{\"summary\":{\"maxLength\":400,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"summary\"],\"type\":\"object\"},\"prompt\":{\"mode\":\"chat\",\"template\":\"{{input}}\"}},{\"id\":\"text-classification\",\"input_schema\":{\"additionalProperties\":false,\"properties\":{\"text\":{\"maxLength\":4000,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"text\"],\"type\":\"object\"},\"output_schema\":{\"additionalProperties\":false,\"properties\":{\"category\":{\"enum\":[\"maintenance\",\"safety\",\"security\",\"noise\",\"cleanliness\",\"other\"]}},\"required\":[\"category\"],\"type\":\"object\"},\"prompt\":{\"mode\":\"chat\",\"template\":\"{{input}}\"}}],\"requirements\":{\"context_length\":1024,\"hardware_profiles\":[\"cpu-wasm\"],\"memory_mb\":{\"basis\":\"estimated\",\"context_length\":1024,\"value\":900}},\"runtime\":{\"browser_features\":[\"wasm\"],\"family\":\"wllama\",\"format\":\"gguf\",\"requirement\":\">=3.8.1 <3.9.0\"},\"schema\":\"wexare.micromodel.release/0.1\",\"version\":\"1.0.0\"}"
+        ]
+      ],
+      "content": "Classifies community messages and writes short summaries.",
+      "pubkey": "d20d8adc9d0e3c9aeb9ad87cfb278d0d8b9d7b4fb4972ffff9f1ba05f07ad36e",
+      "id": "c01b24e45c94ec2ccc0878fc3fec74dba05e6d025ffc2111875d3c313b3ea452",
+      "sig": "f821425fd09454679ca6b5b2b18b0cb7a60d1e9c054f972ac0ede8e1142ba40a24c85dfb39b169806dbed899eb02a3455c9edddf90df09c6575e6aa01590f38a"
+    },
+    {
+      "kind": 1063,
+      "created_at": 1793491201,
+      "tags": [
+        [
+          "t",
+          "wexare-micromodel"
+        ],
+        [
+          "t",
+          "task:summarization"
+        ],
+        [
+          "t",
+          "lang:en"
+        ],
+        [
+          "t",
+          "runtime:wllama"
+        ],
+        [
+          "t",
+          "artifact:model"
+        ],
+        [
+          "m",
+          "application/json"
+        ],
+        [
+          "x",
+          "4516ba1a08a49928a1dfd6d7670af5756b1e7447d068bb094ba1a9faa6cbaf6a"
+        ],
+        [
+          "size",
+          "1003"
+        ],
+        [
+          "alt",
+          "weXare micro-model release: Tiny summarizer 1.0.0"
+        ],
+        [
+          "wexare-manifest",
+          "{\"capabilities\":[\"summarization\"],\"description\":\"Short English summaries of residents’ messages.\",\"files\":[{\"locations\":[],\"path\":\"model.gguf\",\"role\":\"weights\",\"sha256\":\"a02e52a99a3e822c63321f481badd7fc22a7e545d70583eb8b25896818814ed4\",\"size\":386000000}],\"kind\":\"model\",\"languages\":[\"en\"],\"license\":{\"id\":\"Apache-2.0\"},\"model_id\":\"smol-like\",\"name\":\"Tiny summarizer\",\"operations\":[{\"id\":\"summarization\",\"input_schema\":{\"additionalProperties\":false,\"properties\":{\"text\":{\"maxLength\":4000,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"text\"],\"type\":\"object\"},\"output_schema\":{\"additionalProperties\":false,\"properties\":{\"summary\":{\"maxLength\":400,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"summary\"],\"type\":\"object\"},\"prompt\":{\"mode\":\"chat\",\"template\":\"{{input}}\"}}],\"requirements\":{\"context_length\":1024,\"hardware_profiles\":[\"cpu-wasm\"]},\"runtime\":{\"browser_features\":[\"wasm\"],\"family\":\"wllama\",\"format\":\"gguf\",\"requirement\":\">=3.8.1 <3.9.0\"},\"schema\":\"wexare.micromodel.release/0.1\",\"version\":\"1.0.0\"}"
+        ]
+      ],
+      "content": "Short English summaries of residents’ messages.",
+      "pubkey": "d20d8adc9d0e3c9aeb9ad87cfb278d0d8b9d7b4fb4972ffff9f1ba05f07ad36e",
+      "id": "c1ddddc6dd2d153bfe3f362e42ede7bec499fe4272334e92d1d6a41df48c0293",
+      "sig": "a5d501ac8e3607b4dad3a8f6a2d727e4bb68baab48e23eff1f203709d9e407a7b4bd9e03f28dced0d71b3b60d4fb7031ce7bf37280b41c04b487879ab40fa8f7"
+    },
+    {
+      "kind": 1063,
+      "created_at": 1793491202,
+      "tags": [
+        [
+          "t",
+          "wexare-micromodel"
+        ],
+        [
+          "t",
+          "task:summarization"
+        ],
+        [
+          "t",
+          "lang:en"
+        ],
+        [
+          "t",
+          "runtime:wllama"
+        ],
+        [
+          "t",
+          "artifact:model"
+        ],
+        [
+          "m",
+          "application/json"
+        ],
+        [
+          "x",
+          "7a5a0e3f5b14a6c7a384bda3b0c8dfd1437bcdb7e436779fdf7051ebc43d6377"
+        ],
+        [
+          "size",
+          "1036"
+        ],
+        [
+          "alt",
+          "weXare micro-model release: Tiny summarizer 1.0.0"
+        ],
+        [
+          "wexare-manifest",
+          "{\"capabilities\":[\"summarization\"],\"description\":\"A different publisher reusing the same display name.\",\"files\":[{\"locations\":[],\"path\":\"model.gguf\",\"role\":\"weights\",\"sha256\":\"5ed5ea394d1b3817ffda328f0852fbb6793ab679f07cbb2fbb5dd2d55313534c\",\"size\":120000000}],\"kind\":\"model\",\"languages\":[\"en\"],\"license\":{\"id\":\"MIT\"},\"model_id\":\"same-name-b\",\"name\":\"Tiny summarizer\",\"operations\":[{\"id\":\"summarization\",\"input_schema\":{\"additionalProperties\":false,\"properties\":{\"text\":{\"maxLength\":4000,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"text\"],\"type\":\"object\"},\"output_schema\":{\"additionalProperties\":false,\"properties\":{\"summary\":{\"maxLength\":400,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"summary\"],\"type\":\"object\"},\"prompt\":{\"mode\":\"chat\",\"template\":\"{{input}}\"}}],\"requirements\":{\"context_length\":1024,\"memory_mb\":{\"basis\":\"estimated\",\"context_length\":1024,\"value\":300}},\"runtime\":{\"browser_features\":[\"wasm\"],\"family\":\"wllama\",\"format\":\"gguf\",\"requirement\":\">=3.8.1 <3.9.0\"},\"schema\":\"wexare.micromodel.release/0.1\",\"version\":\"1.0.0\"}"
+        ]
+      ],
+      "content": "A different publisher reusing the same display name.",
+      "pubkey": "a781b6f42c3017884015f85825c7928c2a9196b8e03dee7b5d6676b97d869a2d",
+      "id": "fbaa7b32466093856b10bc684fc7f407d3855bc8c7ca98f26af823dae8d75541",
+      "sig": "2940f137c8149abf37f65b790903d3f435b1568e1803755f68f927b4b708cf181f89fc620047d06e13066839feb5d247de6c8bd4ddf73e4fbefad47dd0afc814"
+    },
+    {
+      "kind": 1063,
+      "created_at": 1793491203,
+      "tags": [
+        [
+          "t",
+          "wexare-micromodel"
+        ],
+        [
+          "t",
+          "task:text-classification"
+        ],
+        [
+          "t",
+          "lang:es"
+        ],
+        [
+          "t",
+          "runtime:wllama"
+        ],
+        [
+          "t",
+          "artifact:model"
+        ],
+        [
+          "m",
+          "application/json"
+        ],
+        [
+          "x",
+          "47edebf7bf073e0bddaef2dd77efb37f4e50c2dc1ecda2ec3a0af82eca2fc14a"
+        ],
+        [
+          "size",
+          "1081"
+        ],
+        [
+          "alt",
+          "weXare micro-model release: Leak detector 1.0.0"
+        ],
+        [
+          "wexare-manifest",
+          "{\"capabilities\":[\"text-classification\"],\"description\":\"Detects maintenance issues such as water leaks.\",\"files\":[{\"locations\":[],\"path\":\"model.gguf\",\"role\":\"weights\",\"sha256\":\"aa94db823f6fb890193aab3d610e3e93f231b3f13b34e177cb56a5aa403f9d0e\",\"size\":50000000}],\"kind\":\"model\",\"languages\":[\"es\"],\"license\":{\"id\":\"Apache-2.0\"},\"model_id\":\"classifier-only\",\"name\":\"Leak detector\",\"operations\":[{\"id\":\"text-classification\",\"input_schema\":{\"additionalProperties\":false,\"properties\":{\"text\":{\"maxLength\":4000,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"text\"],\"type\":\"object\"},\"output_schema\":{\"additionalProperties\":false,\"properties\":{\"category\":{\"enum\":[\"maintenance\",\"safety\",\"security\",\"noise\",\"cleanliness\",\"other\"]}},\"required\":[\"category\"],\"type\":\"object\"},\"prompt\":{\"mode\":\"chat\",\"template\":\"{{input}}\"}}],\"requirements\":{\"context_length\":1024,\"memory_mb\":{\"basis\":\"estimated\",\"context_length\":1024,\"value\":2000}},\"runtime\":{\"browser_features\":[\"wasm\"],\"family\":\"wllama\",\"format\":\"gguf\",\"requirement\":\">=3.8.1 <3.9.0\"},\"schema\":\"wexare.micromodel.release/0.1\",\"version\":\"1.0.0\"}"
+        ]
+      ],
+      "content": "Detects maintenance issues such as water leaks.",
+      "pubkey": "a781b6f42c3017884015f85825c7928c2a9196b8e03dee7b5d6676b97d869a2d",
+      "id": "5241c5496dae22c299e526846879c7d54ae1f2cae167597ae1059be52db18cdf",
+      "sig": "dfc74dc18915a0fa7e6b74cd10ff4b0ac9b724ee3ecd8e65c25b0f55f6e8d5dbf2089d09b4d37badecd62130c3ffbbca309c4e28c457c5ac40538e303815e226"
+    },
+    {
+      "kind": 1063,
+      "created_at": 1793491204,
+      "tags": [
+        [
+          "t",
+          "wexare-micromodel"
+        ],
+        [
+          "t",
+          "task:text-generation"
+        ],
+        [
+          "t",
+          "lang:en"
+        ],
+        [
+          "t",
+          "runtime:wllama"
+        ],
+        [
+          "t",
+          "artifact:lora"
+        ],
+        [
+          "m",
+          "application/json"
+        ],
+        [
+          "x",
+          "5372bab9fdde212611bd5c5a169eddefbef3590695e9fef51a5c97e665a1a5cc"
+        ],
+        [
+          "size",
+          "1177"
+        ],
+        [
+          "alt",
+          "weXare micro-model release: Shakespeare adapter 1.0.0"
+        ],
+        [
+          "wexare-manifest",
+          "{\"base\":{\"files\":[{\"sha256\":\"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"size\":1}],\"manifest_sha256\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"release_id\":\"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\"},\"capabilities\":[\"text-generation\"],\"description\":\"Story style adapter.\",\"files\":[{\"locations\":[],\"path\":\"model.gguf\",\"role\":\"adapter\",\"sha256\":\"8ad97d4b2fc41caea97be3f8bd1d9c40bc355f00ab16d8a36964bf3ae06d0a00\",\"size\":16000000}],\"kind\":\"lora\",\"languages\":[\"en\"],\"license\":{\"id\":\"Apache-2.0\"},\"model_id\":\"lora\",\"name\":\"Shakespeare adapter\",\"operations\":[{\"id\":\"text-generation\",\"input_schema\":{\"additionalProperties\":false,\"properties\":{\"text\":{\"maxLength\":4000,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"text\"],\"type\":\"object\"},\"output_schema\":{\"additionalProperties\":false,\"properties\":{\"text\":{\"type\":\"string\"}},\"required\":[\"text\"],\"type\":\"object\"},\"prompt\":{\"mode\":\"chat\",\"template\":\"{{input}}\"}}],\"requirements\":{\"context_length\":1024},\"runtime\":{\"browser_features\":[\"wasm\"],\"family\":\"wllama\",\"format\":\"gguf\",\"requirement\":\">=3.8.1 <3.9.0\"},\"schema\":\"wexare.micromodel.release/0.1\",\"version\":\"1.0.0\"}"
+        ]
+      ],
+      "content": "Story style adapter.",
+      "pubkey": "d20d8adc9d0e3c9aeb9ad87cfb278d0d8b9d7b4fb4972ffff9f1ba05f07ad36e",
+      "id": "e6bd1db27ec4bddcb52c2122d18d8cd0e222d0ffde013da22d724da3cbfdf4e2",
+      "sig": "b80fe216cfb5a7d90300d99eef7603ca4c659ffc856cc26aa0c172fcb222c7c403d26b8a5cb777c1f4dcb7a5e1bd280ef483bae3bd82342078c9b73311f51c25"
+    },
+    {
+      "kind": 1063,
+      "created_at": 1793491205,
+      "tags": [
+        [
+          "t",
+          "wexare-micromodel"
+        ],
+        [
+          "t",
+          "task:summarization"
+        ],
+        [
+          "t",
+          "lang:en"
+        ],
+        [
+          "t",
+          "runtime:onnx-web"
+        ],
+        [
+          "t",
+          "artifact:model"
+        ],
+        [
+          "m",
+          "application/json"
+        ],
+        [
+          "x",
+          "4f2a5c6a0f7832630615caa78f8808efa9402245db823fa11be1beaa467d694f"
+        ],
+        [
+          "size",
+          "977"
+        ],
+        [
+          "alt",
+          "weXare micro-model release: Future runtime model 1.0.0"
+        ],
+        [
+          "wexare-manifest",
+          "{\"capabilities\":[\"summarization\"],\"description\":\"Uses a runtime this client does not support.\",\"files\":[{\"locations\":[],\"path\":\"model.gguf\",\"role\":\"weights\",\"sha256\":\"cfa84f61f596f81de8e6044fa9a0aeda9c9f9e6ece4070d180a4ec2a2f14136e\",\"size\":10000000}],\"kind\":\"model\",\"languages\":[\"en\"],\"license\":{\"id\":\"Apache-2.0\"},\"model_id\":\"unknown-runtime\",\"name\":\"Future runtime model\",\"operations\":[{\"id\":\"summarization\",\"input_schema\":{\"additionalProperties\":false,\"properties\":{\"text\":{\"maxLength\":4000,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"text\"],\"type\":\"object\"},\"output_schema\":{\"additionalProperties\":false,\"properties\":{\"summary\":{\"maxLength\":400,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"summary\"],\"type\":\"object\"},\"prompt\":{\"mode\":\"chat\",\"template\":\"{{input}}\"}}],\"requirements\":{\"context_length\":1024},\"runtime\":{\"browser_features\":[\"wasm\"],\"family\":\"onnx-web\",\"format\":\"gguf\",\"requirement\":\">=3.8.1 <3.9.0\"},\"schema\":\"wexare.micromodel.release/0.1\",\"version\":\"1.0.0\"}"
+        ]
+      ],
+      "content": "Uses a runtime this client does not support.",
+      "pubkey": "a781b6f42c3017884015f85825c7928c2a9196b8e03dee7b5d6676b97d869a2d",
+      "id": "ccb2338dd8faff9ba9f62ec254c18d06e3e74e91e5a93aa3e66f3155beacfa70",
+      "sig": "c066b9df5bd1c7dc03f0944a5e33a5f0bd5efbbd1159616be6eeff5f402816882bf24da1c446cc08d0a0f3073587c5b3f0fad12ca2f2e329831d71b5cb781f55"
+    },
+    {
+      "kind": 1063,
+      "created_at": 1793491206,
+      "tags": [
+        [
+          "t",
+          "wexare-micromodel"
+        ],
+        [
+          "t",
+          "task:summarization"
+        ],
+        [
+          "t",
+          "lang:en"
+        ],
+        [
+          "t",
+          "runtime:wllama"
+        ],
+        [
+          "t",
+          "artifact:model"
+        ],
+        [
+          "m",
+          "application/json"
+        ],
+        [
+          "x",
+          "9e8e83bb41e10b69530687ef9e1a17f87b948f3331c2da0070d6088b7ca21bb6"
+        ],
+        [
+          "size",
+          "1004"
+        ],
+        [
+          "alt",
+          "weXare micro-model release: Synthetic summarizer 0001 1.0.0"
+        ],
+        [
+          "wexare-manifest",
+          "{\"capabilities\":[\"summarization\"],\"description\":\"SYNTHETIC record for scale tests. Not a runnable model.\",\"files\":[{\"locations\":[],\"path\":\"model.gguf\",\"role\":\"weights\",\"sha256\":\"9064eecde369a7cce8537201002f9c82c88931c7f5d4c683049a229b958f7352\",\"size\":1000}],\"kind\":\"model\",\"labels\":[\"synthetic\"],\"languages\":[\"en\"],\"license\":{\"id\":\"Apache-2.0\"},\"model_id\":\"synthetic\",\"name\":\"Synthetic summarizer 0001\",\"operations\":[{\"id\":\"summarization\",\"input_schema\":{\"additionalProperties\":false,\"properties\":{\"text\":{\"maxLength\":4000,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"text\"],\"type\":\"object\"},\"output_schema\":{\"additionalProperties\":false,\"properties\":{\"summary\":{\"maxLength\":400,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"summary\"],\"type\":\"object\"},\"prompt\":{\"mode\":\"chat\",\"template\":\"{{input}}\"}}],\"requirements\":{\"context_length\":1024},\"runtime\":{\"browser_features\":[\"wasm\"],\"family\":\"wllama\",\"format\":\"gguf\",\"requirement\":\">=3.8.1 <3.9.0\"},\"schema\":\"wexare.micromodel.release/0.1\",\"version\":\"1.0.0\"}"
+        ]
+      ],
+      "content": "SYNTHETIC record for scale tests. Not a runnable model.",
+      "pubkey": "a781b6f42c3017884015f85825c7928c2a9196b8e03dee7b5d6676b97d869a2d",
+      "id": "7c1e1be7718128ee43df72f5e685725902c46d429440613fbb8c7582ea8bacfa",
+      "sig": "3af2a9429742044094574c86ed55c7830c8af26535eeff269ad90b6305a045b609ffb6b0e54819f568c5be8ed8251b9bf5a78da70dacd7836699d9f50b45a218"
+    }
+  ],
+  "labels": {
+    "qwen-like": "c01b24e45c94ec2ccc0878fc3fec74dba05e6d025ffc2111875d3c313b3ea452",
+    "smol-like": "c1ddddc6dd2d153bfe3f362e42ede7bec499fe4272334e92d1d6a41df48c0293",
+    "same-name-b": "fbaa7b32466093856b10bc684fc7f407d3855bc8c7ca98f26af823dae8d75541",
+    "classifier-only": "5241c5496dae22c299e526846879c7d54ae1f2cae167597ae1059be52db18cdf",
+    "lora": "e6bd1db27ec4bddcb52c2122d18d8cd0e222d0ffde013da22d724da3cbfdf4e2",
+    "unknown-runtime": "ccb2338dd8faff9ba9f62ec254c18d06e3e74e91e5a93aa3e66f3155beacfa70",
+    "synthetic": "7c1e1be7718128ee43df72f5e685725902c46d429440613fbb8c7582ea8bacfa"
+  },
+  "queries": [
+    {
+      "name": "all non-synthetic",
+      "query": {},
+      "expect": [
+        "c01b24e45c94ec2ccc0878fc3fec74dba05e6d025ffc2111875d3c313b3ea452",
+        "c1ddddc6dd2d153bfe3f362e42ede7bec499fe4272334e92d1d6a41df48c0293",
+        "fbaa7b32466093856b10bc684fc7f407d3855bc8c7ca98f26af823dae8d75541",
+        "5241c5496dae22c299e526846879c7d54ae1f2cae167597ae1059be52db18cdf",
+        "e6bd1db27ec4bddcb52c2122d18d8cd0e222d0ffde013da22d724da3cbfdf4e2",
+        "ccb2338dd8faff9ba9f62ec254c18d06e3e74e91e5a93aa3e66f3155beacfa70"
+      ]
+    },
+    {
+      "name": "include synthetic",
+      "query": {
+        "includeSynthetic": true
+      },
+      "expect": [
+        "c01b24e45c94ec2ccc0878fc3fec74dba05e6d025ffc2111875d3c313b3ea452",
+        "c1ddddc6dd2d153bfe3f362e42ede7bec499fe4272334e92d1d6a41df48c0293",
+        "fbaa7b32466093856b10bc684fc7f407d3855bc8c7ca98f26af823dae8d75541",
+        "5241c5496dae22c299e526846879c7d54ae1f2cae167597ae1059be52db18cdf",
+        "e6bd1db27ec4bddcb52c2122d18d8cd0e222d0ffde013da22d724da3cbfdf4e2",
+        "ccb2338dd8faff9ba9f62ec254c18d06e3e74e91e5a93aa3e66f3155beacfa70",
+        "7c1e1be7718128ee43df72f5e685725902c46d429440613fbb8c7582ea8bacfa"
+      ]
+    },
+    {
+      "name": "capability intersection",
+      "query": {
+        "capabilities": [
+          "summarization",
+          "text-classification"
+        ]
+      },
+      "expect": [
+        "c01b24e45c94ec2ccc0878fc3fec74dba05e6d025ffc2111875d3c313b3ea452"
+      ]
+    },
+    {
+      "name": "single capability",
+      "query": {
+        "capabilities": [
+          "text-classification"
+        ]
+      },
+      "expect": [
+        "c01b24e45c94ec2ccc0878fc3fec74dba05e6d025ffc2111875d3c313b3ea452",
+        "5241c5496dae22c299e526846879c7d54ae1f2cae167597ae1059be52db18cdf"
+      ]
+    },
+    {
+      "name": "language any-of",
+      "query": {
+        "languages": [
+          "es"
+        ]
+      },
+      "expect": [
+        "c01b24e45c94ec2ccc0878fc3fec74dba05e6d025ffc2111875d3c313b3ea452",
+        "5241c5496dae22c299e526846879c7d54ae1f2cae167597ae1059be52db18cdf"
+      ]
+    },
+    {
+      "name": "kind lora",
+      "query": {
+        "kind": "lora"
+      },
+      "expect": [
+        "e6bd1db27ec4bddcb52c2122d18d8cd0e222d0ffde013da22d724da3cbfdf4e2"
+      ]
+    },
+    {
+      "name": "runtime family",
+      "query": {
+        "runtimeFamily": "onnx-web"
+      },
+      "expect": [
+        "ccb2338dd8faff9ba9f62ec254c18d06e3e74e91e5a93aa3e66f3155beacfa70"
+      ]
+    },
+    {
+      "name": "license",
+      "query": {
+        "license": "MIT"
+      },
+      "expect": [
+        "fbaa7b32466093856b10bc684fc7f407d3855bc8c7ca98f26af823dae8d75541"
+      ]
+    },
+    {
+      "name": "download size",
+      "query": {
+        "maxDownloadBytes": 60000000
+      },
+      "expect": [
+        "5241c5496dae22c299e526846879c7d54ae1f2cae167597ae1059be52db18cdf",
+        "e6bd1db27ec4bddcb52c2122d18d8cd0e222d0ffde013da22d724da3cbfdf4e2",
+        "ccb2338dd8faff9ba9f62ec254c18d06e3e74e91e5a93aa3e66f3155beacfa70"
+      ]
+    },
+    {
+      "name": "memory excludes unknown",
+      "query": {
+        "maxMemoryMb": 1000
+      },
+      "expect": [
+        "c01b24e45c94ec2ccc0878fc3fec74dba05e6d025ffc2111875d3c313b3ea452",
+        "fbaa7b32466093856b10bc684fc7f407d3855bc8c7ca98f26af823dae8d75541"
+      ]
+    },
+    {
+      "name": "memory includes unknown when asked",
+      "query": {
+        "maxMemoryMb": 1000,
+        "includeUnknownMemory": true
+      },
+      "expect": [
+        "c01b24e45c94ec2ccc0878fc3fec74dba05e6d025ffc2111875d3c313b3ea452",
+        "c1ddddc6dd2d153bfe3f362e42ede7bec499fe4272334e92d1d6a41df48c0293",
+        "fbaa7b32466093856b10bc684fc7f407d3855bc8c7ca98f26af823dae8d75541",
+        "e6bd1db27ec4bddcb52c2122d18d8cd0e222d0ffde013da22d724da3cbfdf4e2",
+        "ccb2338dd8faff9ba9f62ec254c18d06e3e74e91e5a93aa3e66f3155beacfa70"
+      ]
+    },
+    {
+      "name": "hardware profile",
+      "query": {
+        "hardwareProfile": "cpu-wasm"
+      },
+      "expect": [
+        "c01b24e45c94ec2ccc0878fc3fec74dba05e6d025ffc2111875d3c313b3ea452",
+        "c1ddddc6dd2d153bfe3f362e42ede7bec499fe4272334e92d1d6a41df48c0293"
+      ]
+    },
+    {
+      "name": "text search",
+      "query": {
+        "text": "summaries"
+      },
+      "expect": [
+        "c01b24e45c94ec2ccc0878fc3fec74dba05e6d025ffc2111875d3c313b3ea452",
+        "c1ddddc6dd2d153bfe3f362e42ede7bec499fe4272334e92d1d6a41df48c0293"
+      ]
+    },
+    {
+      "name": "text prefix + diacritics",
+      "query": {
+        "text": "résid"
+      },
+      "expect": [
+        "c1ddddc6dd2d153bfe3f362e42ede7bec499fe4272334e92d1d6a41df48c0293"
+      ]
+    },
+    {
+      "name": "text with FTS operators is literal",
+      "query": {
+        "text": "leak OR NOT \"x"
+      },
+      "expect": []
+    },
+    {
+      "name": "text leak",
+      "query": {
+        "text": "water leaks"
+      },
+      "expect": [
+        "5241c5496dae22c299e526846879c7d54ae1f2cae167597ae1059be52db18cdf"
+      ]
+    },
+    {
+      "name": "same name, distinct publishers",
+      "query": {
+        "text": "Tiny summarizer"
+      },
+      "expect": [
+        "c1ddddc6dd2d153bfe3f362e42ede7bec499fe4272334e92d1d6a41df48c0293",
+        "fbaa7b32466093856b10bc684fc7f407d3855bc8c7ca98f26af823dae8d75541"
+      ]
+    },
+    {
+      "name": "combined filters",
+      "query": {
+        "capabilities": [
+          "summarization"
+        ],
+        "languages": [
+          "en"
+        ],
+        "maxDownloadBytes": 400000000,
+        "runtimeFamily": "wllama"
+      },
+      "expect": [
+        "c1ddddc6dd2d153bfe3f362e42ede7bec499fe4272334e92d1d6a41df48c0293",
+        "fbaa7b32466093856b10bc684fc7f407d3855bc8c7ca98f26af823dae8d75541"
+      ]
+    },
+    {
+      "name": "order by size",
+      "query": {
+        "orderBy": "size",
+        "capabilities": [
+          "summarization"
+        ]
+      },
+      "expect": [
+        "ccb2338dd8faff9ba9f62ec254c18d06e3e74e91e5a93aa3e66f3155beacfa70",
+        "fbaa7b32466093856b10bc684fc7f407d3855bc8c7ca98f26af823dae8d75541",
+        "c1ddddc6dd2d153bfe3f362e42ede7bec499fe4272334e92d1d6a41df48c0293",
+        "c01b24e45c94ec2ccc0878fc3fec74dba05e6d025ffc2111875d3c313b3ea452"
+      ],
+      "ordered": true
+    },
+    {
+      "name": "pagination",
+      "query": {
+        "orderBy": "size",
+        "capabilities": [
+          "summarization"
+        ],
+        "limit": 2,
+        "offset": 1
+      },
+      "expect": [
+        "fbaa7b32466093856b10bc684fc7f407d3855bc8c7ca98f26af823dae8d75541",
+        "c1ddddc6dd2d153bfe3f362e42ede7bec499fe4272334e92d1d6a41df48c0293"
+      ],
+      "ordered": true
+    }
+  ]
+}

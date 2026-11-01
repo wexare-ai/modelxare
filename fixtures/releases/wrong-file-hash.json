@@ -1,0 +1,42 @@
+{
+  "fixture": "@bytes:weXare bytes that do not match the declared hash.\n",
+  "fixture_path": "model.gguf",
+  "declare_wrong_sha256": true,
+  "publisher": "publisher-b",
+  "_comment": "NEGATIVE FIXTURE: a validly signed release whose declared file hash does not match the bytes at any location. Downloads must fail verification everywhere.",
+  "manifest": {
+    "model_id": "wrong-file-hash",
+    "name": "Summarizer with a wrong file reference (negative fixture)",
+    "description": "Negative fixture: its declared SHA-256 does not match the published bytes. Must never reach the runtime.",
+    "version": "1.0.0",
+    "kind": "model",
+    "capabilities": [
+      "summarization"
+    ],
+    "languages": [
+      "en"
+    ],
+    "runtime": {
+      "format": "gguf",
+      "family": "wllama",
+      "requirement": ">=3.8.1 <3.9.0",
+      "browser_features": [
+        "wasm-simd"
+      ],
+      "chat_template": {
+        "source": "embedded"
+      }
+    },
+    "operations": [],
+    "requirements": {
+      "context_length": 512
+    },
+    "labels": [
+      "test-fixture"
+    ]
+  },
+  "locations": [
+    "mirror",
+    "ipfs"
+  ]
+}

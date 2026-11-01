@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wexare:schema:micromodel-catalog:0.1",
+  "title": "weXare micro-model catalog inventory 0.1 (catalog.json)",
+  "description": "Inventory of a full catalog snapshot ZIP. It lists payload files only: it never contains its own hash, the ZIP hash, or a storage location of the archive itself.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "builder_pubkey", "build_time", "collection_policy", "release_schema_versions", "record_count", "coverage", "files"],
+  "properties": {
+    "schema": { "const": "wexare.micromodel.catalog/0.1" },
+    "builder_pubkey": { "$ref": "#/$defs/hex64" },
+    "build_time": { "description": "Unix seconds.", "type": "integer", "minimum": 0 },
+    "collection_policy": {
+      "description": "Identifier of the builder's collection policy.",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:[./:_-][a-z0-9]+)*$",
+      "maxLength": 128
+    },
+    "release_schema_versions": { "type": "array", "uniqueItems": true, "items": { "type": "string", "maxLength": 64 } },
+    "record_count": { "type": "integer", "minimum": 0 },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["relays", "statement"],
+      "properties": {
+        "statement": { "description": "Human-readable coverage statement. Never claims global completeness.", "type": "string", "maxLength": 2000 },
+        "relays": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["url", "state"],
+            "properties": {
+              "url": { "type": "string", "pattern": "^wss?://[^\\s]+$", "maxLength": 512 },
+              "state": { "enum": ["caught-up", "possibly-incomplete", "unavailable", "never-connected"] },
+              "events": { "type": "integer", "minimum": 0 },
+              "last_success_at": { "type": ["integer", "null"], "minimum": 0 },
+              "notes": { "type": "string", "maxLength": 1000 }
+            }
+          }
+        }
+      }
+    },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "size", "sha256"],
+        "properties": {
+          "path": { "enum": ["releases.jsonl", "catalog.sqlite"] },
+          "size": { "type": "integer", "minimum": 0 },
+          "sha256": { "$ref": "#/$defs/hex64" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "hex64": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  }
+}

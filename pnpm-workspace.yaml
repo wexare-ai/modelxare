@@ -1,0 +1,16 @@
+packages:
+  - apps/*
+  - packages/*
+  - tests
+
+allowBuilds:
+  bufferutil: false
+  esbuild: true
+  ip-set: false
+  # Native WebRTC for the Node WebTorrent seeder (prebuilt binary download).
+  node-datachannel: true
+  utf-8-validate: false
+  utp-native: false
+
+# Exact versions only; the lockfile pins transitive dependencies.
+savePrefix: ''

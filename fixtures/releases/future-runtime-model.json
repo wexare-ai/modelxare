@@ -1,0 +1,38 @@
+{
+  "fixture": "@bytes:weXare placeholder bytes for an unknown-runtime fixture. Not a model.\n",
+  "fixture_path": "model.onnx",
+  "publisher": "publisher-b",
+  "_comment": "Metadata-only fixture with a runtime family this client does not implement.",
+  "manifest": {
+    "model_id": "future-runtime-model",
+    "name": "Message summarizer for a future runtime",
+    "description": "Uses an ONNX browser runtime this client does not implement. Discoverable, never executable here.",
+    "version": "0.1.0",
+    "kind": "model",
+    "capabilities": [
+      "summarization"
+    ],
+    "languages": [
+      "en"
+    ],
+    "runtime": {
+      "format": "onnx",
+      "family": "onnx-web",
+      "requirement": ">=1.0.0",
+      "browser_features": [
+        "webgpu"
+      ]
+    },
+    "operations": [],
+    "requirements": {
+      "context_length": 512
+    },
+    "labels": [
+      "test-fixture"
+    ]
+  },
+  "locations": [
+    "mirror",
+    "ipfs"
+  ]
+}

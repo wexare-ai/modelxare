@@ -1,0 +1,65 @@
+# weXare micro-model PoC development services. Managed by `pnpm infra:up` / `pnpm infra:down`.
+# Images are pinned by digest. All ports are published on 127.0.0.1 only.
+# Data lives in named volumes; `pnpm infra:down` keeps them, `pnpm demo:reset --force` removes them.
+name: wexare
+
+x-strfry: &strfry
+  # hoytech/strfry (upstream author's image), index digest of :latest as of 2026-10-31
+  image: ghcr.io/hoytech/strfry@sha256:36f1886d185a88ca57c66ebe52e6e9e8428dac2486eea0a5d50ff934f18b60c3
+  command: ["--config=/etc/strfry/strfry.conf", "relay"]
+  restart: unless-stopped
+
+x-kubo: &kubo
+  image: ipfs/kubo:v0.43.1@sha256:b293923d66e490e70ced64df42ea7a6cf7eac2740e3fb29101df18070fa7be48
+  restart: unless-stopped
+  environment:
+    KUBO_PUBLIC: ${KUBO_PUBLIC:-0}
+
+services:
+  relay-a:
+    <<: *strfry
+    volumes:
+      - ./strfry/relay-a.conf:/etc/strfry/strfry.conf:ro
+      - relay-a-db:/app/strfry-db
+    ports:
+      - "127.0.0.1:${RELAY_A_PORT:-7777}:7777"
+
+  relay-b:
+    <<: *strfry
+    volumes:
+      - ./strfry/relay-b.conf:/etc/strfry/strfry.conf:ro
+      - relay-b-db:/app/strfry-db
+    ports:
+      - "127.0.0.1:${RELAY_B_PORT:-7778}:7777"
+
+  kubo-a:
+    <<: *kubo
+    volumes:
+      - kubo-a-data:/data/ipfs
+      - ./kubo/init.sh:/container-init.d/010-wexare.sh:ro
+    ports:
+      - "127.0.0.1:${KUBO_A_API_PORT:-5001}:5001"
+      - "127.0.0.1:${KUBO_A_GATEWAY_PORT:-8080}:8080"
+
+  # Second node used to demonstrate redundant availability (pin replicas before stopping kubo-a).
+  kubo-b:
+    <<: *kubo
+    volumes:
+      - kubo-b-data:/data/ipfs
+      - ./kubo/init.sh:/container-init.d/010-wexare.sh:ro
+    ports:
+      - "127.0.0.1:${KUBO_B_API_PORT:-5002}:5001"
+      - "127.0.0.1:${KUBO_B_GATEWAY_PORT:-8081}:8080"
+
+  tracker:
+    build: ./tracker
+    image: wexare-tracker:0.1.0
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${TRACKER_PORT:-8000}:8000"
+
+volumes:
+  relay-a-db:
+  relay-b-db:
+  kubo-a-data:
+  kubo-b-data:

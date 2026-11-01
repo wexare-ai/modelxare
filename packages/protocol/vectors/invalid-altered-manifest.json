@@ -1,0 +1,61 @@
+{
+  "expect": "manifest_hash_mismatch",
+  "event": {
+    "kind": 1063,
+    "created_at": 1793491200,
+    "content": "Test-vector release. Not a runnable model.",
+    "tags": [
+      [
+        "t",
+        "wexare-micromodel"
+      ],
+      [
+        "t",
+        "task:summarization"
+      ],
+      [
+        "t",
+        "task:text-classification"
+      ],
+      [
+        "t",
+        "lang:en"
+      ],
+      [
+        "t",
+        "lang:es"
+      ],
+      [
+        "t",
+        "runtime:wllama"
+      ],
+      [
+        "t",
+        "artifact:model"
+      ],
+      [
+        "m",
+        "application/json"
+      ],
+      [
+        "x",
+        "cf671d9ee90f9a32b629b7030654a1349e335e5dffd479bade9879806d82159a"
+      ],
+      [
+        "size",
+        "1807"
+      ],
+      [
+        "alt",
+        "weXare micro-model release: Vector classifier 1.0.0"
+      ],
+      [
+        "wexare-manifest",
+        "{\"capabilities\":[\"summarization\",\"text-classification\"],\"description\":\"Test-vector release. Not a runnable model.\",\"files\":[{\"locations\":[{\"transport\":\"ipfs\",\"uri\":\"ipfs://bafkreigh2akiscaildcqabsyg3dfr6chu3fgpregiymsck7e7aqa4s52zy\"},{\"transport\":\"http\",\"uri\":\"http://127.0.0.1:8790/sha256/bb8924986ab7f176cbd102a3ea02b6593e006ebc135437b62e98901a6cd3f995\"}],\"path\":\"model.gguf\",\"role\":\"weights\",\"sha256\":\"bb8924986ab7f176cbd102a3ea02b6593e006ebc135437b62e98901a6cd3f995\",\"size\":25}],\"kind\":\"model\",\"labels\":[\"test-vector\"],\"languages\":[\"en\",\"es\"],\"license\":{\"id\":\"Apache-2.0\"},\"model_id\":\"vector-classifier\",\"name\":\"Vector classifiex\",\"operations\":[{\"generation\":{\"max_tokens\":32,\"temperature\":0},\"id\":\"text-classification\",\"input_schema\":{\"additionalProperties\":false,\"properties\":{\"text\":{\"maxLength\":4000,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"text\"],\"type\":\"object\"},\"output_schema\":{\"additionalProperties\":false,\"properties\":{\"category\":{\"enum\":[\"maintenance\",\"safety\",\"security\",\"noise\",\"cleanliness\",\"other\"]}},\"required\":[\"category\"],\"type\":\"object\"},\"prompt\":{\"mode\":\"chat\",\"template\":\"Classify: {{input}}\"}},{\"generation\":{\"max_tokens\":32,\"temperature\":0},\"id\":\"summarization\",\"input_schema\":{\"additionalProperties\":false,\"properties\":{\"text\":{\"maxLength\":4000,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"text\"],\"type\":\"object\"},\"output_schema\":{\"additionalProperties\":false,\"properties\":{\"summary\":{\"maxLength\":400,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"summary\"],\"type\":\"object\"},\"prompt\":{\"mode\":\"chat\",\"template\":\"Summarize: {{input}}\"}}],\"requirements\":{\"context_length\":1024},\"runtime\":{\"browser_features\":[\"wasm\"],\"chat_template\":{\"source\":\"embedded\"},\"family\":\"wllama\",\"format\":\"gguf\",\"requirement\":\">=3.8.1 <3.9.0\"},\"schema\":\"wexare.micromodel.release/0.1\",\"version\":\"1.0.0\"}"
+      ]
+    ],
+    "pubkey": "1cc30377c92ae0e34d39a78c1f54e5ca6517e5081660051725d35c9ed2f20075",
+    "id": "3c7045d7bd764c99f6ee64afec0d8964703939a22767de08a96a92c0c84aa5ea",
+    "sig": "f7460c4202f8dbb12da2a5a08f55508dac8940714a41ed7416a3828d27018feef48a5baf36ec86932d52d804e3e97ee3905d6cbd0a0e0a40f40bd2ee67cc2ae9"
+  }
+}

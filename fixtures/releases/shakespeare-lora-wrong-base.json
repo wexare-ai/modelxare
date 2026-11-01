@@ -1,0 +1,62 @@
+{
+  "fixture": "moe-shakespeare15m-lora",
+  "publisher": "publisher-a",
+  "base": "story-base",
+  "base_override": {
+    "files": [
+      {
+        "sha256": "c7aa6863f9a4b3cdf19716e2c95622dcbd3bd06989324bf1ac8e60486ef8e881",
+        "size": 39390272
+      }
+    ]
+  },
+  "_comment": "NEGATIVE FIXTURE: declares the story-base release but pins the Q8_0 variant's weights, which that release does not contain. Clients must block it.",
+  "manifest": {
+    "model_id": "shakespeare-lora-q8-base",
+    "name": "Shakespeare adapter declared for the Q8_0 base (wrong-base fixture)",
+    "description": "Negative fixture: its declared base weights do not match the referenced base release. Must be blocked.",
+    "version": "1.0.0",
+    "kind": "lora",
+    "capabilities": [
+      "text-generation"
+    ],
+    "languages": [
+      "en"
+    ],
+    "runtime": {
+      "format": "gguf",
+      "family": "wllama",
+      "requirement": ">=3.8.1 <3.9.0",
+      "browser_features": [
+        "wasm-simd"
+      ],
+      "chat_template": {
+        "source": "none"
+      }
+    },
+    "operations": [
+      {
+        "id": "text-generation",
+        "prompt": {
+          "mode": "completion",
+          "template": "{{input}}"
+        },
+        "generation": {
+          "max_tokens": 24,
+          "temperature": 0,
+          "top_k": 1
+        }
+      }
+    ],
+    "requirements": {
+      "context_length": 256
+    },
+    "labels": [
+      "test-fixture"
+    ]
+  },
+  "locations": [
+    "mirror",
+    "ipfs"
+  ]
+}

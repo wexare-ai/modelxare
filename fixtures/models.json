@@ -1,0 +1,63 @@
+{
+  "schema": "wexare.fixture.models/0.1",
+  "description": "Pinned upstream sources for the real model fixtures. `pnpm demo:prepare` downloads each file, checks byte length and SHA-256, and stores it under .data/fixtures/models/. Binaries are never committed.",
+  "models": [
+    {
+      "id": "qwen2.5-0.5b-instruct-q4_k_m",
+      "role": "standalone model: text-classification + summarization (en, es)",
+      "repository": "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF",
+      "revision": "9217f5db79a29953eb74d5343926648285ec7e67",
+      "file": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+      "size": 491400032,
+      "sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+      "license": {
+        "id": "Apache-2.0",
+        "url": "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/blob/9217f5db79a29953eb74d5343926648285ec7e67/LICENSE",
+        "attribution": "Qwen2.5-0.5B-Instruct by the Qwen Team, Alibaba Cloud"
+      }
+    },
+    {
+      "id": "smollm2-360m-instruct-q8_0",
+      "role": "standalone model: summarization (en)",
+      "repository": "https://huggingface.co/HuggingFaceTB/SmolLM2-360M-Instruct-GGUF",
+      "revision": "593b5a2e04c8f3e4ee880263f93e0bd2901ad47f",
+      "file": "smollm2-360m-instruct-q8_0.gguf",
+      "size": 386404992,
+      "sha256": "48ab3034d0dd401fbc721eb1df3217902fee7dab9078992d66431f09b7750201",
+      "license": {
+        "id": "Apache-2.0",
+        "url": "https://huggingface.co/HuggingFaceTB/SmolLM2-360M-Instruct",
+        "attribution": "SmolLM2-360M-Instruct by Hugging Face TB Research"
+      }
+    },
+    {
+      "id": "stories15m-moe-f16",
+      "role": "LoRA base: tiny story-generation model (en)",
+      "repository": "https://huggingface.co/ggml-org/stories15M_MOE",
+      "revision": "b6dd737497465570b5f5e962dbc9d9454ed1e0eb",
+      "file": "stories15M_MOE-F16.gguf",
+      "size": 73466432,
+      "sha256": "1240dfc1957df9f3550dd6c1d9e64b466fc2f452d8bc34bd4e45e1a1e2ca6055",
+      "license": {
+        "id": "MIT",
+        "url": "https://huggingface.co/ggml-org/stories15M_MOE",
+        "attribution": "stories15M_MOE by ggml-org, derived from ModelCloud/tinyllama-15M-stories"
+      }
+    },
+    {
+      "id": "moe-shakespeare15m-lora",
+      "role": "LoRA adapter for stories15m-moe-f16 (Shakespeare style)",
+      "repository": "https://huggingface.co/ggml-org/stories15M_MOE",
+      "revision": "b6dd737497465570b5f5e962dbc9d9454ed1e0eb",
+      "file": "moe_shakespeare15M.gguf",
+      "size": 16364896,
+      "sha256": "d1e0617d7e10de960639d18a4620ec8c6bb56343f45692830d3634a1a3e1fe1a",
+      "license": {
+        "id": "MIT",
+        "url": "https://huggingface.co/ggml-org/stories15M_MOE",
+        "attribution": "moe_shakespeare15M LoRA adapter by ggml-org"
+      },
+      "lora_base": "stories15m-moe-f16"
+    }
+  ]
+}
