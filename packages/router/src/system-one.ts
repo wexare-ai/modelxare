@@ -12,6 +12,8 @@ export interface ChoiceQuestion {
 export interface NoulQuestion {
   type: 'noul';
   instructions: string;
+  /** What yes and no mean here. */
+  criteria?: { true?: string; false?: string };
 }
 
 export type Question = ChoiceQuestion | NoulQuestion;

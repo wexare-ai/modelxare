@@ -34,7 +34,7 @@ const steps = (page: Page) =>
     els.map((e) => ({ intent: e.getAttribute('data-intent'), route: e.getAttribute('data-route'), status: e.getAttribute('data-status'), text: (e as HTMLElement).innerText })),
   );
 
-test('Ask: System 1 routes a two-part request to models on this device', async () => {
+test('Ask: one request that asks for two things gets both, from models on this device', async () => {
   const profile = mkdtempSync(join(runDir(), 'profile-router-'));
   const context = await chromium.launchPersistentContext(profile, { headless: true });
   const hosts = new Set<string>();
@@ -43,12 +43,13 @@ test('Ask: System 1 routes a two-part request to models on this device', async (
   await page.goto(`${SIMPLE}/`);
   const t0 = Date.now();
 
-  await askAndFollow(page, 'Sort this message and summarize it: There has been a water leak near the entrance since this morning. Can someone inspect it?');
+  await askAndFollow(page, 'Categorize and Summarize this message: There has been a water leak near the entrance since this morning. Can someone inspect it?');
   const ran = await steps(page);
   const decided = await page.getByTestId('decisions').evaluate((e) => (e as HTMLElement).innerText);
-  evidence('ROUTER-BROWSER', { steps: ran, decisions: decided, ms: Date.now() - t0, http_hosts: [...hosts].sort() });
+  const judgement = await page.getByTestId('judgement').evaluate((e) => (e as HTMLElement).innerText);
+  evidence('ROUTER-BROWSER', { steps: ran, decisions: decided, judgement, ms: Date.now() - t0, http_hosts: [...hosts].sort() });
 
-  expect(ran.map((s) => s.intent).sort()).toEqual(['sort', 'summarize']);
+  expect(ran.map((s) => s.intent)).toEqual(['sort', 'summarize']);
   for (const s of ran) expect([s.route, s.status]).toEqual(['local', 'done']);
   for (const h of hosts) expect(h).toMatch(/^(localhost|127\.0\.0\.1):\d+$/);
 

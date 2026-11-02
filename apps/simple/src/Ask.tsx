@@ -11,7 +11,7 @@ export function Ask() {
   const ask = useAsk();
   const router = useRouterModel();
   const busy = ask.phase === 'working';
-  const running = ask.steps.at(-1)?.status === 'running' ? ask.steps.at(-1) : undefined;
+  const running = ask.steps.find((s) => s.status === 'running');
 
   return (
     <section className="ask-box" aria-labelledby="ask-title">
@@ -87,21 +87,30 @@ export function Ask() {
             <ul className="decisions">
               {ask.result.steps.map((s, i) => (
                 <li key={i}>
-                  {s.decision.chosenBy === 'person'
+                  {s.decision.by === 'person'
                     ? `You chose “${words(s.intent.id).name}”.`
-                    : `It looked like “${words(s.intent.id).name}” (${pct(s.decision.probability)} sure).`}{' '}
+                    : `You asked to “${words(s.intent.id).name}” (${pct(s.decision.probability)} sure).`}{' '}
                   {s.route.kind === 'local' ? 'A model on this device can do that.' : s.route.kind === 'remote' ? 'No model on this device can do that, so online help was used.' : 'No model on this device can do that.'}
                 </li>
               ))}
               <li>
                 {ask.result.ended === 'step-limit'
-                  ? 'It stopped after the most steps one request may take.'
+                  ? 'You asked for more than one request may do, so only the likeliest steps ran.'
                   : ask.result.ended === 'unsure'
                     ? 'It wasn’t sure what you needed, so it stopped.'
-                    : 'Then nothing else was needed.'}
+                    : 'Nothing else was asked for.'}
               </li>
             </ul>
-            <p className="hint">These decisions are made on this device by the router, in a fraction of a second each.</p>
+            {ask.result.judgement && (
+              <p className="hint" data-testid="judgement">
+                How likely each one looked:{' '}
+                {Object.entries(ask.result.judgement.asked)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([id, p]) => `${words(id).name} ${pct(p)}`)
+                  .join(', ')}
+                . Worked out on this device by the router, all at once, in {Math.max(1, Math.round(ask.result.judgement.latencyMs))} ms.
+              </p>
+            )}
           </details>
         </>
       )}
@@ -140,10 +149,12 @@ function StepCard({ step, partial }: { step: Step; partial: string }) {
   return (
     <li className={`step ${step.status}`} data-testid="step" data-intent={step.intent.id} data-route={step.route.kind} data-status={step.status}>
       <h2>{w.result}</h2>
+      {step.status === 'waiting' && <p className="muted">Next.</p>}
       {step.status === 'running' && <p className="pending-text">{partial || `${w.doing}…`}</p>}
       {step.status === 'done' && (step.output?.topic ? <p className="topic">{step.output.topic}</p> : <p>{step.output?.text}</p>)}
       {step.status === 'failed' && <p className="failed">{step.error}</p>}
-      <p className="byline">{by}</p>
+      {/* Which model does a step is settled when it starts. */}
+      {step.status !== 'waiting' && <p className="byline">{by}</p>}
       {step.status === 'done' && value && (
         <button
           className="link"

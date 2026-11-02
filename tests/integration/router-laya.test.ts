@@ -3,9 +3,10 @@
 //
 //   WEXARE_TEST_LAYA=1 pnpm vitest run --project integration tests/integration/router-laya.test.ts
 //
-// Only the router is real here. Mini-models can't run in Node, so the
-// multi-step check gives each step a fixed result; what is checked is which
-// step System 1 picks next, never what a model would write.
+// Only the router is real here. Mini-models can't run in Node, so no step
+// runs: what is checked is which steps System 1 plans for each request, never
+// what a model would write. Every probability goes to the evidence file, to
+// tune the thresholds from.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -49,32 +50,25 @@ describe.skipIf(!RUN)('System 1 router (real Laya)', () => {
     await laya?.close();
   });
 
-  const cases: [string, string][] = [
-    ['summarize', 'Please summarize this message: There has been a water leak near the entrance since this morning. Can someone inspect it?'],
-    ['sort', 'Which category does this message belong to? The people in apartment 4B play loud music every night.'],
-    ['translate', 'Translate into French: the swimming pool is closed today.'],
-    ['write', 'Continue this story: Once upon a time, a little fox'],
-    ['answer', 'What is the capital of Australia?'],
-    ['reply', 'Write a reply to this tenant: my heating has not worked for three days.'],
+  // [steps the request asks for, request]
+  const cases: [string[], string][] = [
+    [['summarize'], 'Please summarize this message: There has been a water leak near the entrance since this morning. Can someone inspect it?'],
+    [['sort'], 'Which category does this message belong to? The people in apartment 4B play loud music every night.'],
+    [['translate'], 'Translate into French: the swimming pool is closed today.'],
+    [['write'], 'Continue this story: Once upon a time, a little fox'],
+    [['answer'], 'What is the capital of Australia?'],
+    [['reply'], 'Write a reply to this tenant: my heating has not worked for three days.'],
+    [['sort', 'summarize'], 'Categorize and Summarize this message: There has been a water leak near the entrance since this morning. Can someone inspect it?'],
+    [['sort', 'summarize'], 'Sort this message and then summarize it: water is leaking near the entrance.'],
+    [['summarize', 'translate'], 'Summarize this and translate it into Spanish: the swimming pool will be closed all week for repairs.'],
   ];
 
-  it.each(cases)('routes a request asking to %s', async (expected, request) => {
-    const r = await route(request, system1, decisionsOnly(), { maxSteps: 1, confirmBelow: 0 });
-    const d = r.steps[0]!.decision;
-    log.push({ request, expected, choice: d.choice, probability: d.probability, confidence: d.confidence, latency_ms: d.latencyMs, device: d.device });
-    expect(d.choice).toBe(expected);
+  it.each(cases)('plans %j for: %s', async (expected, request) => {
+    const r = await route(request, system1, decisionsOnly());
+    const planned = r.steps.map((s) => s.intent.id);
+    const j = r.judgement!;
+    log.push({ request, expected, planned, asked: j.asked, main: j.main, latency_ms: j.latencyMs, device: j.device });
+    // The message shows every probability, so a miss says how far off it was.
+    expect(planned, JSON.stringify({ asked: j.asked, main: [j.main.choice, j.main.probability] })).toEqual(expected);
   }, 120_000);
-
-  it('chains two asked-for steps, then stops', async () => {
-    const results: Record<string, { topic?: string; text?: string }> = {
-      'text-classification': { topic: 'maintenance' },
-      summarization: { text: 'Water is leaking near the entrance.' },
-    };
-    const step = (capability: string) => ({ manifest: { kind: 'model', capabilities: [capability], languages: ['en'], files: [] }, support: { supported: true, reasons: [], executableOperations: [capability] } }) as unknown as CandidateRelease;
-    const hooks: Hooks = { ...decisionsOnly(), candidates: [step('text-classification'), step('summarization')], isCached: () => true, runLocal: async (_r, capability) => results[capability]! };
-    const r = await route('Sort this message and then summarize it: water is leaking near the entrance.', system1, hooks);
-    log.push({ request: 'multi-step', steps: r.steps.map((s) => [s.intent.id, s.decision.probability]), ended: r.ended });
-    expect(r.steps.map((s) => s.intent.id).sort()).toEqual(['sort', 'summarize']);
-    expect(r.ended).toBe('done');
-  }, 300_000);
 });

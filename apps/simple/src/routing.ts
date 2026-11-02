@@ -220,8 +220,8 @@ export function useAsk() {
       },
       clarify: (options) => ask<string | null>({ kind: 'clarify', options: options.map((o) => ({ id: o.intent.id, probability: o.probability })) }),
       onUpdate: (steps) => {
-        const running = steps.at(-1)?.status === 'running' ? steps.at(-1) : undefined;
-        setState((s) => ({ ...s, steps, activity: running ? (STEP_WORDS[running.intent.id]?.doing ?? 'Working') : 'Working out what to do' }));
+        const running = steps.find((x) => x.status === 'running');
+        setState((s) => ({ ...s, steps, partial: running === undefined ? '' : s.partial, activity: running ? (STEP_WORDS[running.intent.id]?.doing ?? 'Working') : 'Working out what to do' }));
       },
     });
     if (stopped()) return setState(IDLE);

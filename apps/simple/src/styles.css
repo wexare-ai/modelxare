@@ -551,9 +551,14 @@ button:disabled {
   animation: appear 0.25s ease-out;
 }
 
-.step.running {
+.step.running,
+.step.waiting {
   background: var(--surface);
   border: 1.5px dashed var(--line);
+}
+
+.step.waiting {
+  opacity: 0.7;
 }
 
 .step.unavailable,
