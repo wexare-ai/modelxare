@@ -35,6 +35,16 @@ included), `pnpm test:e2e` (19 tests) and `pnpm test:models` (6 tests). All pass
 | — | Prompts and outputs stay local | [`models/workflow`](../tests/models/workflow.spec.ts) | ✅ None of the 3 sample inputs or 3 summaries appeared in any of 25 HTTP requests or any WebSocket frame. HTTP hosts: `localhost:4173` (the app) and `127.0.0.1:8790` (the mirror). WebSocket hosts: the two relays. |
 | — | Arweave `ar://` resolution | [`integration/arweave`](../tests/integration/arweave.test.ts) | ✅ `ar://Edj83od3…` resolved through arweave.net: 1,047 bytes, SHA-256 verified, CORS present. |
 
+## Beyond the spec: System 1 routing (2026-11-02)
+
+| Check | Automated check | Status and evidence |
+| --- | --- | --- |
+| Routing rules | [`packages/router`](../packages/router/test/router.test.ts) (unit, 17) | ✅ Covered steps go to a local model even with online help on. A step no local model covers goes online only when allowed, otherwise it is reported unavailable and the loop continues. An unsure first step is confirmed with the person; an unsure later step is not started. Downloads are asked for first. Steps never repeat, and the loop stops at three. The OpenAI-compatible request has the intent as its system message, and errors never contain the key. |
+| Router release | `pnpm demo:prepare` / `demo:publish` | ✅ `laya-router`: four files verified against hashes pinned to `wexare/laya-onnx@2ac71766`, mirrored, pinned on Kubo A and B, and seeded as torrents. Accepted by both relays. Existing releases kept their event IDs. |
+| Ask and online-help screens | [`e2e/10`](../tests/e2e/10-ask.spec.ts) | ✅ The router download (904 MB) is asked for first; cancelling fetches none of its files. Online help is off by default, survives a reload in the same browser, never shows the key, changes the footer and tagline, and saving it contacts no online service. |
+| Real routing decisions | [`integration/router-laya`](../tests/integration/router-laya.test.ts) (opt-in) | ⏳ **Not run.** Laya fp16 needs more than 3 GB in ONNX Runtime's WebAssembly heap. On the 8 GB build VM, an uncapped attempt exhausted memory, and capped attempts were stopped at 3 GB (fp16) and 2.5 GB (8-bit export). Run with `WEXARE_TEST_LAYA=1` on a larger machine. |
+| Ask end to end with real models | [`models/router`](../tests/models/router.spec.ts) (opt-in) | ⏳ **Not run**, for the same reason. |
+
 ## Observations
 
 - **Model quality is not evaluated.** The tests check execution and the output contracts, not the

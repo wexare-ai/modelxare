@@ -87,6 +87,20 @@ Key fields. The schema has the full definition.
   adapter only over that exact base: release ID, manifest hash, and every weight hash must match. A
   GGUF header check additionally compares architectures.
 
+### Router releases (System 1)
+
+A router decides what a request needs; it never generates text. It is published like any model, with:
+
+- `capabilities: ["intent-routing"]` and `operations: []`, because routing has no prompt template;
+- `runtime: {format: "onnx", family: "laya", requirement: <semver range of @wexare/laya-web>}`;
+- four files: `weights` (`*.onnx`), two `tokenizer` files (`tokenizer.json`, `tokenizer_config.json`),
+  and `config` (`rl_agent_config.json`, the calibration temperatures).
+
+`packages/router` accepts a release only when all four files are present and the runtime range admits
+the bundled `@wexare/laya-web` version. It prefers a release that is already downloaded, then the
+newest version. Clients without that runtime list router releases as unsupported, like any unknown
+family.
+
 ## Catalog archive (`schema: wexare.micromodel.catalog/0.1`)
 
 A ZIP whose member names are restricted to the following:

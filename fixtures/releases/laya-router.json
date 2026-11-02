@@ -1,0 +1,50 @@
+{
+  "fixture": "laya-en-fp16",
+  "extra_files": [
+    { "fixture": "laya-tokenizer", "role": "tokenizer" },
+    { "fixture": "laya-tokenizer-config", "role": "tokenizer" },
+    { "fixture": "laya-agent-config", "role": "config" }
+  ],
+  "publisher": "publisher-a",
+  "manifest": {
+    "model_id": "laya-router",
+    "name": "Laya System 1 router (English, fp16)",
+    "description": "Reads a request and decides in one quick pass what should happen next, and how sure it is. Routes work to other models; it never writes text itself.",
+    "version": "1.0.0",
+    "kind": "model",
+    "capabilities": [
+      "intent-routing"
+    ],
+    "languages": [
+      "en"
+    ],
+    "runtime": {
+      "format": "onnx",
+      "family": "laya",
+      "requirement": ">=0.1.1 <0.2.0",
+      "browser_features": [
+        "wasm-simd"
+      ]
+    },
+    "operations": [],
+    "requirements": {
+      "context_length": 512,
+      "memory_mb": {
+        "value": 1900,
+        "basis": "estimated",
+        "context_length": 512,
+        "notes": "900 MB of weights held in memory plus the ONNX Runtime session."
+      },
+      "hardware_profiles": [
+        "webgpu",
+        "cpu-wasm"
+      ]
+    }
+  },
+  "_comment": "System 1 router: a typed-decision model (state + questions in, calibrated probabilities out). Only clients that bundle @wexare/laya-web can run it; others list it as unsupported.",
+  "locations": [
+    "mirror",
+    "ipfs",
+    "torrent"
+  ]
+}

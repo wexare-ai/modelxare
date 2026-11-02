@@ -1,12 +1,12 @@
 import { createWriteStream } from 'node:fs';
 import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { spawnSync } from 'node:child_process';
 import { finalizeEvent } from 'nostr-tools/pure';
 import { buildArchive } from '@wexare/catalog';
-import { type NostrEvent, type ReleaseManifest } from '@wexare/protocol';
+import { type FileRole, type NostrEvent, type ReleaseManifest } from '@wexare/protocol';
 import { ArtifactRoot, KuboClient, hashFile } from '@wexare/storage/node';
 import { publishArchive } from './archive.ts';
 import { ensureKey, type LoadedKey } from './keys.ts';
@@ -32,12 +32,14 @@ interface FixtureDefinition {
   base?: string;
   base_override?: Partial<NonNullable<ReleaseManifest['base']>>;
   declare_wrong_sha256?: boolean;
+  /** More files of the same release, e.g. a tokenizer and a config next to the weights. */
+  extra_files?: { fixture: string; role: FileRole }[];
   manifest: ReleaseDefinition['manifest'] & { license?: ReleaseManifest['license'] };
   locations: ReleaseDefinition['locations'];
 }
 
 /** Publication order: bases before adapters. */
-export const DEMO_RELEASES = ['story-base', 'community-assistant', 'tiny-summarizer', 'shakespeare-lora', 'shakespeare-lora-wrong-base', 'future-runtime-model', 'wrong-file-hash'];
+export const DEMO_RELEASES = ['story-base', 'community-assistant', 'tiny-summarizer', 'shakespeare-lora', 'shakespeare-lora-wrong-base', 'future-runtime-model', 'wrong-file-hash', 'laya-router'];
 export const DEMO_KEYS = ['publisher-a', 'publisher-b', 'builder-a', 'builder-b', 'synthetic-builder'];
 const step = (s: string) => console.log(`\n▶ ${s}`);
 
@@ -57,6 +59,7 @@ export async function fetchFixtureModels(): Promise<void> {
       }
       console.log(`  ! ${m.file} does not match the pinned hash; downloading again`);
     }
+    await mkdir(dirname(dest), { recursive: true });
     const url = `${m.repository}/resolve/${m.revision}/${m.file}`;
     console.log(`  ↓ ${m.file} (${(m.size / 1e6).toFixed(0)} MB) from ${url}`);
     const res = await fetch(url);
@@ -89,13 +92,18 @@ async function toDefinition(name: string, d: FixtureDefinition): Promise<Release
     const m = models.find((x) => x.id === d.fixture);
     if (!m) throw new Error(`unknown fixture ${d.fixture}`);
     source = join(paths.fixtureModels, m.file);
-    path = m.file;
+    path = basename(m.file);
     license = m.license;
   }
+  const extra = (d.extra_files ?? []).map((x) => {
+    const m = models.find((y) => y.id === x.fixture);
+    if (!m) throw new Error(`unknown fixture ${x.fixture}`);
+    return { role: x.role, path: basename(m.file), source: join(paths.fixtureModels, m.file) };
+  });
   const base = d.base ? { event: await loadEvent(join(paths.release(d.base), 'event.json')), ...(d.base_override ? { override: d.base_override } : {}) } : undefined;
   return {
     manifest: { ...d.manifest, license: d.manifest.license ?? license },
-    files: [{ role: d.manifest.kind === 'lora' ? 'adapter' : 'weights', path, source, ...(d.declare_wrong_sha256 ? { declareWrongSha256: true } : {}) }],
+    files: [{ role: d.manifest.kind === 'lora' ? 'adapter' : 'weights', path, source, ...(d.declare_wrong_sha256 ? { declareWrongSha256: true } : {}) }, ...extra],
     ...(base ? { base } : {}),
     locations: d.locations,
   };

@@ -1,18 +1,24 @@
+import { remoteHelp } from '@wexare/router';
+import { Ask } from './Ask.tsx';
 import { useConnection, useModels } from './engine.ts';
+import { useOnlineHelp } from './routing.ts';
 import { TASKS, languageList, size, type TaskId } from './models.ts';
 
 export function Home(p: { task: TaskId | null; setTask: (t: TaskId | null) => void; query: string; setQuery: (q: string) => void; open: (id: string) => void }) {
   const { models, loaded } = useModels();
   const connection = useConnection();
+  const online = !!remoteHelp(useOnlineHelp());
   const verbs = TASKS.map((t) => ({ t, count: models.filter((m) => m.tasks.includes(t.id)).length })).filter((v) => v.count > 0);
   const q = p.query.trim().toLowerCase();
   const shown = models.filter((m) => (!p.task || m.tasks.includes(p.task)) && (!q || `${m.name} ${m.description}`.toLowerCase().includes(q)));
 
   return (
     <>
-      <p className="lede">Small AI models that run on this device. What you type never leaves it.</p>
+      <p className="lede">{online ? 'Small AI models that run on this device, with online help when they can’t.' : 'Small AI models that run on this device. What you type never leaves it.'}</p>
 
-      <h1 className="ask">What do you want to do?</h1>
+      <Ask />
+
+      <h2 className="browse-title">Or pick a model by what it does</h2>
       <div className="verbs" role="group" aria-label="Show models by task" data-filtered={p.task ? '' : undefined}>
         {verbs.map(({ t, count }) => (
           <button key={t.id} aria-pressed={p.task === t.id} onClick={() => p.setTask(p.task === t.id ? null : t.id)}>

@@ -9,8 +9,10 @@ entirely inside the browser.
 - **Archive.** A builder freezes the collected signed events into a ZIP, signs an announcement, and distributes it over IPFS, an HTTP mirror and a WebRTC-capable torrent.
 - **Discover.** The browser app reads relays directly (Live), imports archives (Archives), or both (Combined), into SQLite WASM + FTS5 on OPFS. Searches stay on the device.
 - **Run.** The browser downloads model files with source fallback, verifies every byte against the signed manifest, and runs GGUF models locally with wllama. It composes classification → summarization, and can apply a LoRA adapter at runtime.
+- **Route.** In the simple app, a System 1 router decides what each request needs, one step at a time, and sends each step to a model on the device. The router is [Laya](https://github.com/wexare-ai/browser-laya), itself a signed catalog release. If the person adds their own API key, steps no local model can do go to an online model.
 
-There is no central registry, account, search API or remote inference. See [docs/protocol.md](docs/protocol.md)
+There is no central registry, account or search API, and no remote inference unless a person turns on
+online help with their own key. See [docs/protocol.md](docs/protocol.md)
 for the data contract and [docs/acceptance.md](docs/acceptance.md) for what has been verified, and how.
 
 ![The publisher, catalog operator and browser exchange signed metadata through Nostr relays and bytes through storage](docs/architecture.svg)
@@ -25,8 +27,8 @@ for the data contract and [docs/acceptance.md](docs/acceptance.md) for what has 
   - macOS: Docker Desktop, OrbStack or Colima. The pinned images support Apple Silicon.
   - Ubuntu: `sudo apt-get install -y docker.io docker-compose-v2 && sudo usermod -aG docker $USER`.
     The infra script falls back to `sg docker` until you log in again.
-- About 5 GB of free disk. The four pinned model fixtures total 0.97 GB, and they are copied into
-  IPFS, the mirror and the browser.
+- About 10 GB of free disk. The pinned model fixtures total 1.87 GB, including the 904 MB router,
+  and they are copied into IPFS, the mirror and the browser.
 - Network access the first time, to download the pinned fixtures from Hugging Face. No accounts are needed.
 - Chrome or Chromium for the app; other browsers are untested. `pnpm --filter @wexare/tests exec playwright install chromium` provides one for tests.
 
@@ -51,15 +53,43 @@ For people without a technical background, open <http://localhost:5174> instead.
 (`apps/simple`) lists models by what they do (Summarize, Sort, Write). Opening a model gives you a
 text box and one button. The first press downloads and checks the model, then it runs on the
 device. It uses the same engine as the PoC but hides keys, hashes, relays and storage. It is a
-separate site, so it keeps its own downloads.
+separate site, so it keeps its own downloads. Its **What do you need?** box sends a request through
+the System 1 router; see [Routing with System 1](#routing-with-system-1).
 
-The first `demo:prepare` downloads 0.97 GB and signs 10,000 synthetic records, which takes about 90 s.
+The first `demo:prepare` downloads 1.87 GB and signs 10,000 synthetic records, which takes a few minutes.
 Later runs reuse everything: unchanged manifests keep their signed events.
 
 `pnpm dev` does not start the docker services. If the indexer logs `connection failed (is the relay
 running? pnpm infra:up)`, start Docker, then run `pnpm infra:up`. It is safe to repeat, and it
 prints a ✓ for each service once it answers. Relay and IPFS data live in docker volumes, so events
 you published earlier are still there after a restart.
+
+## Routing with System 1
+
+The simple app opens with one box: **What do you need?** A request such as "Sort this message and
+summarize it: …" goes through a loop:
+
+1. The router reads the request and what has been done so far, and picks the next step: sort,
+   summarize, write, reply, translate, answer, or done. It answers in one pass, around 125 ms on
+   WebGPU, and returns probabilities rather than text.
+2. If the router is unsure about the first step, it asks the person. Later steps it is unsure about
+   are not started.
+3. A step goes to a model on the device when one can do it in the request's language. Online help
+   is used only for steps no local model can do, and only when the person has turned it on.
+   Otherwise the step is reported as unavailable, in plain words.
+4. The step's result joins the request for the next decision, until the router picks "done" or three
+   steps have run.
+
+The router is a catalog release like any model: `fixtures/releases/laya-router.json` publishes the
+ONNX export of Laya (`wexare/laya-onnx`, pinned revision) with `runtime.family: "laya"` and the
+`intent-routing` capability. Its four files (weights, tokenizer, tokenizer config, calibration) are
+downloaded with consent, verified, and checked again before loading, like every model file. Clients
+that don't bundle `@wexare/laya-web`, such as the PoC app, list it as unsupported.
+
+**Online help** (Settings) takes any OpenAI-compatible service: OpenRouter, OpenAI, or a custom
+address. The API key is kept in this browser's local storage only and sent only to that service.
+The app says on screen when online help is on, and each answer shows which model produced it and
+where.
 
 ## Commands
 
@@ -89,6 +119,9 @@ you published earlier are still there after a restart.
 - `pnpm vitest run --project integration` runs the Node-side checks against the same services. The
   mirror and torrent checks also need the artifacts server on :8790, which `pnpm dev` starts.
   `WEXARE_TEST_ARWEAVE=1` adds the public Arweave gateway test, which needs internet access.
+- `WEXARE_TEST_LAYA=1` turns on the checks that load the real router:
+  `tests/integration/router-laya.test.ts` (routing decisions, Node) and `tests/models/router.spec.ts`
+  (the Ask box end to end). They need about 4 to 5 GB of free memory, so they are off by default.
 
 ## Repository layout
 
@@ -99,6 +132,7 @@ you published earlier are still there after a restart.
 | `packages/storage` | Source resolution, verified downloads (Node and browser), IPFS client, mirror layout, torrents |
 | `packages/runtime` | Capability detection, wllama runtime wrapper (including the LoRA adapter path), GGUF header reader |
 | `packages/orchestrator` | Release selection, two-stage workflow planning and execution, LoRA dependency resolution |
+| `packages/router` | System 1 routing: intents, the step-by-step loop, local-first routes, online help, router release selection |
 | `apps/cli` | `wexare`: keys, `release prepare/publish`, `archive build/verify/publish`, `demo …` |
 | `apps/indexer` | Persistent multi-relay collector with a read-only status endpoint |
 | `apps/artifacts` | Static HTTP mirror (range, CORS, immutable caching) and WebRTC torrent seeder |
@@ -168,6 +202,11 @@ disposable. Private keys stay in the CLI and never reach the browser.
   unavailable in this runtime"; see [docs/runtime-compatibility.md](docs/runtime-compatibility.md).
 - Gateway availability, storage retention and browser P2P connectivity are separate concerns. A pinned
   CID or a seeded torrent says nothing about whether a particular gateway or peer is reachable.
+- The router (Laya fp16) is English only. Loading it takes about 3 GB of memory on top of the page.
+  On this project's 8 GB build VM, it could not be loaded safely, so routing decisions with the real
+  router have not been run yet. Run the `WEXARE_TEST_LAYA=1` checks on a larger machine.
+- The simple app's offline cache includes the router's 28 MB WebAssembly runtime, even if routing is
+  never used.
 - P1 items that are not implemented: Arweave uploads (only `ar://` resolution is implemented),
   incremental or sharded catalogs, and browser publishing with a Nostr signer.
 

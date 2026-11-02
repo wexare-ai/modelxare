@@ -34,17 +34,17 @@ export interface CandidateRelease {
   support: SupportResult;
 }
 
-export interface Preferences {
+export interface Preferences<S extends string = StageId> {
   /** Explicit user choice per stage (release event ID). */
-  explicit?: Partial<Record<StageId, string>>;
+  explicit?: Partial<Record<S, string>>;
   /** If any compatible release comes from these publishers, only those are considered. */
   preferredPublishers?: string[];
   /** Override detected language. */
   language?: string;
 }
 
-export interface StageSelection {
-  stage: StageId;
+export interface StageSelection<S extends string = StageId> {
+  stage: S;
   release: CandidateRelease | null;
   reason: string;
   considered: { eventId: string; name: string; pubkey: string; compatible: boolean; why: string }[];
@@ -71,7 +71,7 @@ export interface WorkflowPlan {
 
 const totalBytes = (m: ReleaseManifest) => m.files.reduce((n, f) => n + f.size, 0);
 
-export function compatibility(c: CandidateRelease, stage: StageId, language: string): { ok: boolean; why: string } {
+export function compatibility(c: CandidateRelease, stage: string, language: string): { ok: boolean; why: string } {
   if (c.manifest.kind !== 'model') return { ok: false, why: 'adapters are not selected for workflow stages' };
   if (!c.manifest.capabilities.includes(stage)) return { ok: false, why: `does not declare ${stage}` };
   if (!c.support.executableOperations.includes(stage)) return { ok: false, why: `no executable ${stage} operation matching the bundled contract` };
@@ -85,15 +85,16 @@ export function compatibility(c: CandidateRelease, stage: StageId, language: str
 /**
  * Selection order (spec §F6): explicit user choice, compatible cached release,
  * smaller compatible download, then stable publisher / release-ID tie-break.
+ * Works for any operation ID; the workflow uses its two stages.
  */
-export function selectRelease(
-  stage: StageId,
+export function selectRelease<S extends string = StageId>(
+  stage: S,
   candidates: CandidateRelease[],
   language: string,
-  prefs: Preferences,
+  prefs: Preferences<S>,
   isCached: (sha256: string) => boolean,
   isPending: (sha256: string) => boolean = () => false,
-): StageSelection {
+): StageSelection<S> {
   const evaluated = candidates.map((c) => ({ c, ...compatibility(c, stage, language) }));
   const considered = evaluated.map((e) => ({ eventId: e.c.eventId, name: e.c.name, pubkey: e.c.pubkey, compatible: e.ok, why: e.why }));
   const explicitId = prefs.explicit?.[stage];

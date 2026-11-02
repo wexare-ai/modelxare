@@ -1,0 +1,15 @@
+{
+  "name": "@wexare/router",
+  "version": "0.1.0",
+  "private": true,
+  "description": "System 1 routing: decide what a request needs, step by step, and send each step to a local mini-model first, or to an online model the person allowed.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "typecheck": "tsc -p tsconfig.json" },
+  "dependencies": {
+    "@wexare/orchestrator": "workspace:*",
+    "@wexare/protocol": "workspace:*",
+    "@wexare/runtime": "workspace:*"
+  }
+}

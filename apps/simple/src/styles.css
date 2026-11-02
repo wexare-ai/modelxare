@@ -46,6 +46,7 @@ body {
 
 button,
 input,
+select,
 textarea {
   font: inherit;
   color: inherit;
@@ -98,6 +99,21 @@ button:disabled {
   text-decoration: none;
 }
 
+.top-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.settings-link {
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+
+.settings-link:hover {
+  color: var(--ink);
+}
+
 .connection {
   display: inline-flex;
   align-items: center;
@@ -130,8 +146,16 @@ button:disabled {
   font-size: 1.125rem;
 }
 
-.ask {
-  margin: 2.25rem 0 0.5rem;
+.ask-title {
+  margin: 2rem 0 0;
+  font-size: clamp(2.4rem, 9vw, 3.6rem);
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+}
+
+.browse-title {
+  margin: 4rem 0 0.5rem;
   font-size: 1.25rem;
   font-weight: 500;
 }
@@ -146,10 +170,10 @@ button:disabled {
   padding: 0;
   border: 0;
   background: none;
-  font-size: clamp(2.4rem, 9vw, 3.6rem);
-  font-weight: 750;
-  letter-spacing: -0.03em;
-  line-height: 1.08;
+  font-size: clamp(1.8rem, 6.5vw, 2.4rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
   color: var(--ink);
 }
 
@@ -492,6 +516,153 @@ button:disabled {
 
 .about dd {
   margin: 0;
+}
+
+/* Ask */
+/* A prompt is a note laid out as a column: the question, then its choices. */
+.note.prompt {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.note.prompt p {
+  flex: none;
+}
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 0.9rem;
+}
+
+.steps {
+  display: grid;
+  gap: 1rem;
+  margin: 2rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  padding: 1.1rem 1.5rem 1rem;
+  border-radius: 18px;
+  background: var(--mint);
+  animation: appear 0.25s ease-out;
+}
+
+.step.running {
+  background: var(--surface);
+  border: 1.5px dashed var(--line);
+}
+
+.step.unavailable,
+.step.declined,
+.step.failed {
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+}
+
+.step h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.step p {
+  margin: 0;
+  font-size: 1.2rem;
+  line-height: 1.5;
+}
+
+.step .topic {
+  font-size: 2rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.step .byline {
+  margin-top: 0.6rem;
+  font-size: 0.9375rem;
+  color: var(--muted);
+}
+
+.step .failed {
+  color: var(--alert);
+}
+
+.step .muted,
+.step .pending-text {
+  color: var(--muted);
+}
+
+.decisions {
+  margin: 0.75rem 0;
+  padding-left: 1.25rem;
+}
+
+.decisions li + li {
+  margin-top: 0.35rem;
+}
+
+/* Settings */
+.settings {
+  margin-top: 2.5rem;
+  max-width: 36rem;
+}
+
+.settings h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1.35rem;
+}
+
+.settings p {
+  margin: 0 0 1rem;
+}
+
+.settings fieldset {
+  display: grid;
+  gap: 1rem;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.settings fieldset:disabled {
+  opacity: 0.5;
+}
+
+.settings label {
+  display: grid;
+  gap: 0.3rem;
+  font-weight: 600;
+}
+
+.settings label.check {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.settings input:not([type='checkbox']),
+.settings select {
+  padding: 0.65rem 0.9rem;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  font-weight: 400;
+}
+
+.settings input[type='checkbox'] {
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: var(--brand);
+}
+
+.settings small {
+  font-weight: 400;
+  color: var(--muted);
 }
 
 /* Notices and other tabs */

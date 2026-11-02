@@ -58,6 +58,62 @@
         "attribution": "moe_shakespeare15M LoRA adapter by ggml-org"
       },
       "lora_base": "stories15m-moe-f16"
+    },
+    {
+      "id": "laya-en-fp16",
+      "role": "System 1 router: Laya decision model (ONNX, fp16 encoder, fp32 head)",
+      "repository": "https://huggingface.co/wexare/laya-onnx",
+      "revision": "2ac71766852466d7c50cd7d36171bd47c776b00a",
+      "file": "laya_fp16.onnx",
+      "size": 900153849,
+      "sha256": "b2125c7a1044e78807ee718ff4e65c9892b6b55aeeeee64f31fffffd76871b0a",
+      "license": {
+        "id": "Apache-2.0",
+        "url": "https://huggingface.co/wexare/laya-onnx/blob/2ac71766852466d7c50cd7d36171bd47c776b00a/LICENSE",
+        "attribution": "Laya by Convai Innovations (convaiinnovations/laya); ONNX export and tokenizer mirror by weXare (wexare/laya-onnx)"
+      }
+    },
+    {
+      "id": "laya-tokenizer",
+      "role": "Laya tokenizer (ModernBERT)",
+      "repository": "https://huggingface.co/wexare/laya-onnx",
+      "revision": "2ac71766852466d7c50cd7d36171bd47c776b00a",
+      "file": "tokenizer/tokenizer.json",
+      "size": 3583228,
+      "sha256": "6c8aaa9a542084f2457eab775d4eeb51f92a70c0fd9de28d5edb0ddec3c08d30",
+      "license": {
+        "id": "Apache-2.0",
+        "url": "https://huggingface.co/wexare/laya-onnx/blob/2ac71766852466d7c50cd7d36171bd47c776b00a/LICENSE",
+        "attribution": "Laya by Convai Innovations (convaiinnovations/laya); ONNX export and tokenizer mirror by weXare (wexare/laya-onnx)"
+      }
+    },
+    {
+      "id": "laya-tokenizer-config",
+      "role": "Laya tokenizer configuration",
+      "repository": "https://huggingface.co/wexare/laya-onnx",
+      "revision": "2ac71766852466d7c50cd7d36171bd47c776b00a",
+      "file": "tokenizer/tokenizer_config.json",
+      "size": 308,
+      "sha256": "50044de60daaa73df97d262e15a40d4faf0160e7d742df64b377877a1320dd12",
+      "license": {
+        "id": "Apache-2.0",
+        "url": "https://huggingface.co/wexare/laya-onnx/blob/2ac71766852466d7c50cd7d36171bd47c776b00a/LICENSE",
+        "attribution": "Laya by Convai Innovations (convaiinnovations/laya); ONNX export and tokenizer mirror by weXare (wexare/laya-onnx)"
+      }
+    },
+    {
+      "id": "laya-agent-config",
+      "role": "Laya calibration (temperatures) and sequence limits",
+      "repository": "https://huggingface.co/wexare/laya-onnx",
+      "revision": "2ac71766852466d7c50cd7d36171bd47c776b00a",
+      "file": "rl_agent_config.json",
+      "size": 745,
+      "sha256": "ae287b56bbcf5f8c4f4541ae9dfd00c914c4c48b940b8398c3058af37ba92bbd",
+      "license": {
+        "id": "Apache-2.0",
+        "url": "https://huggingface.co/wexare/laya-onnx/blob/2ac71766852466d7c50cd7d36171bd47c776b00a/LICENSE",
+        "attribution": "Laya by Convai Innovations (convaiinnovations/laya); ONNX export and tokenizer mirror by weXare (wexare/laya-onnx)"
+      }
     }
   ]
 }

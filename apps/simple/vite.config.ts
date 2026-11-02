@@ -38,7 +38,8 @@ export default defineConfig({
   define: { __DEV_ENDPOINTS__: JSON.stringify(endpoints) },
   server: { port: 5174, strictPort: true, headers: isolation },
   preview: { port: 4174, strictPort: true, headers: isolation },
-  optimizeDeps: { exclude: ['@sqlite.org/sqlite-wasm', '@wllama/wllama'] },
+  // Pre-bundling these breaks the paths they use to load their .wasm files.
+  optimizeDeps: { exclude: ['@sqlite.org/sqlite-wasm', '@wllama/wllama', 'onnxruntime-web'] },
   worker: { format: 'es' },
   build: { target: 'es2022', sourcemap: true, chunkSizeWarningLimit: 4096 },
 });

@@ -2,7 +2,7 @@
 // catalog, live discovery from relays, verified downloads and on-device
 // inference. The screens only see models, tasks and answers.
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { detectLanguage, runSingle, type StageTrace } from '@wexare/orchestrator';
+import { detectLanguage, runSingle, type CandidateRelease, type StageTrace } from '@wexare/orchestrator';
 import { createCatalogClient } from '@wexare/web/src/lib/catalog-client.ts';
 import { LiveDiscovery } from '@wexare/web/src/lib/live.ts';
 import { ArtifactManager } from '@wexare/web/src/lib/artifacts.ts';
@@ -13,18 +13,18 @@ import { buildModels, TOPICS, type Model, type TaskId } from './models.ts';
 
 const settings = loadSettings();
 export const { client: catalog, session } = createCatalogClient();
-const live = new LiveDiscovery(catalog);
+export const live = new LiveDiscovery(catalog);
 export const artifacts = new ArtifactManager(catalog, () => settings);
 
 /** Storage first, then the model cache, then relay sync. */
-const opened: Promise<InitResult> = session.open().then(async (r) => {
+export const opened: Promise<InitResult> = session.open().then(async (r) => {
   await artifacts.init(r.persistent).catch((e) => console.warn('model cache', e));
   if (settings.networkSync) live.start(settings.relays);
   return r;
 });
 
 /** Re-render when an engine object reports a change. */
-function useEvent(target: EventTarget, type = 'change'): number {
+export function useEvent(target: EventTarget, type = 'change'): number {
   const version = useRef(0);
   return useSyncExternalStore(
     (notify) => {
@@ -99,6 +99,39 @@ export interface RunState {
 
 const IDLE: RunState = { phase: 'idle', progress: 0, partial: '', answer: null, problem: null };
 
+/** Download (and verify) files that are missing; true when all of them are here. */
+export async function fetchFiles(files: { sha256: string; size: number; path: string; locations: CandidateRelease['manifest']['files'][number]['locations'] }[]): Promise<boolean> {
+  const needed = files.filter((f) => !artifacts.isCached(f.sha256));
+  if (needed.length) await artifacts.download(needed).catch(() => undefined);
+  return files.every((f) => artifacts.isCached(f.sha256));
+}
+
+/** Run one task with a local model (a style add-on runs on its base). */
+export async function runTask(
+  release: CandidateRelease,
+  base: CandidateRelease | undefined,
+  task: string,
+  input: string,
+  on: { signal?: AbortSignal; working?: () => void; partial?: (text: string) => void } = {},
+): Promise<{ topic?: string; text?: string } | null> {
+  const deps = {
+    runtime,
+    choiceGrammar,
+    getVerifiedFile: (sha256: string, size: number) => artifacts.getVerifiedFile(sha256, size),
+    onUpdate: ([t]: StageTrace[]) => void (t?.state === 'generating' && on.working?.()),
+    onToken: (_stage: string, text: string) => on.partial?.(text),
+  };
+  const opts = { ...(on.signal ? { signal: on.signal } : {}), language: detectLanguage(input) };
+  const trace = base
+    ? await runSingle(base, task, input, deps, { ...opts, adapters: [{ candidate: release, scale: 1 }], base })
+    : await runSingle(release, task, input, deps, opts);
+  if (trace.state === 'canceled') throw new DOMException('canceled', 'AbortError');
+  if (trace.state !== 'completed') return null;
+  const out = trace.output ?? {};
+  if (typeof out.category === 'string') return { topic: TOPICS[out.category] ?? out.category };
+  return { text: String(out.summary ?? out.text ?? trace.attempts.at(-1)?.raw ?? '').trim() };
+}
+
 /** One button: download what is missing (verified), load the model, answer. */
 export function useRun(model: Model | undefined) {
   const [state, setState] = useState<RunState>(IDLE);
@@ -120,36 +153,23 @@ export function useRun(model: Model | undefined) {
       const ac = new AbortController();
       abort.current = ac;
       setState({ ...IDLE, phase: 'downloading' });
-      const needed = model.files.filter((f) => !artifacts.isCached(f.sha256));
-      if (needed.length) {
-        await artifacts.download(needed).catch(() => undefined);
-        if (ac.signal.aborted) return setState(IDLE);
-        if (needed.some((f) => !artifacts.isCached(f.sha256))) return setState({ ...IDLE, phase: 'failed', problem: 'download' });
-      }
+      const here = await fetchFiles(model.files);
+      if (ac.signal.aborted) return setState(IDLE);
+      if (!here) return setState({ ...IDLE, phase: 'failed', problem: 'download' });
       setState({ ...IDLE, phase: 'preparing' });
-      const deps = {
-        runtime,
-        choiceGrammar,
-        getVerifiedFile: (sha256: string, size: number) => artifacts.getVerifiedFile(sha256, size),
-        onUpdate: ([t]: StageTrace[]) => t?.state === 'generating' && setState((s) => (s.phase === 'preparing' ? { ...s, phase: 'working' } : s)),
-        onToken: (_stage: string, text: string) => setState((s) => ({ ...s, phase: 'working', partial: text })),
-      };
-      const opts = { signal: ac.signal, language: detectLanguage(input) };
-      let trace: StageTrace;
+      let out: Awaited<ReturnType<typeof runTask>>;
       try {
-        trace = model.base
-          ? await runSingle(model.base, task, input, deps, { ...opts, adapters: [{ candidate: model.release, scale: 1 }], base: model.base })
-          : await runSingle(model.release, task, input, deps, opts);
+        out = await runTask(model.release, model.base, task, input, {
+          signal: ac.signal,
+          working: () => setState((s) => (s.phase === 'preparing' ? { ...s, phase: 'working' } : s)),
+          partial: (text) => setState((s) => ({ ...s, phase: 'working', partial: text })),
+        });
       } catch {
-        return setState({ ...IDLE, phase: 'failed', problem: 'answer' });
+        return setState(ac.signal.aborted ? IDLE : { ...IDLE, phase: 'failed', problem: 'answer' });
       }
-      if (ac.signal.aborted || trace.state === 'canceled') return setState(IDLE);
-      if (trace.state !== 'completed') return setState({ ...IDLE, phase: 'failed', problem: 'answer' });
-      const out = trace.output ?? {};
-      const answer: Answer = { task, input };
-      if (typeof out.category === 'string') answer.topic = TOPICS[out.category] ?? out.category;
-      else answer.text = String(out.summary ?? out.text ?? trace.attempts.at(-1)?.raw ?? '').trim();
-      setState({ ...IDLE, phase: 'done', answer });
+      if (ac.signal.aborted) return setState(IDLE);
+      if (!out) return setState({ ...IDLE, phase: 'failed', problem: 'answer' });
+      setState({ ...IDLE, phase: 'done', answer: { task, input, ...out } });
     },
     [model],
   );

@@ -9,8 +9,14 @@ allowBuilds:
   ip-set: false
   # Native WebRTC for the Node WebTorrent seeder (prebuilt binary download).
   node-datachannel: true
+  # Postinstall only prints a notice; not needed by onnxruntime-web (Laya).
+  protobufjs: false
   utf-8-validate: false
   utp-native: false
 
 # Exact versions only; the lockfile pins transitive dependencies.
 savePrefix: ''
+
+overrides:
+  # The version @wexare/laya-web (System 1 router) was validated against.
+  onnxruntime-web: 1.30.0
