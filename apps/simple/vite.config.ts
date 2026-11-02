@@ -39,7 +39,15 @@ export default defineConfig({
   server: { port: 5174, strictPort: true, headers: isolation },
   preview: { port: 4174, strictPort: true, headers: isolation },
   // Pre-bundling these breaks the paths they use to load their .wasm files.
-  optimizeDeps: { exclude: ['@sqlite.org/sqlite-wasm', '@wllama/wllama', 'onnxruntime-web'] },
+  // @wexare/laya-web is still pre-bundled and imports onnxruntime-web by name,
+  // so onnxruntime-web is a direct dependency: with pnpm, only packages that
+  // declare it can resolve it.
+  // The workers' imports aren't found by Vite's start-up scan, so list them:
+  // otherwise Vite reloads the page the first time each worker starts.
+  optimizeDeps: {
+    exclude: ['@sqlite.org/sqlite-wasm', '@wllama/wllama', 'onnxruntime-web'],
+    include: ['@wexare/laya-web/worker', '@wexare/web > @wexare/catalog > fflate'],
+  },
   worker: { format: 'es' },
   build: { target: 'es2022', sourcemap: true, chunkSizeWarningLimit: 4096 },
 });
