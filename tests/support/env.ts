@@ -19,6 +19,8 @@ export const [RELAY_A, RELAY_B] = endpoints.relays;
 
 /** The built app served by `vite preview` (service worker enabled). */
 export const WEB = process.env.WEXARE_WEB_URL ?? 'http://localhost:4173';
+/** The plain-language app (apps/simple). */
+export const SIMPLE = process.env.WEXARE_SIMPLE_URL ?? 'http://localhost:4174';
 
 /** One directory per test run, shared by global setup and every worker. */
 export function runDir(): string {

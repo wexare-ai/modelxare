@@ -81,6 +81,40 @@ importers:
         specifier: 8.5.1
         version: 8.5.1(postcss@8.5.32)(tsx@4.23.15)(typescript@5.9.3)
 
+  apps/simple:
+    dependencies:
+      '@fontsource-variable/atkinson-hyperlegible-next':
+        specifier: 5.3.0
+        version: 5.3.0
+      '@wexare/orchestrator':
+        specifier: workspace:*
+        version: link:../../packages/orchestrator
+      '@wexare/protocol':
+        specifier: workspace:*
+        version: link:../../packages/protocol
+      '@wexare/web':
+        specifier: workspace:*
+        version: link:../web
+      react:
+        specifier: 19.3.1
+        version: 19.3.1
+      react-dom:
+        specifier: 19.3.1
+        version: 19.3.1(react@19.3.1)
+    devDependencies:
+      '@types/react':
+        specifier: 19.3.0
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: 19.3.0
+        version: 19.3.0(@types/react@19.3.0)
+      '@vitejs/plugin-react':
+        specifier: 5.2.0
+        version: 5.2.0(vite@7.3.7(@types/node@22.20.5)(lightningcss@1.33.0)(tsx@4.23.15))
+      vite:
+        specifier: 7.3.7
+        version: 7.3.7(@types/node@22.20.5)(lightningcss@1.33.0)(tsx@4.23.15)
+
   apps/web:
     dependencies:
       '@sqlite.org/sqlite-wasm':
@@ -623,6 +657,9 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@fontsource-variable/atkinson-hyperlegible-next@5.3.0':
+    resolution: {integrity: sha512-UnLzNUy1RWoLDfydAatP4NaRm99X/WbQEph7q/PymJnCFIOOwKOx3pBmp5ys8trO0dM+CKGuJgeZP9fAR4mQpA==}
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -2529,6 +2566,8 @@ snapshots:
 
   '@esbuild/win32-x64@0.28.2':
     optional: true
+
+  '@fontsource-variable/atkinson-hyperlegible-next@5.3.0': {}
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:

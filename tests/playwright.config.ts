@@ -1,12 +1,14 @@
 // Acceptance tests against real services: two strfry relays, two Kubo nodes and
 // the tracker (pnpm infra:up), demo data (pnpm demo:prepare), plus the artifacts
-// server and the built web app, which Playwright starts here.
+// server and the built web apps (the PoC and the simple app), which Playwright
+// starts here.
 //
 //   pnpm test:e2e     deterministic service/browser checks (tiny real model only)
 //   pnpm test:models  opt-in real-model runs (downloads ~0.9 GB into the browser)
 import { defineConfig } from '@playwright/test';
 
 const WEB = process.env.WEXARE_WEB_URL ?? 'http://localhost:4173';
+const SIMPLE = process.env.WEXARE_SIMPLE_URL ?? 'http://localhost:4174';
 
 export default defineConfig({
   testDir: '.',
@@ -29,6 +31,12 @@ export default defineConfig({
     {
       command: 'pnpm --dir .. --filter @wexare/web run build && pnpm --dir .. --filter @wexare/web exec vite preview --port 4173 --strictPort',
       url: WEB,
+      reuseExistingServer: !process.env.CI,
+      timeout: 240_000,
+    },
+    {
+      command: 'pnpm --dir .. --filter @wexare/simple run build && pnpm --dir .. --filter @wexare/simple exec vite preview --port 4174 --strictPort',
+      url: SIMPLE,
       reuseExistingServer: !process.env.CI,
       timeout: 240_000,
     },

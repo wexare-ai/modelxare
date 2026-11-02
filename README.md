@@ -36,7 +36,7 @@ for the data contract and [docs/acceptance.md](docs/acceptance.md) for what has 
 pnpm install
 pnpm infra:up          # relays A/B, Kubo A/B, tracker (docker compose; data volumes persist)
 pnpm demo:prepare      # keys, fixture download + verification, releases, IPFS pins, torrents, synthetic catalog
-pnpm dev               # web app :5173, indexer (operator A) :8791, artifacts mirror/seeder :8790
+pnpm dev               # web app :5173, simple app :5174, indexer (operator A) :8791, artifacts mirror/seeder :8790
 pnpm demo:publish      # in another terminal: publish to both relays, per-relay outcomes
 pnpm catalog:build     # freeze operator A's indexer into a signed, seeded snapshot
 ```
@@ -46,6 +46,12 @@ Open <http://localhost:5173>. Releases appear under **Discover → Live**. To im
 `.data/operators/a/archives/`), or look it up by event ID. To run the classification → summarization
 workflow, use **Playground**. [docs/demo-script.md](docs/demo-script.md) walks through the full
 demonstration, including relay failure, offline reload and a second operator.
+
+For people without a technical background, open <http://localhost:5174> instead. That app
+(`apps/simple`) lists models by what they do (Summarize, Sort, Write). Opening a model gives you a
+text box and one button. The first press downloads and checks the model, then it runs on the
+device. It uses the same engine as the PoC but hides keys, hashes, relays and storage. It is a
+separate site, so it keeps its own downloads.
 
 The first `demo:prepare` downloads 0.97 GB and signs 10,000 synthetic records, which takes about 90 s.
 Later runs reuse everything: unchanged manifests keep their signed events.
@@ -62,13 +68,13 @@ you published earlier are still there after a restart.
 | `pnpm install` | Install the pinned workspace dependencies |
 | `pnpm infra:up` / `pnpm infra:down` | Start, or stop, the docker services. `down` keeps volumes. |
 | `pnpm demo:prepare` | Generate demo keys, fetch and verify fixtures, and populate the mirror, IPFS (with replicas on Kubo B) and torrents |
-| `pnpm dev` | Web app, indexer and artifacts mirror/seeder, with live logs |
+| `pnpm dev` | Web app, simple app, indexer and artifacts mirror/seeder, with live logs |
 | `pnpm demo:publish` | Publish every fixture release (and the negative fixture) to both relays |
 | `pnpm catalog:build` | Build, sign, publish and seed a snapshot from operator A's indexer database |
 | `pnpm test` | Fast unit tests: protocol, catalog and golden queries, storage, runtime, orchestrator, collector |
 | `pnpm test:e2e` | Browser and service acceptance tests against the real services (see below) |
 | `pnpm test:models` | Opt-in real-model browser tests. They download about 0.9 GB into the browser. |
-| `pnpm build` | Static web build (`apps/web/dist`) and bundled operator programs (`apps/*/dist`) |
+| `pnpm build` | Static web builds (`apps/web/dist`, `apps/simple/dist`) and bundled operator programs (`apps/*/dist`) |
 | `pnpm demo:reset --force` | Delete the demo data under `.data/`. `--volumes` also deletes relay and IPFS data, and `--downloads` the fixture models. Without `--force` it only lists what it would delete. |
 | `pnpm cli <args>` | The publisher/builder CLI (`wexare --help`) |
 
@@ -97,6 +103,7 @@ you published earlier are still there after a restart.
 | `apps/indexer` | Persistent multi-relay collector with a read-only status endpoint |
 | `apps/artifacts` | Static HTTP mirror (range, CORS, immutable caching) and WebRTC torrent seeder |
 | `apps/web` | The browser app: Discover, Model library, Playground, Sources & diagnostics |
+| `apps/simple` | The plain-language app: find a model by task and use it, built on the `apps/web` engine |
 | `infra/` | Docker Compose for strfry ×2, Kubo ×2 and the WebSocket tracker, with images pinned by digest |
 | `fixtures/` | Pinned upstream model fixtures, release definitions, sample messages, the Arweave fixture |
 | `tests/` | Playwright acceptance (`e2e/`, `models/`), integration tests, the runtime compatibility spike |
@@ -112,6 +119,9 @@ none of them is required by the protocol.
   require-corp`; those headers enable multithreaded inference. Relays, gateways, trackers and
   trusted catalog builders are configured in **Sources & diagnostics** and can be exported or imported
   as public JSON.
+- **Simple app only:** run `pnpm --filter @wexare/simple build` and serve `apps/simple/dist` with the
+  same two headers. It has no settings screen: it uses the endpoints from
+  `infra/dev-endpoints.json`, which are built into the app.
 - **Publisher CLI only:** `pnpm cli keygen --out my.key.json`, then `pnpm cli release prepare --definition
   def.json --key my.key.json --out out/ --ipfs-api http://… --mirror-url https://…`, then
   `pnpm cli release publish --event out/event.json --relay wss://…`.
@@ -134,6 +144,7 @@ none of them is required by the protocol.
 | Artifacts mirror + seeder | 8790 |
 | Indexer operator A / B (status only) | 8791 / 8792 |
 | Web app (dev / preview) | 5173 / 4173 |
+| Simple app (dev / preview) | 5174 / 4174 |
 
 ## Data and keys
 

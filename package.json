@@ -16,7 +16,7 @@
     "demo:reset": "tsx --disable-warning=ExperimentalWarning apps/cli/src/main.ts demo reset",
     "catalog:build": "tsx --disable-warning=ExperimentalWarning apps/cli/src/main.ts archive build --publish",
     "cli": "tsx --disable-warning=ExperimentalWarning apps/cli/src/main.ts",
-    "dev": "pnpm --parallel --filter @wexare/web --filter @wexare/indexer --filter @wexare/artifacts run dev",
+    "dev": "pnpm --parallel --filter @wexare/web --filter @wexare/simple --filter @wexare/indexer --filter @wexare/artifacts run dev",
     "indexer:b": "pnpm --filter @wexare/indexer run dev:b",
     "build": "pnpm -r --filter './apps/*' run build",
     "typecheck": "pnpm -r run typecheck",
