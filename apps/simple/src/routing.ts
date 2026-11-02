@@ -6,7 +6,7 @@ import { LayaWorkerClient } from '@wexare/laya-web';
 import type { CandidateRelease } from '@wexare/orchestrator';
 import { REMOTE_OFF, layaBundle, pickRouter, remoteHelp, route, routerFiles, type RemoteSettings, type RunResult, type Step, type System1 } from '@wexare/router';
 import { capabilities, toCandidate } from '@wexare/web/src/lib/runtime.ts';
-import { artifacts, catalog, fetchFiles, live, opened, runTask, touch, useEvent, type Fetched } from './engine.ts';
+import { artifacts, catalog, fetchFiles, live, noSpaceText, opened, runTask, touch, useEvent, type Fetched } from './engine.ts';
 
 /** How each kind of step reads to a person. */
 export const STEP_WORDS: Record<string, { name: string; result: string; doing: string }> = {
@@ -141,9 +141,11 @@ export interface AskState {
   partial: string;
   result: RunResult | null;
   problem: 'no-router' | 'router-download' | 'no-space' | 'router-load' | null;
+  /** For 'no-space': the room the browser really had. */
+  room: number;
 }
 
-const IDLE: AskState = { phase: 'idle', activity: null, downloading: [], prompt: null, steps: [], partial: '', result: null, problem: null };
+const IDLE: AskState = { phase: 'idle', activity: null, downloading: [], prompt: null, steps: [], partial: '', result: null, problem: null, room: 0 };
 
 export function useAsk() {
   const [state, setState] = useState<AskState>(IDLE);
@@ -183,7 +185,8 @@ export function useAsk() {
     if (routerModel.missingBytes > 0) {
       const fetched = await download(routerModel.files, 'Downloading the router');
       if (stopped()) return setState(IDLE);
-      if (fetched !== 'ok') return setState({ ...IDLE, phase: 'failed', problem: fetched === 'no-space' ? 'no-space' : 'router-download' });
+      if (fetched.status === 'no-space') return setState({ ...IDLE, phase: 'failed', problem: 'no-space', room: fetched.room });
+      if (fetched.status !== 'ok') return setState({ ...IDLE, phase: 'failed', problem: 'router-download' });
       await routerModel.refresh();
     }
     setState((s) => ({ ...s, activity: 'Getting the router ready' }));
@@ -214,9 +217,11 @@ export function useAsk() {
       },
       // Models download as needed; the router's files stay while it is in use.
       async download(release) {
-        const fetched = await download(release.manifest.files, `Downloading ${plainName(release.name)}`, routerModel.files.map((f) => f.sha256));
-        if (fetched === 'no-space') throw new Error('There isn’t enough free space on this device for this model.');
-        return fetched === 'ok';
+        const files = release.manifest.files;
+        const bytes = files.filter((f) => !artifacts.isCached(f.sha256)).reduce((n, f) => n + f.size, 0);
+        const fetched = await download(files, `Downloading ${plainName(release.name)}`, routerModel.files.map((f) => f.sha256));
+        if (fetched.status === 'no-space') throw new Error(noSpaceText('this model', bytes, fetched.room));
+        return fetched.status === 'ok';
       },
       clarify: (options) => ask<string | null>({ kind: 'clarify', options: options.map((o) => ({ id: o.intent.id, probability: o.probability })) }),
       onUpdate: (steps) => {

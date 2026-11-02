@@ -57,11 +57,19 @@ separate site, so it keeps its own downloads. Its **What do you need?** box send
 the System 1 router; see [Routing with System 1](#routing-with-system-1).
 
 Models download when they are first needed, without a question. They stay saved until a new model
-needs room in the space for models (4 GB by default, changeable in **Settings**). Then the ones used
-longest ago are removed first, and they download again if needed later. The files of the model about
-to run, and the router's files during a request, are never removed. Nothing is removed while another
-tab holds storage, or for a download that wouldn't fit anyway. The rule is `planEviction` in
-`@wexare/storage`.
+needs room, and then the ones used longest ago are removed first. They download again if needed
+later. Room is made in two ways:
+
+- **Before a download**, so that saved models stay within the space for models (4 GB by default,
+  changeable in **Settings**) and within the space the browser says the site has left.
+- **When the browser refuses the bytes anyway.** Some browsers, and private windows, misreport their
+  space, so a download is always tried. If the browser runs out of space partway, the app takes how
+  much it stored before refusing as the real room, removes models used longest ago to match, and
+  retries once. Only then does it report that there isn't enough space, saying how much the browser
+  really allowed.
+
+The files of the model about to run, and the router's files during a request, are never removed.
+Nothing is removed while another tab holds storage. The rule is `planEviction` in `@wexare/storage`.
 
 The first `demo:prepare` downloads 1.87 GB and signs 10,000 synthetic records, which takes a few minutes.
 Later runs reuse everything: unchanged manifests keep their signed events.

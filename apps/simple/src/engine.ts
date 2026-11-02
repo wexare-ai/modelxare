@@ -10,7 +10,7 @@ import { ArtifactManager } from '@wexare/web/src/lib/artifacts.ts';
 import { loadSettings } from '@wexare/web/src/lib/settings.ts';
 import { choiceGrammar, runtime, toCandidate } from '@wexare/web/src/lib/runtime.ts';
 import type { InitResult } from '@wexare/web/src/workers/catalog-api.ts';
-import { buildModels, TOPICS, type Model, type TaskId } from './models.ts';
+import { buildModels, size, TOPICS, type Model, type TaskId } from './models.ts';
 
 const settings = loadSettings();
 export const { client: catalog, session } = createCatalogClient();
@@ -96,6 +96,8 @@ export interface RunState {
   partial: string;
   answer: Answer | null;
   problem: 'download' | 'space' | 'answer' | null;
+  /** For 'space': what was needed, and the room the browser really had. */
+  space?: { bytes: number; room: number };
 }
 
 const IDLE: RunState = { phase: 'idle', progress: 0, partial: '', answer: null, problem: null };
@@ -143,7 +145,7 @@ export function spaceLimit(): number {
 export async function setSpaceLimit(limit: number): Promise<void> {
   writeJson(LIMIT_KEY, { limit });
   spaceEvents.dispatchEvent(new Event('change'));
-  await makeRoom(0);
+  await makeRoom(0, new Set(), Infinity);
 }
 
 /** Bytes saved models take on this device. */
@@ -152,27 +154,39 @@ async function savedBytes(): Promise<number> {
   return files.filter((f) => artifacts.isCached(f.sha256)).reduce((n, f) => n + f.size, 0);
 }
 
+/** Space the browser says this site may still use; null when it won't say. */
+async function browserRoom(): Promise<number | null> {
+  try {
+    const { quota, usage } = await navigator.storage.estimate();
+    return typeof quota === 'number' && typeof usage === 'number' ? Math.max(0, quota - usage) : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Make room for `bytes` more by removing the models used least recently, never
- * the files in `keep`. False when the browser hasn't got the space even so.
+ * Remove the models used longest ago, never the files in `keep`, so that
+ * `bytes` more fit within the limit and within `room`, the space the browser
+ * has. When even removing every other model wouldn't make room by that count,
+ * only the limit is kept: the count may be wrong, so the download is tried
+ * anyway. Returns whether, by that count, it fits.
  */
-export async function makeRoom(bytes: number, keep: Iterable<string> = []): Promise<boolean> {
+async function makeRoom(bytes: number, keep: ReadonlySet<string>, room: number): Promise<boolean> {
   const init = await opened;
-  const estimate = await navigator.storage.estimate();
-  const free = (estimate.quota ?? 0) - (estimate.usage ?? 0);
   // Another tab holds storage, and its models may be in use there: remove nothing.
-  if (!init.persistent) return free >= bytes * 1.05;
+  if (!init.persistent) return room >= bytes;
   const used = readJson<Record<string, number>>(USED_KEY, {});
   const files = (await (await artifacts.getCache()).list())
     .filter((f) => artifacts.isCached(f.sha256))
     .map((f) => ({ sha256: f.sha256, size: f.size, lastUsed: used[f.sha256] ?? 0 }));
-  const plan = planEviction({ files, needed: bytes, limit: spaceLimit(), free, keep: new Set(keep) });
+  const byCount = planEviction({ files, needed: bytes, limit: spaceLimit(), free: room, keep });
+  const plan = byCount.ok ? byCount : planEviction({ files, needed: bytes, limit: spaceLimit(), free: Infinity, keep });
   for (const sha of plan.remove) await artifacts.remove(sha);
   // Forget files that are gone, so the record doesn't grow forever.
   const now = readJson<Record<string, number>>(USED_KEY, {});
   const onDisk = new Set(files.map((f) => f.sha256).filter((s) => !plan.remove.includes(s)));
   writeJson(USED_KEY, Object.fromEntries(Object.entries(now).filter(([s]) => onDisk.has(s) || artifacts.isPending(s))));
-  return plan.ok;
+  return byCount.ok;
 }
 
 /** Saved bytes and the limit, for Settings. */
@@ -193,25 +207,55 @@ export function useSpace(): { saved: number | null; limit: number } {
   return { saved, limit: spaceLimit() };
 }
 
-export type Fetched = 'ok' | 'no-space' | 'failed';
+/** 'no-space': the browser refused the bytes even after room was made; `room` is how much it took first. */
+export type Fetched = { status: 'ok' } | { status: 'failed' } | { status: 'no-space'; room: number };
+
+/** Plain words for a download that didn't fit, with the room the browser really had. */
+export function noSpaceText(what: string, bytes: number, room: number): string {
+  const left = room < 1e6 ? 'this browser won’t let weXare store any more' : `this browser lets weXare use only ${size(room)} more`;
+  return `There isn’t enough free space on this device for ${what} (${size(bytes)}): ${left}. Free up space on this device, then try again.`;
+}
 
 /**
- * Download (and verify) the files that are missing, after making room for
- * them. `keep` lists other files in use that must not be removed for room.
+ * When the browser refused to store these files (it was out of space), the
+ * most bytes it took before refusing: the room it really had. Null when
+ * nothing failed for lack of space.
  */
-export async function fetchFiles(
-  files: { sha256: string; size: number; path: string; locations: CandidateRelease['manifest']['files'][number]['locations'] }[],
-  keep: string[] = [],
-): Promise<Fetched> {
-  const needed = files.filter((f) => !artifacts.isCached(f.sha256));
-  if (needed.length) {
-    const bytes = needed.reduce((n, f) => n + f.size, 0);
-    if (!(await makeRoom(bytes, [...files.map((f) => f.sha256), ...keep]))) return 'no-space';
-    await artifacts.download(needed).catch(() => undefined);
+function refusedAfter(files: { sha256: string }[]): number | null {
+  let took: number | null = null;
+  for (const f of files) {
+    const d = artifacts.downloads.get(f.sha256);
+    if (d?.noSpace) took = Math.max(took ?? 0, d.bytes);
   }
-  if (!files.every((f) => artifacts.isCached(f.sha256))) return 'failed';
+  return took;
+}
+
+type DownloadFile = { sha256: string; size: number; path: string; locations: CandidateRelease['manifest']['files'][number]['locations'] };
+
+/**
+ * Download (and verify) the files that are missing, making room for them as
+ * needed: first by what the browser says it has; then, if it still refuses
+ * the bytes, by what it actually took, and once more. `keep` lists other
+ * files in use that must not be removed for room.
+ */
+export async function fetchFiles(files: DownloadFile[], keep: string[] = []): Promise<Fetched> {
+  const keepSet = new Set([...files.map((f) => f.sha256), ...keep]);
+  const missing = () => files.filter((f) => !artifacts.isCached(f.sha256));
+  const bytes = (list: DownloadFile[]) => list.reduce((n, f) => n + f.size, 0);
+  if (missing().length) {
+    await makeRoom(bytes(missing()), keepSet, (await browserRoom()) ?? Infinity);
+    await artifacts.download(missing()).catch(() => undefined);
+    const took = refusedAfter(missing());
+    if (took !== null && missing().length && (await makeRoom(bytes(missing()), keepSet, took))) {
+      await artifacts.download(missing()).catch(() => undefined);
+    }
+  }
+  if (missing().length) {
+    const room = refusedAfter(missing());
+    return room === null ? { status: 'failed' } : { status: 'no-space', room };
+  }
   touch(files.map((f) => f.sha256));
-  return 'ok';
+  return { status: 'ok' };
 }
 
 /** Run one task with a local model (a style add-on runs on its base). */
@@ -262,9 +306,11 @@ export function useRun(model: Model | undefined) {
       const ac = new AbortController();
       abort.current = ac;
       setState({ ...IDLE, phase: 'downloading' });
+      const bytes = model.files.filter((f) => !artifacts.isCached(f.sha256)).reduce((n, f) => n + f.size, 0);
       const fetched = await fetchFiles(model.files);
       if (ac.signal.aborted) return setState(IDLE);
-      if (fetched !== 'ok') return setState({ ...IDLE, phase: 'failed', problem: fetched === 'no-space' ? 'space' : 'download' });
+      if (fetched.status === 'no-space') return setState({ ...IDLE, phase: 'failed', problem: 'space', space: { bytes, room: fetched.room } });
+      if (fetched.status !== 'ok') return setState({ ...IDLE, phase: 'failed', problem: 'download' });
       setState({ ...IDLE, phase: 'preparing' });
       let out: Awaited<ReturnType<typeof runTask>>;
       try {

@@ -93,6 +93,8 @@ export async function downloadToCache(
       attempts.push(a);
       opts.onAttempt?.(a);
       if ((e as Error).name === 'AbortError' || opts.signal?.aborted) throw e;
+      // Out of space: every other source would fail the same way.
+      if ((e as Error).name === 'QuotaExceededError') throw e;
     }
   }
   const err = new Error(sources.length ? 'all sources failed' : 'no usable source for this file');

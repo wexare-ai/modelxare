@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Step } from '@wexare/router';
 import { size } from './models.ts';
+import { noSpaceText } from './engine.ts';
 import { STEP_WORDS, plainName, useAsk, useRouterModel, type Prompt } from './routing.ts';
 
 const pct = (p: number) => `${Math.round(p * 100)}%`;
@@ -65,7 +66,7 @@ export function Ask() {
               : ask.problem === 'router-download'
                 ? 'The router couldn’t be downloaded. Check your internet connection, then try again.'
                 : ask.problem === 'no-space'
-                  ? `There isn’t enough free space on this device for the router (${size(router.totalBytes)}). Free up some space, then try again.`
+                  ? noSpaceText('the router', router.totalBytes, ask.room)
                   : 'The router couldn’t start on this device. It needs about 3 GB of free memory: close other tabs, then try again.'}
           </p>
         </div>

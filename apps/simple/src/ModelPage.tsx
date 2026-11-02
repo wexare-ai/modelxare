@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { removeFromDevice, useModels, useRun } from './engine.ts';
+import { noSpaceText, removeFromDevice, useModels, useRun } from './engine.ts';
 import { TASKS, languageList, size, taskById, type TaskId } from './models.ts';
 
 const DOING: Record<TaskId, string> = {
@@ -128,8 +128,8 @@ export function ModelPage(p: { id: string; preferredTask: TaskId | null; back: (
           <p>
             {run.problem === 'download'
               ? 'The model couldn’t be downloaded. Check your internet connection, then try again.'
-              : run.problem === 'space'
-                ? 'There isn’t enough free space on this device for this model. Free up some space, then try again.'
+              : run.problem === 'space' && run.space
+                ? noSpaceText('this model', run.space.bytes, run.space.room)
                 : 'The model didn’t give a usable answer. Try again, or reword your text.'}
           </p>
           <button className="secondary" onClick={() => run.run(taskId, text.trim())} disabled={!text.trim()}>

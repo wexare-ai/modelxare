@@ -19,6 +19,8 @@ export interface FileDownloadState {
   peerBytes?: number;
   webSeedBytes?: number;
   error?: string;
+  /** The browser refused to store the file: it is out of space. `bytes` is how much it took first. */
+  noSpace?: boolean;
   attempts: AttemptReport[];
 }
 
@@ -157,6 +159,7 @@ export class ArtifactManager extends EventTarget {
         } catch (e) {
           st.status = ac.signal.aborted ? 'canceled' : 'failed';
           st.error = ac.signal.aborted ? 'canceled' : (e as Error).message;
+          if ((e as Error).name === 'QuotaExceededError') st.noSpace = true;
         } finally {
           this.controllers.delete(f.sha256);
           this.changed();
