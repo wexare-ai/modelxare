@@ -2,8 +2,10 @@
 // the newest tab takes the catalog over, a holder that never answers or storage
 // that stalls ends in a visible in-memory fallback, and "Reset local data"
 // recovers without touching browser settings.
-import { expect, test, type Page } from '@playwright/test';
-import { WEB } from '../support/env.ts';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+import { chromium, expect, test, type Page } from '@playwright/test';
+import { WEB, runDir } from '../support/env.ts';
 import { openApp } from '../support/app.ts';
 
 const catalogBadge = (page: Page) => page.getByText(/^catalog: /);
@@ -36,23 +38,20 @@ test('a holder that never lets go ends in an explained in-memory catalog', async
 });
 
 test('storage that stalls falls back to memory after the time limit instead of "opening…" forever', async () => {
-  const app = await openApp({ path: 'discover' });
-  // The service worker would answer from its cache; this test needs the catalog worker's own fetch.
-  await app.context.route(/\/sw\.js$/, (route) => route.abort());
-  await app.page.evaluate(async () => {
-    for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister();
-    for (const k of await caches.keys()) await caches.delete(k);
-  });
-  await app.page.close();
+  // A browser without service workers: a cached copy would bypass the stalled download.
+  const profile = mkdtempSync(join(runDir(), 'profile-'));
+  const context = await chromium.launchPersistentContext(profile, { headless: true, serviceWorkers: 'block' });
   // Never answer the first catalog worker's SQLite download: its open stalls.
   let stalled = false;
-  await app.context.route(/sqlite3[^/]*\.wasm/, (route) => (stalled || route.request().serviceWorker() ? route.continue() : void (stalled = true)));
-  const page = await app.context.newPage();
+  await context.route(/sqlite3[^/]*\.wasm/, (route) => (stalled ? route.continue() : void (stalled = true)));
+  const page = context.pages()[0] ?? (await context.newPage());
   await page.goto(`${WEB}/#/discover`);
   await expect(catalogBadge(page)).toHaveText('catalog: opening…');
   await expect(catalogBadge(page)).toHaveText('catalog: memory only', { timeout: 40_000 });
   await expect(page.getByTestId('memory-only')).toContainText('did not respond within 20 s');
-  await app.close();
+  expect(stalled).toBe(true);
+  await context.close();
+  rmSync(profile, { recursive: true, force: true });
 });
 
 test('Reset local data deletes the catalog and model cache, keeps settings, and reopens persistently', async () => {
