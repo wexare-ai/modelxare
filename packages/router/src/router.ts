@@ -77,8 +77,8 @@ export interface Hooks {
   runLocal(release: CandidateRelease, capability: string, input: string, language: string, signal?: AbortSignal): Promise<StepOutput>;
   /** Present only when the person allowed online help. */
   remote?: RemoteHelp | null;
-  /** Ask before downloading a model; false skips the step. */
-  confirmDownload(release: CandidateRelease, bytes: number): Promise<boolean>;
+  /** Ask before downloading a model; false skips the step. Without it, models download as needed. */
+  confirmDownload?(release: CandidateRelease, bytes: number): Promise<boolean>;
   /** Download and verify a model's files; false when that failed. */
   download(release: CandidateRelease): Promise<boolean>;
   /** System 1 was unsure about the first step: offer the likeliest; null stops. */
@@ -182,7 +182,7 @@ async function execute(step: Step, request: string, language: string, context: s
   }
   if (r.kind === 'remote') return { text: (await hooks.remote!.run(step.intent, request, context, hooks.signal)).trim() };
   if (r.downloadBytes > 0) {
-    if (!(await hooks.confirmDownload(r.release, r.downloadBytes))) {
+    if (hooks.confirmDownload && !(await hooks.confirmDownload(r.release, r.downloadBytes))) {
       step.status = 'declined';
       return undefined;
     }

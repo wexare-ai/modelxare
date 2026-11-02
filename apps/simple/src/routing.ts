@@ -6,7 +6,7 @@ import { LayaWorkerClient } from '@wexare/laya-web';
 import type { CandidateRelease } from '@wexare/orchestrator';
 import { REMOTE_OFF, layaBundle, pickRouter, remoteHelp, route, routerFiles, type RemoteSettings, type RunResult, type Step, type System1 } from '@wexare/router';
 import { capabilities, toCandidate } from '@wexare/web/src/lib/runtime.ts';
-import { artifacts, catalog, fetchFiles, live, opened, runTask, useEvent } from './engine.ts';
+import { artifacts, catalog, fetchFiles, live, opened, runTask, touch, useEvent, type Fetched } from './engine.ts';
 
 /** How each kind of step reads to a person. */
 export const STEP_WORDS: Record<string, { name: string; result: string; doing: string }> = {
@@ -49,7 +49,7 @@ export function useOnlineHelp(): RemoteSettings {
   return loadOnlineHelp();
 }
 
-/** The router model: found in the catalog, downloaded with consent, loaded once. */
+/** The router model: found in the catalog, downloaded the first time it's needed, loaded once. */
 class RouterModel extends EventTarget {
   release: CandidateRelease | null = null;
   status: 'unknown' | 'missing' | 'not-downloaded' | 'downloaded' | 'loading' | 'ready' = 'unknown';
@@ -82,6 +82,7 @@ class RouterModel extends EventTarget {
 
   /** Load the downloaded router: each file is re-checked against its hash first. */
   async load(): Promise<System1> {
+    touch(this.files.map((f) => f.sha256));
     if (this.client) return this.client;
     const release = this.release;
     const files = release && routerFiles(release.manifest);
@@ -125,16 +126,8 @@ export function useRouterModel(): RouterModel {
   return routerModel;
 }
 
-/** Chrome reports device memory (capped at 8 GB); the router needs about 3 GB free. */
-const lowMemory = () => {
-  const gb = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
-  return typeof gb === 'number' && gb < 8;
-};
-
-export type Prompt =
-  | { kind: 'router'; bytes: number; lowMemory: boolean }
-  | { kind: 'download'; model: string; bytes: number }
-  | { kind: 'clarify'; options: { id: string; probability: number }[] };
+/** The router was unsure about the first step: the person picks it. */
+export type Prompt = { kind: 'clarify'; options: { id: string; probability: number }[] };
 
 export interface AskState {
   phase: 'idle' | 'working' | 'done' | 'failed';
@@ -147,7 +140,7 @@ export interface AskState {
   /** Text of the step being written right now. */
   partial: string;
   result: RunResult | null;
-  problem: 'no-router' | 'router-download' | 'router-load' | null;
+  problem: 'no-router' | 'router-download' | 'no-space' | 'router-load' | null;
 }
 
 const IDLE: AskState = { phase: 'idle', activity: null, downloading: [], prompt: null, steps: [], partial: '', result: null, problem: null };
@@ -171,11 +164,11 @@ export function useAsk() {
     r?.(value);
   }, []);
 
-  const download = async (files: CandidateRelease['manifest']['files'], activity: string) => {
+  const download = async (files: CandidateRelease['manifest']['files'], activity: string, keep: string[] = []): Promise<Fetched> => {
     setState((s) => ({ ...s, activity, downloading: files.map((f) => ({ sha256: f.sha256, size: f.size })) }));
-    const ok = await fetchFiles(files);
+    const fetched = await fetchFiles(files, keep);
     setState((s) => ({ ...s, downloading: [] }));
-    return ok;
+    return fetched;
   };
 
   const go = useCallback(async (request: string) => {
@@ -188,8 +181,9 @@ export function useAsk() {
     if (stopped()) return;
     if (!routerModel.release) return setState({ ...IDLE, phase: 'failed', problem: 'no-router' });
     if (routerModel.missingBytes > 0) {
-      if (!(await ask<boolean>({ kind: 'router', bytes: routerModel.missingBytes, lowMemory: lowMemory() })) || stopped()) return setState(IDLE);
-      if (!(await download(routerModel.files, 'Downloading the router'))) return setState(stopped() ? IDLE : { ...IDLE, phase: 'failed', problem: 'router-download' });
+      const fetched = await download(routerModel.files, 'Downloading the router');
+      if (stopped()) return setState(IDLE);
+      if (fetched !== 'ok') return setState({ ...IDLE, phase: 'failed', problem: fetched === 'no-space' ? 'no-space' : 'router-download' });
       await routerModel.refresh();
     }
     setState((s) => ({ ...s, activity: 'Getting the router ready' }));
@@ -218,8 +212,12 @@ export function useAsk() {
         if (!out) throw new Error('The model didn’t give a usable answer.');
         return out;
       },
-      confirmDownload: (release, bytes) => ask<boolean>({ kind: 'download', model: plainName(release.name), bytes }),
-      download: (release) => download(release.manifest.files, `Downloading ${plainName(release.name)}`),
+      // Models download as needed; the router's files stay while it is in use.
+      async download(release) {
+        const fetched = await download(release.manifest.files, `Downloading ${plainName(release.name)}`, routerModel.files.map((f) => f.sha256));
+        if (fetched === 'no-space') throw new Error('There isn’t enough free space on this device for this model.');
+        return fetched === 'ok';
+      },
       clarify: (options) => ask<string | null>({ kind: 'clarify', options: options.map((o) => ({ id: o.intent.id, probability: o.probability })) }),
       onUpdate: (steps) => {
         const running = steps.at(-1)?.status === 'running' ? steps.at(-1) : undefined;

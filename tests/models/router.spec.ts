@@ -10,7 +10,7 @@ import { SIMPLE, evidence, runDir } from '../support/env.ts';
 
 test.skip(process.env.WEXARE_TEST_LAYA !== '1', 'set WEXARE_TEST_LAYA=1 on a machine with about 5 GB of free memory');
 
-/** Answer each prompt as it comes (downloads: yes; unsure: the first option) until the run ends. */
+/** Models download without a question; when the router is unsure, pick the first option. */
 async function askAndFollow(page: Page, request: string): Promise<void> {
   await page.getByTestId('ask-input').fill(request);
   await page.getByTestId('ask-go').click();
@@ -19,19 +19,12 @@ async function askAndFollow(page: Page, request: string): Promise<void> {
   // Whichever shows up first; the waits that lose the race are ignored.
   const shows = <T extends string>(id: string, value: T) => page.getByTestId(id).waitFor({ timeout: 1_800_000 }).then(() => value, () => 'timeout' as const);
   for (;;) {
-    const next = await Promise.race([
-      shows('decisions', 'done'),
-      shows('router-consent', 'router'),
-      shows('model-consent', 'model'),
-      shows('clarify', 'clarify'),
-      shows('ask-problem', 'problem'),
-    ]);
+    const next = await Promise.race([shows('decisions', 'done'), shows('clarify', 'clarify'), shows('ask-problem', 'problem')]);
     if (next === 'done') return;
     if (next === 'timeout') throw new Error('the Ask run did not finish in 30 minutes');
     if (next === 'problem') throw new Error(await page.getByTestId('ask-problem').innerText());
-    const id = next === 'clarify' ? 'clarify' : next === 'router' ? 'router-consent' : 'model-consent';
-    const prompt = page.getByTestId(id);
-    await (next === 'clarify' ? prompt.getByRole('button').first() : prompt.getByRole('button', { name: 'Download and continue' })).click();
+    const prompt = page.getByTestId('clarify');
+    await prompt.getByRole('button').first().click();
     await expect(prompt).toHaveCount(0);
   }
 }

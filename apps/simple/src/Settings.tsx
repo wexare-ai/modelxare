@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { PROVIDERS, remoteProblem, type ProviderId, type RemoteSettings } from '@wexare/router';
+import { SPACE_LIMITS, setSpaceLimit, useSpace } from './engine.ts';
 import { size } from './models.ts';
 import { loadOnlineHelp, saveOnlineHelp, useRouterModel } from './routing.ts';
 
@@ -13,6 +14,8 @@ export function Settings({ back }: { back: () => void }) {
   const [form, setForm] = useState<RemoteSettings>(loadOnlineHelp);
   const [saved, setSaved] = useState(false);
   const router = useRouterModel();
+  const space = useSpace();
+  const limits = SPACE_LIMITS.includes(space.limit) ? SPACE_LIMITS : [...SPACE_LIMITS, space.limit].sort((a, b) => a - b);
   const set = (patch: Partial<RemoteSettings>) => {
     setSaved(false);
     setForm((f) => ({ ...f, ...patch }));
@@ -119,6 +122,27 @@ export function Settings({ back }: { back: () => void }) {
             Remove from this device
           </button>
         )}
+      </section>
+
+      <section className="settings" aria-labelledby="space-title">
+        <h2 id="space-title">Space</h2>
+        <p>
+          Models are saved on this device, so they start faster and work offline. When a new model needs room, the ones you haven’t used for the longest are removed.
+          They download again if you need them.
+        </p>
+        <label>
+          Space for models
+          <select value={space.limit} onChange={(e) => void setSpaceLimit(Number(e.target.value))} data-testid="space-limit">
+            {limits.map((l) => (
+              <option key={l} value={l}>
+                {l % 1e9 === 0 ? `${l / 1e9} GB` : size(l)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <p className="hint" data-testid="space-status">
+          {space.saved === null ? '' : space.saved === 0 ? 'No models saved yet.' : `Saved models take ${size(space.saved)}.`}
+        </p>
       </section>
     </>
   );

@@ -64,7 +64,9 @@ export function Ask() {
               ? 'The router isn’t available yet, so requests can’t be worked out automatically. Pick a model below instead.'
               : ask.problem === 'router-download'
                 ? 'The router couldn’t be downloaded. Check your internet connection, then try again.'
-                : 'The router couldn’t start on this device. It needs about 3 GB of free memory: close other tabs, then try again.'}
+                : ask.problem === 'no-space'
+                  ? `There isn’t enough free space on this device for the router (${size(router.totalBytes)}). Free up some space, then try again.`
+                  : 'The router couldn’t start on this device. It needs about 3 GB of free memory: close other tabs, then try again.'}
           </p>
         </div>
       )}
@@ -108,38 +110,17 @@ export function Ask() {
 }
 
 function PromptCard({ prompt, respond }: { prompt: Prompt; respond: (v: unknown) => void }) {
-  if (prompt.kind === 'clarify') {
-    return (
-      <div className="note prompt" role="dialog" aria-label="What do you need?" data-testid="clarify">
-        <p>Which of these do you need?</p>
-        <div className="choices">
-          {prompt.options.map((o) => (
-            <button key={o.id} className="secondary" onClick={() => respond(o.id)}>
-              {words(o.id).name}
-            </button>
-          ))}
-          <button className="link" onClick={() => respond(null)}>
-            Cancel
-          </button>
-        </div>
-      </div>
-    );
-  }
-  const router = prompt.kind === 'router';
   return (
-    <div className="note prompt" role="dialog" aria-label="Download needed" data-testid={router ? 'router-consent' : 'model-consent'}>
-      <p>
-        {router
-          ? `To work out what you need, weXare uses a router model that runs on this device. It’s a one-time ${size(prompt.bytes)} download.`
-          : `This step needs ${prompt.model}, a one-time ${size(prompt.bytes)} download. It stays on this device.`}
-        {router && prompt.lowMemory && ' This device may not have enough memory for it: the router needs about 3 GB.'}
-      </p>
+    <div className="note prompt" role="dialog" aria-label="What do you need?" data-testid="clarify">
+      <p>Which of these do you need?</p>
       <div className="choices">
-        <button className="primary" onClick={() => respond(true)}>
-          Download and continue
-        </button>
-        <button className="secondary" onClick={() => respond(false)}>
-          {router ? 'Cancel' : 'Skip this step'}
+        {prompt.options.map((o) => (
+          <button key={o.id} className="secondary" onClick={() => respond(o.id)}>
+            {words(o.id).name}
+          </button>
+        ))}
+        <button className="link" onClick={() => respond(null)}>
+          Cancel
         </button>
       </div>
     </div>
@@ -162,7 +143,6 @@ function StepCard({ step, partial }: { step: Step; partial: string }) {
       {step.status === 'running' && <p className="pending-text">{partial || `${w.doing}…`}</p>}
       {step.status === 'done' && (step.output?.topic ? <p className="topic">{step.output.topic}</p> : <p>{step.output?.text}</p>)}
       {step.status === 'failed' && <p className="failed">{step.error}</p>}
-      {step.status === 'declined' && <p className="muted">Skipped: the model wasn’t downloaded.</p>}
       <p className="byline">{by}</p>
       {step.status === 'done' && value && (
         <button

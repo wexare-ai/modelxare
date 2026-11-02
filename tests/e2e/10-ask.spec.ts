@@ -12,29 +12,47 @@ const routerFiles = () => {
   return manifest.files.map((f) => f.sha256);
 };
 
-async function simpleApp() {
+/**
+ * The app in a fresh browser. With `holdDownloads`, requests to other hosts
+ * (the mirror, IPFS gateways) wait until the test ends, and the router's
+ * worker is blocked: the router is never downloaded or started here.
+ */
+async function simpleApp(opts: { holdDownloads?: boolean } = {}) {
   const profile = mkdtempSync(join(runDir(), 'profile-ask-'));
-  const context = await chromium.launchPersistentContext(profile, { headless: true });
+  const context = await chromium.launchPersistentContext(profile, { headless: true, ...(opts.holdDownloads ? { serviceWorkers: 'block' as const } : {}) });
+  const held: string[] = [];
+  if (opts.holdDownloads) {
+    await context.route('**/*', (route) => {
+      const url = route.request().url();
+      if (/laya\.worker/.test(url)) return route.abort();
+      if (url.startsWith(SIMPLE)) return route.continue();
+      held.push(url); // never answered
+    });
+  }
   const page = context.pages()[0] ?? (await context.newPage());
   const urls: string[] = [];
   context.on('request', (r) => urls.push(r.url()));
   await page.goto(`${SIMPLE}/`);
-  return { page, urls, close: async () => (await context.close(), rmSync(profile, { recursive: true, force: true })) };
+  return { page, urls, held, close: async () => (await context.close(), rmSync(profile, { recursive: true, force: true })) };
 }
 
-test('Ask: the router download is asked for first, and nothing downloads when the person cancels', async () => {
-  const app = await simpleApp();
+test('Ask: the router downloads without a question, and Stop cancels it with nothing saved', async () => {
+  const app = await simpleApp({ holdDownloads: true });
   const { page } = app;
   await expect(page.locator('.ask-box .hint')).toContainText('downloads a 904 MB router', { timeout: 30_000 });
   await page.getByTestId('ask-input').fill('Sort this message and summarize it: there is a water leak near the entrance.');
   await page.getByTestId('ask-go').click();
-  const consent = page.getByTestId('router-consent');
-  await expect(consent).toContainText('one-time 904 MB download');
-  await consent.getByRole('button', { name: 'Cancel' }).click();
-  await expect(consent).toHaveCount(0);
-  await expect(page.getByTestId('ask-go')).toBeEnabled();
+  await expect(page.locator('.ask-box .progress')).toContainText('Downloading the router');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   const hashes = routerFiles();
-  expect(app.urls.filter((u) => hashes.some((h) => u.includes(h)))).toEqual([]);
+  await expect.poll(() => app.held.filter((u) => hashes.some((h) => u.includes(h))).length).toBeGreaterThan(0);
+
+  await page.getByRole('button', { name: 'Stop' }).click();
+  await expect(page.getByTestId('ask-go')).toBeEnabled();
+  await expect(page.locator('.ask-box .hint')).toContainText('downloads a 904 MB router');
+  await page.getByRole('link', { name: 'Settings' }).click();
+  await expect(page.getByTestId('router-status')).toContainText('Not downloaded (904 MB)');
+  await expect(page.getByTestId('space-status')).toHaveText('No models saved yet.');
   await app.close();
 });
 

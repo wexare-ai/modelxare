@@ -17,6 +17,7 @@
     "@wexare/orchestrator": "workspace:*",
     "@wexare/protocol": "workspace:*",
     "@wexare/router": "workspace:*",
+    "@wexare/storage": "workspace:*",
     "@wexare/web": "workspace:*",
     "onnxruntime-web": "1.30.0",
     "react": "19.3.1",

@@ -79,3 +79,5 @@ export const formatBytes = (n: number): string => {
   }
   return `${v.toFixed(v < 10 ? 2 : 1)} ${units[i]}`;
 };
+
+export * from './eviction.ts';

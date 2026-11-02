@@ -189,6 +189,26 @@ describe('routing loop', () => {
     expect([ok.calls.confirm, ok.calls.download, ok.calls.local.length]).toEqual([1, 1, 1]);
   });
 
+  it('downloads without asking when the host has no confirmation step', async () => {
+    const { h, calls } = hooks({ candidates: [summarizer] });
+    delete h.confirmDownload;
+    const r = await route('Summarize: the lift is broken.', scripted(['summarize', 0.9]).system1, h);
+    expect(r.steps[0]!.status).toBe('done');
+    expect([calls.confirm, calls.download, calls.local.length]).toEqual([0, 1, 1]);
+  });
+
+  it('reports why a download failed in the step', async () => {
+    const { h } = hooks({
+      candidates: [summarizer],
+      download: async () => {
+        throw new Error('There isn’t enough free space on this device for this model.');
+      },
+    });
+    delete h.confirmDownload;
+    const r = await route('Summarize: the lift is broken.', scripted(['summarize', 0.9]).system1, h);
+    expect(r.steps[0]).toMatchObject({ status: 'failed', error: 'There isn’t enough free space on this device for this model.' });
+  });
+
   it('picks a local model that declares the request language', async () => {
     const { system1 } = scripted(['summarize', 0.9], [DONE, 0.9]);
     const { h, calls } = hooks({ candidates: [summarizer, assistant], cached: ready(summarizer, assistant) });

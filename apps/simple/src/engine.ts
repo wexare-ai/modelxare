@@ -3,6 +3,7 @@
 // inference. The screens only see models, tasks and answers.
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { detectLanguage, runSingle, type CandidateRelease, type StageTrace } from '@wexare/orchestrator';
+import { planEviction } from '@wexare/storage';
 import { createCatalogClient } from '@wexare/web/src/lib/catalog-client.ts';
 import { LiveDiscovery } from '@wexare/web/src/lib/live.ts';
 import { ArtifactManager } from '@wexare/web/src/lib/artifacts.ts';
@@ -94,16 +95,123 @@ export interface RunState {
   /** Text as it is being written. */
   partial: string;
   answer: Answer | null;
-  problem: 'download' | 'answer' | null;
+  problem: 'download' | 'space' | 'answer' | null;
 }
 
 const IDLE: RunState = { phase: 'idle', progress: 0, partial: '', answer: null, problem: null };
 
-/** Download (and verify) files that are missing; true when all of them are here. */
-export async function fetchFiles(files: { sha256: string; size: number; path: string; locations: CandidateRelease['manifest']['files'][number]['locations'] }[]): Promise<boolean> {
+// Space. Saved models stay until a new one needs room; then the ones used
+// least recently are removed first. When each file was last used, and the
+// limit, are kept in this browser only.
+const USED_KEY = 'wexare.simple.last-used.v1';
+const LIMIT_KEY = 'wexare.simple.space.v1';
+export const SPACE_LIMITS = [2e9, 4e9, 8e9, 16e9];
+const DEFAULT_LIMIT = 4e9;
+const spaceEvents = new EventTarget();
+
+function readJson<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeJson(key: string, value: unknown): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // storage unavailable: files with no recorded use are removed first
+  }
+}
+
+/** Record that these files were just used (one model's files share the moment). */
+export function touch(shas: Iterable<string>): void {
+  const used = readJson<Record<string, number>>(USED_KEY, {});
+  const now = Date.now();
+  for (const s of shas) used[s] = now;
+  writeJson(USED_KEY, used);
+}
+
+export function spaceLimit(): number {
+  const limit = readJson<{ limit?: unknown }>(LIMIT_KEY, {}).limit;
+  return typeof limit === 'number' && limit > 0 ? limit : DEFAULT_LIMIT;
+}
+
+/** Change the limit, and trim saved models down to it right away. */
+export async function setSpaceLimit(limit: number): Promise<void> {
+  writeJson(LIMIT_KEY, { limit });
+  spaceEvents.dispatchEvent(new Event('change'));
+  await makeRoom(0);
+}
+
+/** Bytes saved models take on this device. */
+async function savedBytes(): Promise<number> {
+  const files = await (await artifacts.getCache()).list();
+  return files.filter((f) => artifacts.isCached(f.sha256)).reduce((n, f) => n + f.size, 0);
+}
+
+/**
+ * Make room for `bytes` more by removing the models used least recently, never
+ * the files in `keep`. False when the browser hasn't got the space even so.
+ */
+export async function makeRoom(bytes: number, keep: Iterable<string> = []): Promise<boolean> {
+  const init = await opened;
+  const estimate = await navigator.storage.estimate();
+  const free = (estimate.quota ?? 0) - (estimate.usage ?? 0);
+  // Another tab holds storage, and its models may be in use there: remove nothing.
+  if (!init.persistent) return free >= bytes * 1.05;
+  const used = readJson<Record<string, number>>(USED_KEY, {});
+  const files = (await (await artifacts.getCache()).list())
+    .filter((f) => artifacts.isCached(f.sha256))
+    .map((f) => ({ sha256: f.sha256, size: f.size, lastUsed: used[f.sha256] ?? 0 }));
+  const plan = planEviction({ files, needed: bytes, limit: spaceLimit(), free, keep: new Set(keep) });
+  for (const sha of plan.remove) await artifacts.remove(sha);
+  // Forget files that are gone, so the record doesn't grow forever.
+  const now = readJson<Record<string, number>>(USED_KEY, {});
+  const onDisk = new Set(files.map((f) => f.sha256).filter((s) => !plan.remove.includes(s)));
+  writeJson(USED_KEY, Object.fromEntries(Object.entries(now).filter(([s]) => onDisk.has(s) || artifacts.isPending(s))));
+  return plan.ok;
+}
+
+/** Saved bytes and the limit, for Settings. */
+export function useSpace(): { saved: number | null; limit: number } {
+  const files = useEvent(artifacts);
+  const changes = useEvent(spaceEvents);
+  const [saved, setSaved] = useState<number | null>(null);
+  useEffect(() => {
+    let current = true;
+    void opened
+      .then(savedBytes)
+      .then((n) => current && setSaved(n))
+      .catch(() => undefined);
+    return () => {
+      current = false;
+    };
+  }, [files, changes]);
+  return { saved, limit: spaceLimit() };
+}
+
+export type Fetched = 'ok' | 'no-space' | 'failed';
+
+/**
+ * Download (and verify) the files that are missing, after making room for
+ * them. `keep` lists other files in use that must not be removed for room.
+ */
+export async function fetchFiles(
+  files: { sha256: string; size: number; path: string; locations: CandidateRelease['manifest']['files'][number]['locations'] }[],
+  keep: string[] = [],
+): Promise<Fetched> {
   const needed = files.filter((f) => !artifacts.isCached(f.sha256));
-  if (needed.length) await artifacts.download(needed).catch(() => undefined);
-  return files.every((f) => artifacts.isCached(f.sha256));
+  if (needed.length) {
+    const bytes = needed.reduce((n, f) => n + f.size, 0);
+    if (!(await makeRoom(bytes, [...files.map((f) => f.sha256), ...keep]))) return 'no-space';
+    await artifacts.download(needed).catch(() => undefined);
+  }
+  if (!files.every((f) => artifacts.isCached(f.sha256))) return 'failed';
+  touch(files.map((f) => f.sha256));
+  return 'ok';
 }
 
 /** Run one task with a local model (a style add-on runs on its base). */
@@ -121,6 +229,7 @@ export async function runTask(
     onUpdate: ([t]: StageTrace[]) => void (t?.state === 'generating' && on.working?.()),
     onToken: (_stage: string, text: string) => on.partial?.(text),
   };
+  touch([...(base?.manifest.files ?? []), ...release.manifest.files].map((f) => f.sha256));
   const opts = { ...(on.signal ? { signal: on.signal } : {}), language: detectLanguage(input) };
   const trace = base
     ? await runSingle(base, task, input, deps, { ...opts, adapters: [{ candidate: release, scale: 1 }], base })
@@ -153,9 +262,9 @@ export function useRun(model: Model | undefined) {
       const ac = new AbortController();
       abort.current = ac;
       setState({ ...IDLE, phase: 'downloading' });
-      const here = await fetchFiles(model.files);
+      const fetched = await fetchFiles(model.files);
       if (ac.signal.aborted) return setState(IDLE);
-      if (!here) return setState({ ...IDLE, phase: 'failed', problem: 'download' });
+      if (fetched !== 'ok') return setState({ ...IDLE, phase: 'failed', problem: fetched === 'no-space' ? 'space' : 'download' });
       setState({ ...IDLE, phase: 'preparing' });
       let out: Awaited<ReturnType<typeof runTask>>;
       try {

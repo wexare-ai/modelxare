@@ -56,6 +56,13 @@ device. It uses the same engine as the PoC but hides keys, hashes, relays and st
 separate site, so it keeps its own downloads. Its **What do you need?** box sends a request through
 the System 1 router; see [Routing with System 1](#routing-with-system-1).
 
+Models download when they are first needed, without a question. They stay saved until a new model
+needs room in the space for models (4 GB by default, changeable in **Settings**). Then the ones used
+longest ago are removed first, and they download again if needed later. The files of the model about
+to run, and the router's files during a request, are never removed. Nothing is removed while another
+tab holds storage, or for a download that wouldn't fit anyway. The rule is `planEviction` in
+`@wexare/storage`.
+
 The first `demo:prepare` downloads 1.87 GB and signs 10,000 synthetic records, which takes a few minutes.
 Later runs reuse everything: unchanged manifests keep their signed events.
 
@@ -83,7 +90,8 @@ summarize it: …" goes through a loop:
 The router is a catalog release like any model: `fixtures/releases/laya-router.json` publishes the
 ONNX export of Laya (`wexare/laya-onnx`, pinned revision) with `runtime.family: "laya"` and the
 `intent-routing` capability. Its four files (weights, tokenizer, tokenizer config, calibration) are
-downloaded with consent, verified, and checked again before loading, like every model file. Clients
+downloaded the first time a request needs them, verified, and checked again before loading, like
+every model file. Clients
 that don't bundle `@wexare/laya-web`, such as the PoC app, list it as unsupported.
 
 **Online help** (Settings) takes any OpenAI-compatible service: OpenRouter, OpenAI, or a custom

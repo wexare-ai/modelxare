@@ -93,7 +93,7 @@ export function ModelPage(p: { id: string; preferredTask: TaskId | null; back: (
             <button className="primary" disabled={!text.trim()} onClick={() => run.run(taskId, text.trim())} data-testid="run">
               {task.action}
             </button>
-            {run.missingBytes > 0 && <span className="hint">The first time, this downloads {size(run.missingBytes)}. It stays on this device.</span>}
+            {run.missingBytes > 0 && <span className="hint">The first time, this downloads {size(run.missingBytes)}.</span>}
           </>
         )}
       </div>
@@ -128,7 +128,9 @@ export function ModelPage(p: { id: string; preferredTask: TaskId | null; back: (
           <p>
             {run.problem === 'download'
               ? 'The model couldn’t be downloaded. Check your internet connection, then try again.'
-              : 'The model didn’t give a usable answer. Try again, or reword your text.'}
+              : run.problem === 'space'
+                ? 'There isn’t enough free space on this device for this model. Free up some space, then try again.'
+                : 'The model didn’t give a usable answer. Try again, or reword your text.'}
           </p>
           <button className="secondary" onClick={() => run.run(taskId, text.trim())} disabled={!text.trim()}>
             Try again

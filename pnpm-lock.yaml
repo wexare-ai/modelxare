@@ -101,6 +101,9 @@ importers:
       '@wexare/router':
         specifier: workspace:*
         version: link:../../packages/router
+      '@wexare/storage':
+        specifier: workspace:*
+        version: link:../../packages/storage
       '@wexare/web':
         specifier: workspace:*
         version: link:../web
