@@ -1,24 +1,23 @@
-// The routing plan. In one forward pass, System 1 judges every kind of step
-// on its own (does the request ask for this?) and picks the main one. Every
-// step the request asks for runs, so "sort and summarize" gets both. Each step
-// goes to a local mini-model when one can do it, to an online model only when
-// the person allowed that, and otherwise is reported as unavailable. When
-// nothing is clear, the person picks.
+// The routing plan. A request usually starts with an instruction
+// ("Categorize and summarize this message: …"). System 1 reads each task the
+// instruction names on its own, so "sort and summarize" gets both steps and
+// the message itself can't sway the choice. A request without an instruction
+// is read whole. Each step goes to a local mini-model when one can do it, to an
+// online model only when the person allowed that, and otherwise is reported as
+// unavailable. When nothing is clear, the person picks.
 import { detectLanguage, selectRelease, type CandidateRelease } from '@wexare/orchestrator';
 import { INTENTS, type Intent } from './intents.ts';
-import type { ChoiceAnswer, NoulAnswer, Question, System1 } from './system-one.ts';
+import type { ChoiceAnswer, Question, System1 } from './system-one.ts';
 
 export interface RouterOptions {
   /** Most steps one request may take. */
   maxSteps?: number;
-  /** A step runs when the request asks for it with at least this probability. */
-  askedAbove?: number;
-  /** The main-task choice counts at or above this probability; when nothing counts, the person picks. */
-  confirmBelow?: number;
+  /** System 1 is sure of a step at or above this probability; when it is sure of none, the person picks. */
+  sureAbove?: number;
   intents?: Intent[];
 }
 
-const DEFAULTS = { maxSteps: 3, askedAbove: 0.5, confirmBelow: 0.5 };
+const DEFAULTS = { maxSteps: 3, sureAbove: 0.5 };
 
 export interface StepOutput {
   /** Summary, continued text, translation, answer. */
@@ -34,10 +33,11 @@ export type Route =
 
 /** Why a step is in the plan. */
 export interface Decision {
-  /** How likely System 1 thinks the request asks for this step. */
+  /** How sure System 1 is that this is what was asked. */
   probability: number;
-  /** 'asked': its yes/no question; 'main': the main-task choice; 'person': picked when System 1 was unsure. */
-  by: 'asked' | 'main' | 'person';
+  /** 'instruction': one part of the instruction, quoted in `text`; 'request': the whole request; 'person': picked when System 1 was unsure. */
+  by: 'instruction' | 'request' | 'person';
+  text?: string;
 }
 
 export interface Step {
@@ -50,12 +50,19 @@ export interface Step {
   ms?: number;
 }
 
+/** One text System 1 read, and what it thinks the person wants done. */
+export interface Reading {
+  /** A part of the instruction ("Categorize"), or the whole request. */
+  text: string;
+  choice: string;
+  probability: number;
+  probabilities: Record<string, number>;
+}
+
 /** What System 1 answered, kept for "how this was decided" and for tuning. */
 export interface Judgement {
-  /** P(the request asks for it), per intent. */
-  asked: Record<string, number>;
-  /** The main task, as one choice among the intents. */
-  main: { choice: string; probability: number; probabilities: Record<string, number>; confidence: number };
+  /** The instruction's parts in order, then the whole request when it was read too. */
+  readings: Reading[];
   latencyMs: number;
   device?: string;
 }
@@ -64,6 +71,10 @@ export type Ending = 'done' | 'step-limit' | 'unsure' | 'canceled';
 
 export interface RunResult {
   request: string;
+  /** The instruction at the start of the request, when it has one. */
+  instruction: string | null;
+  /** What local models work on: the request without its instruction. */
+  message: string;
   language: string;
   judgement: Judgement | null;
   steps: Step[];
@@ -112,83 +123,125 @@ export function describe(step: Step): string {
   return `${step.intent.id}: ${what}`;
 }
 
-const MAIN = 'main';
-const askKey = (intent: Intent) => `asks_${intent.id}`;
+/** Longest instruction looked for at the start of a request. */
+const INSTRUCTION_MAX = 120;
+/** Most parts of an instruction read; each is one short System 1 pass. */
+const MAX_PARTS = 6;
 
-/** The questions for one forward pass: a yes/no per intent, and the main task. */
-export function questionsFor(intents: Intent[]): Record<string, Question> {
-  const asks = intents.map((x): [string, Question] => [askKey(x), { type: 'noul', instructions: x.asks, criteria: { true: 'yes, it asks for this', false: 'no' } }]);
+/**
+ * Splits "Categorize and summarize this message: There is a leak." into its
+ * instruction and its message. The instruction ends at a colon near the start
+ * ("Translate into French: …"), or with a first sentence that is a question
+ * followed by more text ("Can you sort this? There is a leak."). Without
+ * either, there is no instruction and the message is the whole request.
+ */
+export function splitRequest(request: string): { instruction: string | null; message: string } {
+  const text = request.trim();
+  const colon = text.search(/:(\s|$)/);
+  if (colon > 0 && colon <= INSTRUCTION_MAX) return { instruction: text.slice(0, colon).trim(), message: text.slice(colon + 1).trim() || text };
+  const question = text.indexOf('?') + 1;
+  if (question > 1 && question <= INSTRUCTION_MAX && text.slice(question).trim()) return { instruction: text.slice(0, question).trim(), message: text.slice(question).trim() };
+  return { instruction: null, message: text };
+}
+
+/** The tasks an instruction names: "Categorize, summarize and then reply" has three. */
+export function partsOf(instruction: string): string[] {
+  return instruction
+    .split(/\s*(?:[,;&+]|\b(?:and then|then|and also|also|and)\b)\s*/i)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .slice(0, MAX_PARTS);
+}
+
+/** The one question System 1 answers about each text. */
+export function mainQuestion(intents: Intent[]): Question {
   return {
-    [MAIN]: {
-      type: 'choice',
-      instructions: 'What does the person mainly want done with `request`?',
-      criteria: Object.fromEntries(intents.map((x) => [x.id, x.criterion])),
-    },
-    ...Object.fromEntries(asks),
+    type: 'choice',
+    instructions: 'What does the person mainly want done with `request`?',
+    criteria: Object.fromEntries(intents.map((x) => [x.id, x.criterion])),
   };
 }
 
 export async function route(request: string, system1: System1, hooks: Hooks, options: RouterOptions = {}): Promise<RunResult> {
   const opts = { ...DEFAULTS, ...options };
   const intents = opts.intents ?? INTENTS;
-  const language = detectLanguage(request);
-  const finish = (judgement: Judgement | null, steps: Step[], ended: Ending): RunResult => ({ request, language, judgement, steps, ended });
-  if (hooks.signal?.aborted) return finish(null, [], 'canceled');
+  const { instruction, message } = splitRequest(request);
+  const language = detectLanguage(message);
+  const readings: Reading[] = [];
+  let latencyMs = 0;
+  let device: string | undefined;
+  const judgement = (): Judgement | null => (readings.length ? { readings: [...readings], latencyMs, ...(device ? { device } : {}) } : null);
+  const finish = (steps: Step[], ended: Ending): RunResult => ({ request, instruction, message, language, judgement: judgement(), steps, ended });
 
-  const result = await system1.predict({ request }, questionsFor(intents));
-  const main = result.answers[MAIN] as ChoiceAnswer;
-  const judgement: Judgement = {
-    asked: Object.fromEntries(intents.map((x) => [x.id, (result.answers[askKey(x)] as NoulAnswer | undefined)?.noul ?? 0])),
-    main: { choice: main.choice, probability: main.probabilities[main.choice] ?? 0, probabilities: main.probabilities, confidence: main.confidence },
-    latencyMs: result.latency_ms,
-    ...(result.device ? { device: result.device } : {}),
+  const questions = { main: mainQuestion(intents) };
+  const read = async (text: string): Promise<Reading> => {
+    const result = await system1.predict({ request: text }, questions);
+    const a = result.answers.main as ChoiceAnswer;
+    latencyMs += result.latency_ms;
+    device ??= result.device;
+    const reading = { text, choice: a.choice, probability: a.probabilities[a.choice] ?? 0, probabilities: a.probabilities };
+    readings.push(reading);
+    return reading;
   };
-  if (hooks.signal?.aborted) return finish(judgement, [], 'canceled');
 
-  // Every step asked for, plus the main task when System 1 is sure of it.
+  // Each task the instruction names, read on its own, in the order asked.
   const planned = new Map<string, Decision>();
-  for (const x of intents) if (judgement.asked[x.id]! >= opts.askedAbove) planned.set(x.id, { probability: judgement.asked[x.id]!, by: 'asked' });
-  if (judgement.main.probability >= opts.confirmBelow && !planned.has(main.choice)) planned.set(main.choice, { probability: judgement.main.probability, by: 'main' });
+  for (const part of instruction ? partsOf(instruction) : []) {
+    if (hooks.signal?.aborted) return finish([], 'canceled');
+    const r = await read(part);
+    if (r.probability >= opts.sureAbove && !planned.has(r.choice)) planned.set(r.choice, { probability: r.probability, by: 'instruction', text: part });
+  }
+  // No instruction, or none of its parts was clear: the whole request.
   if (!planned.size) {
+    if (hooks.signal?.aborted) return finish([], 'canceled');
+    const r = await read(request);
+    if (r.probability >= opts.sureAbove) planned.set(r.choice, { probability: r.probability, by: 'request' });
+  }
+  if (hooks.signal?.aborted) return finish([], 'canceled');
+  if (!planned.size) {
+    const whole = readings.at(-1)!.probabilities;
     const offered = intents
-      .map((intent) => ({ intent, probability: main.probabilities[intent.id] ?? 0 }))
+      .map((intent) => ({ intent, probability: whole[intent.id] ?? 0 }))
       .sort((a, b) => b.probability - a.probability)
       .slice(0, 3);
     const picked = await hooks.clarify(offered);
-    if (!picked) return finish(judgement, [], 'unsure');
-    planned.set(picked, { probability: main.probabilities[picked] ?? 0, by: 'person' });
+    if (!picked) return finish([], 'unsure');
+    planned.set(picked, { probability: whole[picked] ?? 0, by: 'person' });
   }
 
-  // The likeliest steps when more were asked for than one request may take, in the usual order.
-  const chosen = new Map([...planned].sort((a, b) => b[1].probability - a[1].probability).slice(0, opts.maxSteps));
-  const steps: Step[] = intents
-    .filter((x) => chosen.has(x.id))
-    .map((intent) => ({ intent, decision: chosen.get(intent.id)!, route: routeFor(intent, language, hooks), status: 'waiting' }));
+  // The first steps asked for, when there are more than one request may take.
+  const steps: Step[] = [...planned]
+    .slice(0, opts.maxSteps)
+    .map(([id, decision]) => {
+      const intent = intents.find((x) => x.id === id)!;
+      return { intent, decision, route: routeFor(intent, language, hooks), status: 'waiting' };
+    });
   const update = () => hooks.onUpdate?.(steps.map((s) => ({ ...s })));
   update();
 
   for (const step of steps) {
-    if (hooks.signal?.aborted) return finish(judgement, steps, 'canceled');
+    if (hooks.signal?.aborted) return finish(steps, 'canceled');
     // Chosen again now: a model an earlier step downloaded may do this one too.
     step.route = routeFor(step.intent, language, hooks);
     step.status = 'running';
     update();
     const t0 = Date.now();
     try {
-      step.output = await execute(step, request, steps.filter((s) => s.status === 'done').map(describe), hooks, language);
+      step.output = await execute(step, request, message, steps.filter((s) => s.status === 'done').map(describe), hooks, language);
       step.status = step.output ? 'done' : step.status;
     } catch (e) {
-      if (hooks.signal?.aborted) return finish(judgement, steps, 'canceled');
+      if (hooks.signal?.aborted) return finish(steps, 'canceled');
       step.status = 'failed';
       step.error = (e as Error).message;
     }
     step.ms = Date.now() - t0;
     update();
   }
-  return finish(judgement, steps, planned.size > opts.maxSteps ? 'step-limit' : 'done');
+  return finish(steps, planned.size > opts.maxSteps ? 'step-limit' : 'done');
 }
 
-async function execute(step: Step, request: string, context: string[], hooks: Hooks, language: string): Promise<StepOutput | undefined> {
+/** Online models get the whole request (it may say which language, say); local ones get the message. */
+async function execute(step: Step, request: string, message: string, context: string[], hooks: Hooks, language: string): Promise<StepOutput | undefined> {
   const r = step.route;
   if (r.kind === 'none') {
     step.status = 'unavailable';
@@ -202,5 +255,5 @@ async function execute(step: Step, request: string, context: string[], hooks: Ho
     }
     if (!(await hooks.download(r.release))) throw new Error('the model could not be downloaded');
   }
-  return hooks.runLocal(r.release, step.intent.capability!, request, language, hooks.signal);
+  return hooks.runLocal(r.release, step.intent.capability!, message, language, hooks.signal);
 }

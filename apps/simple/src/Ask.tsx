@@ -90,13 +90,15 @@ export function Ask() {
                 <li key={i}>
                   {s.decision.by === 'person'
                     ? `You chose “${words(s.intent.id).name}”.`
-                    : `You asked to “${words(s.intent.id).name}” (${pct(s.decision.probability)} sure).`}{' '}
+                    : s.decision.by === 'instruction'
+                      ? `“${s.decision.text}”: ${words(s.intent.id).name} (${pct(s.decision.probability)} sure).`
+                      : `You asked to “${words(s.intent.id).name}” (${pct(s.decision.probability)} sure).`}{' '}
                   {s.route.kind === 'local' ? 'A model on this device can do that.' : s.route.kind === 'remote' ? 'No model on this device can do that, so online help was used.' : 'No model on this device can do that.'}
                 </li>
               ))}
               <li>
                 {ask.result.ended === 'step-limit'
-                  ? 'You asked for more than one request may do, so only the likeliest steps ran.'
+                  ? 'You asked for more than one request may do, so only the first steps ran.'
                   : ask.result.ended === 'unsure'
                     ? 'It wasn’t sure what you needed, so it stopped.'
                     : 'Nothing else was asked for.'}
@@ -104,12 +106,19 @@ export function Ask() {
             </ul>
             {ask.result.judgement && (
               <p className="hint" data-testid="judgement">
-                How likely each one looked:{' '}
-                {Object.entries(ask.result.judgement.asked)
-                  .sort((a, b) => b[1] - a[1])
-                  .map(([id, p]) => `${words(id).name} ${pct(p)}`)
-                  .join(', ')}
-                . Worked out on this device by the router, all at once, in {Math.max(1, Math.round(ask.result.judgement.latencyMs))} ms.
+                Read on this device by the router in {Math.max(1, Math.round(ask.result.judgement.latencyMs))} ms:{' '}
+                {ask.result.judgement.readings
+                  .map(
+                    (r) =>
+                      `“${r.text.length > 60 ? `${r.text.slice(0, 60)}…` : r.text}” looked like ` +
+                      Object.entries(r.probabilities)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 2)
+                        .map(([id, p]) => `${words(id).name} ${pct(p)}`)
+                        .join(', '),
+                  )
+                  .join('; ')}
+                .
               </p>
             )}
           </details>

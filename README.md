@@ -9,7 +9,7 @@ entirely inside the browser.
 - **Archive.** A builder freezes the collected signed events into a ZIP, signs an announcement, and distributes it over IPFS, an HTTP mirror and a WebRTC-capable torrent.
 - **Discover.** The browser app reads relays directly (Live), imports archives (Archives), or both (Combined), into SQLite WASM + FTS5 on OPFS. Searches stay on the device.
 - **Run.** The browser downloads model files with source fallback, verifies every byte against the signed manifest, and runs GGUF models locally with wllama. It composes classification → summarization, and can apply a LoRA adapter at runtime.
-- **Route.** In the simple app, a System 1 router works out everything a request asks for in one pass, and sends each step to a model on the device. The router is [Laya](https://github.com/wexare-ai/browser-laya), itself a signed catalog release. If the person adds their own API key, steps no local model can do go to an online model.
+- **Route.** In the simple app, a System 1 router works out every task a request asks for, and sends each step to a model on the device. The router is [Laya](https://github.com/wexare-ai/browser-laya), itself a signed catalog release. If the person adds their own API key, steps no local model can do go to an online model.
 
 There is no central registry, account or search API, and no remote inference unless a person turns on
 online help with their own key. See [docs/protocol.md](docs/protocol.md)
@@ -84,19 +84,24 @@ you published earlier are still there after a restart.
 The simple app opens with one box: **What do you need?** A request such as "Categorize and summarize
 this message: …" is handled like this:
 
-1. The router reads the request once and answers seven questions in a single forward pass. There
-   is one yes/no question for each kind of step (does it ask to sort, summarize, write, reply,
-   translate or answer?), plus a choice of the main task. It returns probabilities rather than
-   text.
-2. Every step the request asks for, with a "yes" of at least 50 %, is planned. So is the main task
-   when it's at least 50 % likely. "Categorize and summarize" plans both. If nothing reaches 50 %,
-   the person picks from the likeliest three. At most three steps run, the likeliest ones.
-3. All planned steps show at once, then run one after another. A step goes to a model on the device
-   when one can do it in the request's language, preferring a model already downloaded, including
-   one an earlier step just fetched. Online help is used only for steps no local model can do, and
-   only when the person has turned it on. Otherwise the step is reported as unavailable, in plain
-   words.
-4. **How this was decided** lists why each step ran, with every probability the router gave.
+1. The instruction is the part before a colon near the start ("Categorize and summarize this
+   message"), or a first sentence that is a question with more text after it. It is split where it
+   says "and", "then" or "also", or lists tasks with commas: "Categorize" and "summarize this
+   message".
+2. The router reads each part on its own and picks what it asks for: sort, summarize, write, reply,
+   translate or answer. It returns probabilities rather than text, and a part it is at least 50 %
+   sure of becomes a step. Only the instruction is read, so a message that mentions other tasks
+   ("Can you translate the notice?") doesn't add them.
+3. A request without an instruction, or with no clear part, is read whole. If no task reaches 50 %,
+   the person picks from the likeliest three. At most three steps run, the first ones asked for.
+4. All planned steps show at once, then run in the order asked. A step goes to a model on the
+   device when one can do it in the message's language, preferring a model already downloaded,
+   including one an earlier step just fetched. Local models get the message without the
+   instruction. Online help gets the whole request, which may name a language, and is used only for
+   steps no local model can do, and only when the person has turned it on. Otherwise the step is
+   reported as unavailable, in plain words.
+5. **How this was decided** lists each part of the instruction, what the router took it for, and
+   how sure it was.
 
 The router is a catalog release like any model: `fixtures/releases/laya-router.json` publishes the
 ONNX export of Laya (`wexare/laya-onnx`, pinned revision) with `runtime.family: "laya"` and the
