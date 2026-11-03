@@ -13,6 +13,8 @@ import type { InitResult } from '@wexare/web/src/workers/catalog-api.ts';
 import { buildModels, size, TOPICS, type Model, type TaskId } from './models.ts';
 
 const settings = loadSettings();
+/** The relays this app listens to: publish there and a release shows up here. */
+export const relays = settings.relays;
 export const { client: catalog, session } = createCatalogClient();
 export const live = new LiveDiscovery(catalog);
 export const artifacts = new ArtifactManager(catalog, () => settings);

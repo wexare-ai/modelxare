@@ -18,7 +18,12 @@ export function Home(p: { task: TaskId | null; setTask: (t: TaskId | null) => vo
       <HeroDecorations />
       <Ask lede={online ? 'Small AI models that run on this device, with online help when they can’t.' : 'Small AI models that run on this device. What you type never leaves it.'} />
 
-      <h2 className="browse-title">Or pick a model by what it does</h2>
+      <div className="browse-head">
+        <h2 className="browse-title">Or pick a model by what it does</h2>
+        <a className="pill-yellow" href="#/xare">
+          Xare your model <span aria-hidden="true">↗</span>
+        </a>
+      </div>
       <div className="verbs" role="group" aria-label="Show models by task">
         {verbs.map(({ t, count }) => (
           <button key={t.id} aria-pressed={p.task === t.id} onClick={() => p.setTask(p.task === t.id ? null : t.id)}>

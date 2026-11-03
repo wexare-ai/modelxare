@@ -25,6 +25,10 @@ export function BrandDefs() {
           <feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves={2} seed={5} result="w" />
           <feDisplacementMap in="SourceGraphic" in2="w" scale={2.6} />
         </filter>
+        <filter id="wx-brush" filterUnits="userSpaceOnUse" x="-200" y="-200" width="4000" height="3000">
+          <feTurbulence type="fractalNoise" baseFrequency="0.02 0.3" numOctaves={2} seed={2} result="w" />
+          <feDisplacementMap in="SourceGraphic" in2="w" scale={5} />
+        </filter>
       </defs>
     </svg>
   );

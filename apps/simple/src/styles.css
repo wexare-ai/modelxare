@@ -19,6 +19,7 @@
   --pinkl: #fbcad4;
   --sun: #f5c518;
   --yellow: #f7c933;
+  --yellow-press: #d9a913;
   --sunl: #fce7a6;
   --alert: #a42235;
   /* roles: people are pink, AI wears navy and sky */
@@ -100,6 +101,11 @@ button:disabled {
   outline-offset: 3px;
 }
 
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.88em;
+}
+
 ::selection {
   background: var(--sunl);
 }
@@ -122,12 +128,12 @@ button:disabled {
 
 /* ───────────── Paper ───────────── */
 /* A torn sheet: the colored paper is a pseudo-element with displaced edges, so the text stays crisp. */
-:is(.model, .answer, .step, .clarify, .note, .problem) {
+:is(.model, .answer, .step, .clarify, .note, .problem, .xare-step, .xare-card) {
   position: relative;
   isolation: isolate;
 }
 
-:is(.model, .answer, .step, .clarify, .note, .problem)::before {
+:is(.model, .answer, .step, .clarify, .note, .problem, .xare-step, .xare-card)::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -400,6 +406,36 @@ button:disabled {
   background: var(--sky);
 }
 
+/* The friendly call to action: a yellow pill. */
+.pill-yellow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  background: var(--yellow);
+  color: var(--navy);
+  font-weight: 700;
+  font-size: 16px;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 0 3px 0 var(--yellow-press);
+  transition: transform 0.25s var(--snap);
+}
+
+.pill-yellow:hover {
+  transform: translateY(-2px) rotate(-1deg);
+}
+
+.pill-yellow:active {
+  transform: translateY(1px);
+}
+
+a.secondary {
+  color: var(--navy);
+  text-decoration: none;
+}
+
 .link {
   padding: 0;
   border: 0;
@@ -581,10 +617,18 @@ button:disabled {
 }
 
 /* Browse: a dashed rule, then the task chips, search and the models as torn sheets. */
-.browse-title {
+.browse-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px 20px;
   margin-top: clamp(56px, 8vw, 96px);
   padding-top: clamp(32px, 5vw, 48px);
   border-top: 2px dashed var(--skyline);
+}
+
+.browse-title {
   font-family: var(--font-display);
   font-weight: 800;
   font-variation-settings: 'opsz' 48;
@@ -1023,6 +1067,290 @@ button:disabled {
   margin-top: 6px;
 }
 
+/* ───────────── Xare your model ───────────── */
+.needs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.needs li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: var(--white);
+  font-weight: 500;
+  font-size: 15px;
+  box-shadow: inset 0 0 0 2px var(--skyline);
+}
+
+.i {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+
+.xare-steps {
+  display: grid;
+  gap: 64px;
+  margin: 48px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.xare-step {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 18px;
+  padding: 24px 24px 22px;
+  animation: land 0.55s var(--snap) both;
+}
+
+.xare-step:nth-child(odd) {
+  rotate: -0.5deg;
+}
+
+.xare-step:nth-child(even) {
+  rotate: 0.5deg;
+}
+
+.xare-step:nth-child(2) {
+  animation-delay: 0.08s;
+}
+
+.xare-step:nth-child(3) {
+  animation-delay: 0.16s;
+}
+
+.xare-step:nth-child(4) {
+  animation-delay: 0.24s;
+}
+
+.xare-icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--sunl);
+}
+
+.xare-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.xare-body h2 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-variation-settings: 'opsz' 48;
+  font-size: 24px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.xare-n {
+  margin-right: 4px;
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+
+.xare-line {
+  margin-top: 4px;
+  font-size: 16px;
+  color: var(--muted);
+}
+
+/* a brush-drawn arrow down to the next sheet */
+.xare-arrow {
+  position: absolute;
+  top: calc(100% + 18px);
+  left: 30px;
+  width: 52px;
+  overflow: visible;
+  rotate: 90deg;
+}
+
+.xare-arrow path,
+.pack-arrow path {
+  fill: none;
+  stroke: var(--leaf);
+  stroke-width: 9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: url(#wx-brush);
+}
+
+.cmd {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 2px dashed var(--skyline);
+  border-radius: 12px;
+  background: var(--paper);
+}
+
+.cmd code {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre;
+}
+
+.cmd .link {
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+/* the starter file, drawn as a label to fill in */
+.label-card {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px 16px;
+  margin: 14px 0 16px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: var(--sky);
+  rotate: -0.6deg;
+}
+
+.label-card dt {
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.label-card dd {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.does {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.does span {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 6px;
+  min-width: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--white);
+  font-size: 15px;
+}
+
+.does code {
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* your file, then the three places it is shared from */
+.pack {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-top: 14px;
+}
+
+.pack-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: var(--white);
+  font-weight: 600;
+  font-size: 15px;
+  box-shadow: inset 0 0 0 2px var(--skyline);
+}
+
+.pack-arrow {
+  width: 52px;
+  overflow: visible;
+}
+
+.pack-to {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pack-to span {
+  padding: 5px 12px 2px;
+  border-radius: 8px;
+  background: var(--sky);
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.xare-done {
+  margin-top: 64px;
+}
+
+.xare-done h2 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-variation-settings: 'opsz' 48;
+  font-size: 28px;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+}
+
+.xare-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 12px;
+  max-width: 24rem;
+  margin-top: 20px;
+  padding: 22px 22px 20px;
+  rotate: 1deg;
+}
+
+.xare-trust {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 28px;
+  font-weight: 600;
+}
+
+.xare-trust .i {
+  width: 24px;
+  height: 24px;
+  color: var(--leaf);
+}
+
+.xare-more {
+  margin-top: 24px;
+}
+
+.xare-more a {
+  font-weight: 600;
+  color: var(--blue);
+  text-underline-offset: 4px;
+}
+
 /* ───────────── Settings ───────────── */
 .settings {
   max-width: 38rem;
@@ -1289,6 +1617,49 @@ button:disabled {
   .answer,
   .step {
     padding: 32px 20px 18px;
+  }
+  /* the commands get the card's full width: the icon moves to its corner, Copy under the command */
+  .xare-step {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 20px 18px;
+  }
+  .xare-icon {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+  }
+  .xare-body h2 {
+    padding-right: 48px;
+  }
+  .cmd {
+    flex-direction: column;
+    gap: 6px;
+  }
+  .cmd .link {
+    align-self: flex-end;
+  }
+  .xare-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+  .xare-arrow {
+    left: 22px;
+  }
+  .needs li {
+    border-radius: 18px;
+  }
+  .label-card {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+  .label-card dd {
+    margin-bottom: 8px;
+  }
+  .cmd code {
+    font-size: 13px;
   }
   .about dl {
     grid-template-columns: 1fr;
