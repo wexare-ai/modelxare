@@ -8,11 +8,13 @@ import { Settings } from './Settings.tsx';
 import type { TaskId } from './models.ts';
 import { useOnlineHelp } from './routing.ts';
 import { WexareLogo } from './WexareLogo.tsx';
+import { Train } from './Train.tsx';
 import { Xare } from './Xare.tsx';
 
 const modelInHash = () => /^#\/model\/([0-9a-f]{64})$/.exec(location.hash)?.[1] ?? null;
 const settingsInHash = () => location.hash === '#/settings';
 const xareInHash = () => location.hash === '#/xare';
+const trainInHash = () => location.hash === '#/xare/train';
 
 const CONNECTION: Record<ReturnType<typeof useConnection>, string> = {
   connecting: 'Connecting',
@@ -26,6 +28,7 @@ export function App() {
   const [modelId, setModelId] = useState(modelInHash);
   const [settings, setSettings] = useState(settingsInHash);
   const [xare, setXare] = useState(xareInHash);
+  const [train, setTrain] = useState(trainInHash);
   const help = remoteHelp(useOnlineHelp());
   const [task, setTask] = useState<TaskId | null>(null);
   const [query, setQuery] = useState('');
@@ -35,6 +38,7 @@ export function App() {
       setModelId(modelInHash());
       setSettings(settingsInHash());
       setXare(xareInHash());
+      setTrain(trainInHash());
       scrollTo(0, 0);
     };
     addEventListener('hashchange', onHash);
@@ -94,6 +98,8 @@ export function App() {
           <Settings back={() => (location.hash = '#/')} />
         ) : xare ? (
           <Xare back={() => (location.hash = '#/')} />
+        ) : train ? (
+          <Train back={() => (location.hash = '#/xare')} />
         ) : modelId ? (
           <ModelPage id={modelId} preferredTask={task} back={() => (location.hash = '#/')} />
         ) : (

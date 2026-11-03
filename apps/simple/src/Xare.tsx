@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
+import { Command } from './Command.tsx';
 import { relays } from './engine.ts';
+import { StageStrip } from './Train.tsx';
 
 // "Xare your model": how a model gets into this catalog, in four steps on the
 // publisher's computer. The commands are the real CLI's (apps/cli); the
@@ -9,6 +11,22 @@ import { relays } from './engine.ts';
 const PROTOCOL_DOC = 'https://github.com/wexare-ai/modelxare/blob/main/docs/protocol.md#publisher-definition-cli-input';
 
 const STEPS: { icon: ReactNode; title: string; line: string; body: ReactNode }[] = [
+  {
+    icon: <SparkIcon />,
+    title: 'Train your model',
+    line: 'Teach a small open model one job, then make it browser-sized.',
+    body: (
+      <>
+        <StageStrip />
+        <p className="train-go">
+          <a className="pill-yellow" href="#/xare/train">
+            Open the training guide <span aria-hidden="true">↗</span>
+          </a>
+          <span className="hint">Already have a .gguf? Go to step 2.</span>
+        </p>
+      </>
+    ),
+  },
   {
     icon: <KeyIcon />,
     title: 'Make your key',
@@ -61,7 +79,7 @@ export function Xare({ back }: { back: () => void }) {
         <li>
           <FileIcon />
           <span>
-            A <code>.gguf</code> model file
+            An idea, or a <code>.gguf</code> model
           </span>
         </li>
         <li>
@@ -168,27 +186,16 @@ function Pack() {
   );
 }
 
-function Command({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <div className="cmd">
-      <code>{text}</code>
-      <button
-        className="link"
-        onClick={() => {
-          void navigator.clipboard.writeText(text);
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1500);
-        }}
-      >
-        {copied ? 'Copied' : 'Copy'}
-      </button>
-    </div>
-  );
-}
-
 // Round-capped line icons (STYLE.md §9), drawn in currentColor.
 const icon = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true } as const;
+
+function SparkIcon() {
+  return (
+    <svg {...icon}>
+      <path d="M12 3c1 5 3 7 8 8-5 1-7 3-8 8-1-5-3-7-8-8 5-1 7-3 8-8z" />
+    </svg>
+  );
+}
 
 function KeyIcon() {
   return (

@@ -56,7 +56,9 @@ press downloads and checks the model, then it runs on the device. It uses the sa
 PoC but hides keys, hashes, relays and storage. It is a separate site, so it keeps its own
 downloads. Its **What do you need?** box sends a request through the System 1 router; see
 [Routing with System 1](#routing-with-system-1). **Xare your model**, next to the catalog, shows
-in four steps how to publish a model of your own, with a starter file to fill in.
+how to publish a model of your own, with a starter file to fill in. Its first step is a visual guide
+to training one: spec, data, LoRA/QLoRA training, eval, fuse, GGUF export, quantization, a tokenizer
+check and a browser test, with common tools for each stage.
 
 Models download when they are first needed, without a question. They stay saved until a new model
 needs room, and then the ones used longest ago are removed first. They download again if needed
