@@ -1992,29 +1992,30 @@ a.secondary {
     position: absolute;
     overflow: visible;
   }
-  .d-sun {
-    top: 56px;
-    right: calc(50% + var(--column) / 2 + 90px);
-    width: 64px;
-  }
-  .d-leaves {
-    top: 250px;
-    right: calc(50% + var(--column) / 2 + 40px);
-    width: 120px;
-    transform-origin: 30% 95%;
-    animation: sway 7s ease-in-out infinite;
-  }
-  .d-ray-sun {
-    top: 20px;
-    left: calc(50% + var(--column) / 2 + 50px);
+  .d-laptop {
+    top: 46px;
+    right: calc(50% + var(--column) / 2 + 48px);
     width: 150px;
-    animation: spin 60s linear infinite;
+    animation: float 8s ease-in-out infinite;
   }
-  .d-pink {
-    top: 330px;
-    left: calc(50% + var(--column) / 2 + 60px);
-    width: 104px;
-    transform-origin: 30% 95%;
+  .d-pencil {
+    top: 280px;
+    right: calc(50% + var(--column) / 2 + 30px);
+    width: 160px;
+    transform-origin: 48% 80%;
+    animation: wiggle 4s ease-in-out infinite;
+  }
+  .d-summary {
+    top: 30px;
+    left: calc(50% + var(--column) / 2 + 52px);
+    width: 140px;
+    animation: float 9s ease-in-out -3s infinite;
+  }
+  .d-tags {
+    top: 300px;
+    left: calc(50% + var(--column) / 2 + 44px);
+    width: 150px;
+    transform-origin: 50% 10%;
     animation: sway 7.5s ease-in-out -1s infinite;
   }
 }
@@ -2091,9 +2092,24 @@ a.secondary {
   }
 }
 
-@keyframes spin {
-  to {
-    rotate: 360deg;
+@keyframes float {
+  0%,
+  100% {
+    translate: 0 -5px;
+  }
+  50% {
+    translate: 0 5px;
+  }
+}
+
+/* a pencil at work: small back-and-forth turns */
+@keyframes wiggle {
+  0%,
+  100% {
+    rotate: -2deg;
+  }
+  50% {
+    rotate: 2deg;
   }
 }
 

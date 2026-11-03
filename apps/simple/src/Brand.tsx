@@ -1,8 +1,8 @@
 /**
  * The weXare look (STYLE.md, 2026-10 brand): the SVG filters the paper and
- * crayon effects use, and the crayon decorations at the edges of the home
- * page. Filters and shapes are the weXare site's (wexare-mvp
- * src/pages/home/LandingDefs.tsx and Decorations.tsx), unchanged.
+ * crayon effects use (the weXare site's, from wexare-mvp
+ * src/pages/home/LandingDefs.tsx, unchanged), and modelXare's own crayon
+ * drawings for the home page's margins, in the same style.
  */
 
 /** Rendered once per page; styles.css refers to the filters by id. */
@@ -34,57 +34,95 @@ export function BrandDefs() {
   );
 }
 
-const LEAF = 'M30 200 C 3 150, -2 70, 30 0 C 62 70, 57 150, 30 200 Z';
+/** The brand's AI heart: the machine heart with straight 45° sides, 80 units wide. */
+const AI_HEART = 'M50 80 L10 40 L31 19 L50 38 L69 19 L90 40 Z';
 
-const SUN_RAYS = [
-  'M157.8,94.8 L197.0,100.0 L157.8,105.2Z',
-  'M154.3,120.4 L187.4,142.1 L149.8,129.8Z',
-  'M140.1,141.9 L160.5,175.8 L131.9,148.4Z',
-  'M117.9,155.2 L121.6,194.6 L107.8,157.5Z',
-  'M92.2,157.5 L78.4,194.6 L82.1,155.2Z',
-  'M68.1,148.4 L39.5,175.8 L59.9,141.9Z',
-  'M50.2,129.8 L12.6,142.1 L45.7,120.4Z',
-  'M42.2,105.2 L3.0,100.0 L42.2,94.8Z',
-  'M45.7,79.6 L12.6,57.9 L50.2,70.2Z',
-  'M59.9,58.1 L39.5,24.2 L68.1,51.6Z',
-  'M82.1,44.8 L78.4,5.4 L92.2,42.5Z',
-  'M107.8,42.5 L121.6,5.4 L117.9,44.8Z',
-  'M131.9,51.6 L160.5,24.2 L140.1,58.1Z',
-  'M149.8,70.2 L187.4,57.9 L154.3,79.6Z',
-];
+const ink = { fill: 'none', stroke: 'var(--navy)', strokeLinecap: 'round' } as const;
 
-function Sprig({ className, fill, angles }: { className: string; fill: string; angles: number[] }) {
+/** Models run here: a laptop with the AI heart on its screen. */
+function Laptop() {
   return (
-    <svg className={`d ${className}`} viewBox="-80 -20 220 230">
-      <g style={{ fill }} filter="url(#wx-crayon)">
-        {angles.map((a) => (
-          <path key={a} d={LEAF} transform={`rotate(${a} 30 200)`} />
-        ))}
+    <svg className="d d-laptop" viewBox="0 0 160 116">
+      <g filter="url(#wx-crayon)">
+        <rect x="22" y="6" width="116" height="80" rx="9" style={{ fill: 'var(--leaf)' }} />
+        <rect x="31" y="15" width="98" height="62" rx="4" style={{ fill: 'var(--sky)' }} />
+        <path d={AI_HEART} transform="translate(56 22) scale(0.48)" style={{ fill: 'var(--navy)' }} />
+        <path d="M6 92 H154 L146 108 H14 Z" style={{ fill: 'var(--navy)' }} />
       </g>
     </svg>
   );
 }
 
-/** Crayon suns and leaves in the margins beside the home page's headline, never behind text. */
+/** Write: a pencil finishing a line. */
+function Pencil() {
+  return (
+    <svg className="d d-pencil" viewBox="0 0 210 150">
+      <g filter="url(#wx-crayon)">
+        <path d="M8 128 C 22 104, 34 140, 50 118 S 76 104, 86 124 S 104 132, 100 120" style={{ ...ink, stroke: 'var(--leaf)', strokeWidth: 7 }} />
+        <g transform="translate(100 120) rotate(-48)">
+          <path d="M0 0 L24 -10 V10 Z" style={{ fill: 'var(--sunl)' }} />
+          <path d="M0 0 L8 -3.4 V3.4 Z" style={{ fill: 'var(--navy)' }} />
+          <rect x="24" y="-10" width="84" height="20" style={{ fill: 'var(--yellow)' }} />
+          <rect x="24" y="-3" width="84" height="6" style={{ fill: 'var(--sun)' }} />
+          <rect x="108" y="-10" width="10" height="20" style={{ fill: 'var(--skyline)' }} />
+          <rect x="118" y="-10" width="20" height="20" rx="5" style={{ fill: 'var(--pinkd)' }} />
+        </g>
+      </g>
+    </svg>
+  );
+}
+
+/** Summarize: a long page, and the short note it becomes. */
+function Summary() {
+  const lines = [86, 78, 88, 70, 84, 62];
+  return (
+    <svg className="d d-summary" viewBox="0 0 170 160">
+      <g filter="url(#wx-crayon)">
+        <g transform="rotate(-7 55 75)">
+          <rect x="10" y="12" width="90" height="126" rx="5" style={{ fill: 'var(--skyline)' }} />
+          {lines.map((end, i) => (
+            <path key={i} d={`M24 ${34 + i * 16} H${end}`} style={{ ...ink, strokeWidth: 5 }} />
+          ))}
+        </g>
+        <g transform="rotate(6 125 110)">
+          <rect x="86" y="74" width="76" height="70" rx="4" style={{ fill: 'var(--yellow)' }} />
+          <path d="M100 100 H148 M100 118 H130" style={{ ...ink, strokeWidth: 6 }} />
+        </g>
+      </g>
+    </svg>
+  );
+}
+
+/** Sort: three label tags on a string, one per topic. */
+function Tags() {
+  const tag = (x: number, y: number, turn: number, fill: string) => (
+    <g transform={`translate(${x} ${y}) rotate(${turn})`}>
+      <path d="M0 -2 V16" style={{ ...ink, strokeWidth: 3 }} />
+      <path d="M-18 24 L-8 12 H8 L18 24 V86 a5 5 0 0 1 -5 5 H-13 a5 5 0 0 1 -5 -5 Z" style={{ fill }} />
+      <circle cx="0" cy="24" r="4.5" style={{ fill: 'var(--paper)' }} />
+      <path d="M-9 52 H9 M-9 66 H4" style={{ ...ink, strokeWidth: 4 }} />
+    </g>
+  );
+  return (
+    <svg className="d d-tags" viewBox="0 0 170 150">
+      <g filter="url(#wx-crayon)">
+        <path d="M6 18 C 50 34, 120 34, 164 16" style={{ ...ink, strokeWidth: 4 }} />
+        {tag(30, 23, -10, 'var(--pinkd)')}
+        {tag(85, 29, 5, 'var(--leaf)')}
+        {tag(138, 25, -4, 'var(--sun)')}
+      </g>
+    </svg>
+  );
+}
+
+/** The home page's margins: what this app does, drawn in crayon, never behind text. */
 export function HeroDecorations() {
   return (
     <div className="deco" aria-hidden="true">
-      <svg className="d d-sun" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="47" style={{ fill: 'var(--sun)' }} filter="url(#wx-crayon)" />
-      </svg>
-      <Sprig className="d-leaves" fill="var(--leaf)" angles={[-34, -12, 10]} />
-      <svg className="d d-ray-sun" viewBox="0 0 200 200">
-        <g filter="url(#wx-crayon)">
-          <g style={{ fill: 'var(--pink)' }}>
-            {SUN_RAYS.map((d) => (
-              <path key={d} d={d} />
-            ))}
-            <circle cx="100" cy="100" r="60" />
-          </g>
-          <circle cx="100" cy="100" r="40" style={{ fill: 'var(--yellow)' }} />
-        </g>
-      </svg>
-      <Sprig className="d-pink" fill="var(--pinkd)" angles={[10, 34, 58]} />
+      <Laptop />
+      <Pencil />
+      <Summary />
+      <Tags />
     </div>
   );
 }
