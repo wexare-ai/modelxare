@@ -28,6 +28,7 @@ test('Xare your model: from the catalog to the training guide, the publishing st
     await page.getByRole('link', { name: /Open the training guide/ }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Train your own model');
     await expect(page.getByTestId('stage')).toHaveCount(9);
+    await expect(page.getByTestId('stage').nth(1).getByTestId('distill')).toContainText('Generate them');
     await expect(page.getByTestId('stage').nth(5)).toContainText('convert_hf_to_gguf.py');
     await page.getByRole('link', { name: /Xare it/ }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Xare your model');

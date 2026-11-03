@@ -7,7 +7,7 @@ import { Command } from './Command.tsx';
 
 type Tool = { name: string; href: string; note?: string };
 
-export const STAGES: { id: string; title: string; line: string; visual?: ReactNode; command?: string; tools: Tool[]; aside?: ReactNode }[] = [
+export const STAGES: { id: string; title: string; line: string; visual?: ReactNode; command?: string; tools: Tool[]; more?: ReactNode; aside?: ReactNode }[] = [
   {
     id: 'spec',
     title: 'Pick one job',
@@ -28,6 +28,7 @@ export const STAGES: { id: string; title: string; line: string; visual?: ReactNo
       { name: 'Chat data format', href: 'https://huggingface.co/docs/trl/dataset_formats' },
       { name: 'Datasets', href: 'https://huggingface.co/docs/datasets' },
     ],
+    more: <Distill />,
   },
   {
     id: 'train',
@@ -152,6 +153,7 @@ export function Train({ back }: { back: () => void }) {
                 </a>
               ))}
             </p>
+            {s.more}
             {s.aside && <p className="stage-aside">{s.aside}</p>}
           </section>
         ))}
@@ -215,6 +217,45 @@ function Data() {
         <span style={{ flex: 1 }}>valid</span>
         <span style={{ flex: 1 }}>test</span>
       </div>
+    </div>
+  );
+}
+
+/** No data yet: have a large model write it (distillation), then check it. */
+function Distill() {
+  return (
+    <div className="distill" data-testid="distill">
+      <h3>No examples yet? Generate them</h3>
+      <p className="xare-line">A large model writes the chats; your small model learns from them.</p>
+      <ol className="pic flow" aria-hidden="true">
+        <li className="block prompt">your prompt</li>
+        <li className="block frontier">
+          <span>
+            <SparkIcon /> large model
+          </span>
+        </li>
+        <li className="block chats">
+          thousands of chats
+          <small>JSON lines</small>
+        </li>
+        <li className="block checked">
+          check
+          <small>format · repeats · balance</small>
+        </li>
+      </ol>
+      <p className="prompt-card">
+        Write 50 short messages tenants send about building problems. Vary the tone, length and typos. Label each one: maintenance, noise or safety. One JSON line
+        per message.
+      </p>
+      <p className="tools">
+        <a className="tool" href="https://github.com/argilla-io/distilabel" target="_blank" rel="noreferrer">
+          distilabel <span aria-hidden="true">↗</span>
+        </a>
+        <a className="tool" href="https://github.com/bespokelabsai/curator" target="_blank" rel="noreferrer">
+          Curator <span aria-hidden="true">↗</span>
+        </a>
+      </p>
+      <p className="stage-aside">Check the test examples by hand, and that the large model’s terms allow training on its answers.</p>
     </div>
   );
 }
@@ -328,6 +369,14 @@ function Arrow() {
   return (
     <svg className="pack-arrow" viewBox="0 0 100 60">
       <path d="M8 34 C 34 22, 60 40, 86 28 M66 12 L 88 28 L 70 48" />
+    </svg>
+  );
+}
+
+function SparkIcon() {
+  return (
+    <svg className="i" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 3c1 5 3 7 8 8-5 1-7 3-8 8-1-5-3-7-8-8 5-1 7-3 8-8z" />
     </svg>
   );
 }
