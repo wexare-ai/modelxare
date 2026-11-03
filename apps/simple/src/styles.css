@@ -522,6 +522,29 @@ button:disabled {
   margin-top: 22px;
 }
 
+/* Examples under the box: one tap fills it in, then Go runs it. */
+.examples {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+  animation: fade-up 0.6s var(--soft) 0.55s both;
+}
+
+.examples-label {
+  margin-right: 2px;
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--muted);
+}
+
+.examples .chip {
+  padding: 8px 15px;
+  font-size: 15px;
+}
+
 .hint {
   flex: 1 1 16rem;
   font-size: 16px;

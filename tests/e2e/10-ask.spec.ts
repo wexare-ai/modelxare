@@ -40,7 +40,10 @@ test('Ask: the router downloads without a question, and Stop cancels it with not
   const app = await simpleApp({ holdDownloads: true });
   const { page } = app;
   await expect(page.locator('.ask-box .hint')).toContainText('downloads a 904 MB router', { timeout: 30_000 });
-  await page.getByTestId('ask-input').fill('Sort this message and summarize it: there is a water leak near the entrance.');
+  // An example fills the box; Go runs it.
+  await page.getByTestId('ask-example').first().click();
+  await expect(page.getByTestId('ask-input')).toHaveValue(/^Summarize and categorize this message: The garage door/);
+  await expect(page.getByTestId('ask-input')).toBeFocused();
   await page.getByTestId('ask-go').click();
   await expect(page.locator('.ask-box .progress')).toContainText('Downloading the router');
   await expect(page.getByRole('dialog')).toHaveCount(0);

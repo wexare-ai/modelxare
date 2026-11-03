@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { Step } from '@wexare/router';
 import { size } from './models.ts';
 import { noSpaceText } from './engine.ts';
@@ -7,8 +7,16 @@ import { STEP_WORDS, plainName, useAsk, useRouterModel, type Prompt } from './ro
 const pct = (p: number) => `${Math.round(p * 100)}%`;
 const words = (id: string) => STEP_WORDS[id] ?? { name: id, result: id, doing: 'Working' };
 
+/** Requests the real router plans right (tests/integration/router-laya.test.ts) that models on this device can finish. */
+export const EXAMPLES = [
+  { label: 'Summarize and sort a message', request: 'Summarize and categorize this message: The garage door has been stuck open since yesterday evening, anyone can walk in.' },
+  { label: 'Sort a message by topic', request: 'What category is this? The hallway lights flicker every evening.' },
+  { label: 'Continue a story', request: 'Continue this story: Once upon a time, a little fox' },
+];
+
 export function Ask({ lede }: { lede: string }) {
   const [text, setText] = useState('');
+  const box = useRef<HTMLTextAreaElement>(null);
   const ask = useAsk();
   const router = useRouterModel();
   const busy = ask.phase === 'working';
@@ -23,6 +31,7 @@ export function Ask({ lede }: { lede: string }) {
       <label className="input">
         <span className="visually-hidden">Your request</span>
         <textarea
+          ref={box}
           value={text}
           rows={4}
           disabled={busy}
@@ -56,6 +65,25 @@ export function Ask({ lede }: { lede: string }) {
           </>
         )}
       </div>
+
+      {!busy && (
+        <div className="examples" role="group" aria-label="Examples to try">
+          <span className="examples-label">Or try one:</span>
+          {EXAMPLES.map((e) => (
+            <button
+              key={e.label}
+              className="chip"
+              onClick={() => {
+                setText(e.request);
+                box.current?.focus();
+              }}
+              data-testid="ask-example"
+            >
+              {e.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {ask.prompt && <PromptCard prompt={ask.prompt} respond={ask.respond} />}
 
