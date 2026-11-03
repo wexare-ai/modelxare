@@ -7,7 +7,7 @@ import { STEP_WORDS, plainName, useAsk, useRouterModel, type Prompt } from './ro
 const pct = (p: number) => `${Math.round(p * 100)}%`;
 const words = (id: string) => STEP_WORDS[id] ?? { name: id, result: id, doing: 'Working' };
 
-export function Ask() {
+export function Ask({ lede }: { lede: string }) {
   const [text, setText] = useState('');
   const ask = useAsk();
   const router = useRouterModel();
@@ -17,8 +17,9 @@ export function Ask() {
   return (
     <section className="ask-box" aria-labelledby="ask-title">
       <h1 id="ask-title" className="ask-title">
-        What do you need?
+        What do you <em className="accent">need</em>?
       </h1>
+      <p className="lede">{lede}</p>
       <label className="input">
         <span className="visually-hidden">Your request</span>
         <textarea
@@ -130,11 +131,11 @@ export function Ask() {
 
 function PromptCard({ prompt, respond }: { prompt: Prompt; respond: (v: unknown) => void }) {
   return (
-    <div className="note prompt" role="dialog" aria-label="What do you need?" data-testid="clarify">
+    <div className="clarify" role="dialog" aria-label="What do you need?" data-testid="clarify">
       <p>Which of these do you need?</p>
       <div className="choices">
         {prompt.options.map((o) => (
-          <button key={o.id} className="secondary" onClick={() => respond(o.id)}>
+          <button key={o.id} className="chip" onClick={() => respond(o.id)}>
             {words(o.id).name}
           </button>
         ))}
@@ -158,7 +159,7 @@ function StepCard({ step, partial }: { step: Step; partial: string }) {
         : `No model on this device can ${w.name.toLowerCase()} yet. To use your own online AI for steps like this, turn on online help in Settings.`;
   return (
     <li className={`step ${step.status}`} data-testid="step" data-intent={step.intent.id} data-route={step.route.kind} data-status={step.status}>
-      <h2>{w.result}</h2>
+      <h2 className="tag">{w.result}</h2>
       {step.status === 'waiting' && <p className="muted">Next.</p>}
       {step.status === 'running' && <p className="pending-text">{partial || `${w.doing}…`}</p>}
       {step.status === 'done' && (step.output?.topic ? <p className="topic">{step.output.topic}</p> : <p>{step.output?.text}</p>)}

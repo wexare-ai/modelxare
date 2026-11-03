@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { remoteHelp } from '@wexare/router';
+import { BrandDefs } from './Brand.tsx';
 import { useConnection, useStorage } from './engine.ts';
 import { Home } from './Home.tsx';
 import { ModelPage } from './ModelPage.tsx';
 import { Settings } from './Settings.tsx';
 import type { TaskId } from './models.ts';
 import { useOnlineHelp } from './routing.ts';
+import { WexareLogo } from './WexareLogo.tsx';
 
 const modelInHash = () => /^#\/model\/([0-9a-f]{64})$/.exec(location.hash)?.[1] ?? null;
 const settingsInHash = () => location.hash === '#/settings';
@@ -37,9 +39,11 @@ export function App() {
 
   if (steppedAside) {
     return (
-      <div className="page">
+      <div className="app">
+        <BrandDefs />
         <main className="aside">
-          <h1>weXare is open in another tab</h1>
+          <WexareLogo className="aside-mark" />
+          <h1>modelXare is open in another tab</h1>
           <p>It works in one tab at a time.</p>
           <button className="primary" onClick={() => location.reload()}>
             Use it here
@@ -50,30 +54,38 @@ export function App() {
   }
 
   return (
-    <div className="page">
-      <header className="top">
-        <a className="wordmark" href="#/">
-          <img src="./favicon.svg" alt="" width="26" height="26" />
-          weXare
+    <div className="app">
+      <BrandDefs />
+      <header className="nav">
+        <a className="brand" href="#/">
+          <WexareLogo className="brand-mark" />
+          <span className="brand-name">
+            <span className="brand-word">modelXare</span>
+            <span className="brand-by">
+              by <b>weXare</b>
+            </span>
+          </span>
         </a>
-        <span className="top-right">
-          <span className={`connection ${connection}`}>{CONNECTION[connection]}</span>
-          <a className="settings-link" href="#/settings">
+        <span className="nav-right">
+          <span className={`connection ${connection}`}>
+            <span className="connection-text">{CONNECTION[connection]}</span>
+          </span>
+          <a className="nav-link" href="#/settings">
             Settings
           </a>
         </span>
       </header>
 
-      {init && !init.persistent && (
-        <div className="note" role="status">
-          <p>weXare can’t save anything in this tab right now. Close other weXare tabs, then reload.</p>
-          <button className="secondary" onClick={() => location.reload()}>
-            Reload
-          </button>
-        </div>
-      )}
+      <main className="page">
+        {init && !init.persistent && (
+          <div className="note" role="status">
+            <p>modelXare can’t save anything in this tab right now. Close other modelXare tabs, then reload.</p>
+            <button className="secondary" onClick={() => location.reload()}>
+              Reload
+            </button>
+          </div>
+        )}
 
-      <main>
         {settings ? (
           <Settings back={() => (location.hash = '#/')} />
         ) : modelId ? (
@@ -83,10 +95,13 @@ export function App() {
         )}
       </main>
 
-      <footer>
-        {help
-          ? `Models run in this browser. With online help on, only steps no model here can do are sent to ${help.provider}.`
-          : 'Models run in this browser. What you type is never sent anywhere.'}
+      <footer className="foot">
+        <WexareLogo className="foot-mark" />
+        <span>
+          {help
+            ? `Models run in this browser. With online help on, only steps no model here can do are sent to ${help.provider}.`
+            : 'Models run in this browser. What you type is never sent anywhere.'}
+        </span>
       </footer>
     </div>
   );

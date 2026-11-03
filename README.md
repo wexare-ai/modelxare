@@ -50,11 +50,12 @@ workflow, use **Playground**. [docs/demo-script.md](docs/demo-script.md) walks t
 demonstration, including relay failure, offline reload and a second operator.
 
 For people without a technical background, open <http://localhost:5174> instead. That app
-(`apps/simple`) lists models by what they do (Summarize, Sort, Write). Opening a model gives you a
-text box and one button. The first press downloads and checks the model, then it runs on the
-device. It uses the same engine as the PoC but hides keys, hashes, relays and storage. It is a
-separate site, so it keeps its own downloads. Its **What do you need?** box sends a request through
-the System 1 router; see [Routing with System 1](#routing-with-system-1).
+(`apps/simple`), shown as **modelXare by weXare** in the weXare brand, lists models by what they
+do (Summarize, Sort, Write). Opening a model gives you a text box and one button. The first
+press downloads and checks the model, then it runs on the device. It uses the same engine as the
+PoC but hides keys, hashes, relays and storage. It is a separate site, so it keeps its own
+downloads. Its **What do you need?** box sends a request through the System 1 router; see
+[Routing with System 1](#routing-with-system-1).
 
 Models download when they are first needed, without a question. They stay saved until a new model
 needs room, and then the ones used longest ago are removed first. They download again if needed

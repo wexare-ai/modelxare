@@ -1,5 +1,6 @@
 import { remoteHelp } from '@wexare/router';
 import { Ask } from './Ask.tsx';
+import { HeroDecorations } from './Brand.tsx';
 import { useConnection, useModels } from './engine.ts';
 import { useOnlineHelp } from './routing.ts';
 import { TASKS, languageList, size, type TaskId } from './models.ts';
@@ -14,16 +15,18 @@ export function Home(p: { task: TaskId | null; setTask: (t: TaskId | null) => vo
 
   return (
     <>
-      <p className="lede">{online ? 'Small AI models that run on this device, with online help when they can’t.' : 'Small AI models that run on this device. What you type never leaves it.'}</p>
-
-      <Ask />
+      <HeroDecorations />
+      <Ask lede={online ? 'Small AI models that run on this device, with online help when they can’t.' : 'Small AI models that run on this device. What you type never leaves it.'} />
 
       <h2 className="browse-title">Or pick a model by what it does</h2>
-      <div className="verbs" role="group" aria-label="Show models by task" data-filtered={p.task ? '' : undefined}>
+      <div className="verbs" role="group" aria-label="Show models by task">
         {verbs.map(({ t, count }) => (
           <button key={t.id} aria-pressed={p.task === t.id} onClick={() => p.setTask(p.task === t.id ? null : t.id)}>
             {t.verb}
-            <sup aria-label={`${count} ${count === 1 ? 'model' : 'models'}`}>{count}</sup>
+            <span className="count" aria-hidden="true">
+              {count}
+            </span>
+            <span className="visually-hidden">, {count === 1 ? '1 model' : `${count} models`}</span>
           </button>
         ))}
       </div>

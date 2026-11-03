@@ -36,7 +36,7 @@ export function Settings({ back }: { back: () => void }) {
       <section className="settings" aria-labelledby="help-title">
         <h2 id="help-title">Online help</h2>
         <p>
-          When no model on this device can do a step, weXare can ask an online AI service you choose, with your own account. Models on this device are always tried
+          When no model on this device can do a step, modelXare can ask an online AI service you choose, with your own account. Models on this device are always tried
           first.
         </p>
         <label className="check">

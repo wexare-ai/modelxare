@@ -212,7 +212,7 @@ export type Fetched = { status: 'ok' } | { status: 'failed' } | { status: 'no-sp
 
 /** Plain words for a download that didn't fit, with the room the browser really had. */
 export function noSpaceText(what: string, bytes: number, room: number): string {
-  const left = room < 1e6 ? 'this browser won’t let weXare store any more' : `this browser lets weXare use only ${size(room)} more`;
+  const left = room < 1e6 ? 'this browser won’t let modelXare store any more' : `this browser lets modelXare use only ${size(room)} more`;
   return `There isn’t enough free space on this device for ${what} (${size(bytes)}): ${left}. Free up space on this device, then try again.`;
 }
 

@@ -100,14 +100,14 @@ export function ModelPage(p: { id: string; preferredTask: TaskId | null; back: (
 
       {run.phase === 'working' && run.partial && (
         <section className="answer pending" aria-live="polite">
-          <h2>{task.result}</h2>
+          <h2 className="tag">{task.result}</h2>
           <p>{run.partial}</p>
         </section>
       )}
 
       {answer && (
         <section className="answer" data-testid="answer">
-          <h2>{task.result}</h2>
+          <h2 className="tag">{task.result}</h2>
           {answer.topic ? (
             <p className="topic">{answer.topic}</p>
           ) : taskId === 'text-generation' ? (

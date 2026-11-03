@@ -104,7 +104,7 @@ test('space: when nothing can make room, it says how much the browser allows', a
   await page.getByRole('button', { name: 'Try an example' }).click();
   await page.getByTestId('run').click();
   // The room it reports is what the browser really took before refusing, about 20 MB.
-  await expect(page.getByRole('alert')).toContainText(/There isn’t enough free space on this device for this model \(73 MB\): this browser lets weXare use only \d{1,2} MB more\./, {
+  await expect(page.getByRole('alert')).toContainText(/There isn’t enough free space on this device for this model \(73 MB\): this browser lets modelXare use only \d{1,2} MB more\./, {
     timeout: 120_000,
   });
   await close();
