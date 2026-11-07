@@ -1,4 +1,12 @@
 {
   "description": "Publishers a deployed app shows (local development shows every validly signed release). Each entry vouches for one public key: never put a private key here. pubkey: 64 hex characters, from `pnpm cli pubkey --key <file>`. roles: \"models\" (listed in the catalog) and/or \"router\" (may provide the System 1 router). approvedBy: who vouches; weXare today, community curators later. A deployment can use another file with WEXARE_PUBLISHERS.",
-  "publishers": []
+  "publishers": [
+    { 
+      "pubkey": "09fcd5b3656408cac2af89c625488b59fcfaf3788af510a6b408f2ffcb58a75d", 
+      "label": "weXare", 
+      "approvedBy": "weXare", 
+      "roles": ["models", "router"] 
+    }
+  ]
 }
+
