@@ -58,3 +58,28 @@ test('A16: with both relays down, archived records stay searchable', async () =>
   evidence('A16', { both_down: { archive_announcement: annPath, archive_hits: found.total, capability_hits: tagged.total } });
   await app?.close();
 });
+
+test('A16: when relays come back, the app reconnects on its own and sees releases published meanwhile', async () => {
+  // The previous test left both relays stopped: this page starts with neither reachable.
+  const app = await openApp({ path: 'sources' });
+  const { page } = app;
+  const row = (relay: string) => page.locator(`[data-testid="relay-row"][data-relay="${relay}"]`);
+  await expect(row(RELAY_A)).not.toHaveAttribute('data-state', 'live');
+
+  // Reachable again: connects without a reload.
+  await infra('start', 'relay-a', 'relay-b');
+  await expect(row(RELAY_A)).toHaveAttribute('data-state', 'live', { timeout: 60_000 });
+  await expect(row(RELAY_B)).toHaveAttribute('data-state', 'live', { timeout: 60_000 });
+
+  // Dropped while live (a restart), then back: reconnects and resubscribes.
+  await infra('stop', 'relay-a', 'relay-b');
+  await expect(row(RELAY_A)).not.toHaveAttribute('data-state', 'live', { timeout: 30_000 });
+  await infra('start', 'relay-a', 'relay-b');
+  const r = await publishNewRelease('a16-reconnect');
+  await page.evaluate(() => (location.hash = '#/discover'));
+  await expect.poll(async () => (await search(page, { mode: 'Live', text: r.name })).ids, { timeout: 90_000 }).toEqual([r.eventId]);
+  await page.evaluate(() => (location.hash = '#/sources'));
+  await expect(row(RELAY_A)).toHaveAttribute('data-state', 'live');
+  evidence('A16', { reconnect: { event_id: r.eventId, outcomes: r.outcomes } });
+  await app?.close();
+});

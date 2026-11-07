@@ -39,6 +39,8 @@ describe('client config', () => {
     expect(() => loadClientConfig(deployment({ WEXARE_RELAYS: 'ws://relay.example.org' }))).toThrow(/WEXARE_RELAYS: "ws:\/\/relay.example.org" isn't a wss:\/\/ URL/);
     expect(() => loadClientConfig(deployment({ WEXARE_RELAYS: '' }))).toThrow(/WEXARE_RELAYS: required/);
     expect(() => loadClientConfig(deployment({ WEXARE_IPFS_GATEWAYS: 'http://ipfs.example.org' }))).toThrow(/WEXARE_IPFS_GATEWAYS/);
+    // Optional: releases whose files are only on HTTPS hosts need no gateway.
+    expect(loadClientConfig(deployment({ WEXARE_IPFS_GATEWAYS: '' })).ipfsGateways).toEqual([]);
     expect(() => loadClientConfig(deployment({ WEXARE_APPROVAL_REQUEST: 'javascript:alert(1)' }))).toThrow(/WEXARE_APPROVAL_REQUEST/);
   });
 

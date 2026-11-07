@@ -6,7 +6,7 @@
 // A deployment sets them in its build environment (on Vercel: Project →
 // Settings → Environment Variables; see infra/deploy/app.env.example):
 //   WEXARE_RELAYS                wss:// URLs, comma-separated (required)
-//   WEXARE_IPFS_GATEWAYS         https:// URLs (required)
+//   WEXARE_IPFS_GATEWAYS         https:// URLs, for ipfs:// file locations
 //   WEXARE_TRACKERS              wss:// WebTorrent trackers (none: no torrents)
 //   WEXARE_ARWEAVE_GATEWAYS      https:// URLs
 //   WEXARE_OPERATOR_STATUS_URLS  https:// URLs
@@ -73,7 +73,7 @@ export function checkDeployment(c: Omit<ClientConfig, 'publishers'> & { publishe
     }
   };
   list('WEXARE_RELAYS', c.relays, 'wss://', true);
-  list('WEXARE_IPFS_GATEWAYS', c.ipfsGateways, 'https://', true);
+  list('WEXARE_IPFS_GATEWAYS', c.ipfsGateways, 'https://', false);
   list('WEXARE_ARWEAVE_GATEWAYS', c.arweaveGateways, 'https://', false);
   list('WEXARE_TRACKERS', c.trackers, 'wss://', false);
   list('WEXARE_OPERATOR_STATUS_URLS', c.operatorStatusUrls, 'https://', false);

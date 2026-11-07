@@ -311,10 +311,10 @@ demo
   .command('export')
   .description("Write release definitions for the demo's real models, linked to their Hugging Face commits, to publish them to a deployment")
   .requiredOption('--out <dir>', 'where to write one <name>.json per release')
-  .option('--location <kind>', 'also publish copies here: mirror or ipfs (repeatable; default both)', collect, [])
+  .option('--location <kind>', 'also publish your own copies: mirror or ipfs (repeatable; default none, Hugging Face only)', collect, [])
   .action(
     run(async (o) => {
-      const kinds = o.location.length ? o.location : ['mirror', 'ipfs'];
+      const kinds = o.location;
       if (kinds.some((k: string) => k !== 'mirror' && k !== 'ipfs')) throw new Error('--location takes mirror or ipfs');
       await fetchFixtureModels();
       for (const f of await exportDefinitions(resolve(o.out), kinds)) console.log(`wrote ${f}`);

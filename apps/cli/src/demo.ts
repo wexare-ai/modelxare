@@ -115,8 +115,9 @@ export const DEPLOYABLE_RELEASES = ['laya-router', 'story-base', 'shakespeare-lo
 /**
  * Write a full release definition for each deployable demo model: its manifest,
  * the verified local copy, and the exact Hugging Face commit link it came from
- * (so browsers download from Hugging Face first). `locations` adds weXare's own
- * copies; the style add-on still needs its base: `--base-event`.
+ * (browsers download from Hugging Face first). `locations` adds your own copies
+ * (mirror, ipfs) as fallbacks; none is needed. The style add-on still needs its
+ * base at prepare time: `--base-event`.
  */
 export async function exportDefinitions(outDir: string, locations: NonNullable<ReleaseDefinition['locations']>): Promise<string[]> {
   const models = await fixtureModels();
