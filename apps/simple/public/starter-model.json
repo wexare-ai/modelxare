@@ -28,6 +28,12 @@
     ],
     "requirements": { "context_length": 1024, "hardware_profiles": ["cpu-wasm"] }
   },
-  "files": [{ "role": "weights", "path": "model.gguf", "source": "./model.gguf" }],
-  "locations": ["mirror", "ipfs", "torrent"]
+  "files": [
+    {
+      "role": "weights",
+      "path": "model.gguf",
+      "source": "./model.gguf",
+      "urls": ["https://huggingface.co/YOUR-NAME/YOUR-MODEL/resolve/COMMIT/model.gguf"]
+    }
+  ]
 }

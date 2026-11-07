@@ -15,7 +15,7 @@ import { ArtifactRoot, KuboClient } from '@wexare/storage/node';
 import { buildSnapshot, publishArchive } from './archive.ts';
 import { demoBoundedFixture, demoPrepare, demoPublish, demoReset, fetchFixtureModels } from './demo.ts';
 import { generateKeyFile, loadKey } from './keys.ts';
-import { endpoints, paths } from './paths.ts';
+import { endpoints, paths, publishDefaults } from './paths.ts';
 import { printPublishResults, publishToRelays } from './relays.ts';
 import { loadEvent, prepareRelease, saveRelease, signRelease, type ReleaseDefinition } from './release.ts';
 
@@ -34,6 +34,8 @@ async function readEventFiles(files: string[]): Promise<NostrEvent[]> {
   }
   return out;
 }
+
+const publish = publishDefaults();
 
 const program = new Command();
 program.name('wexare').description('Publisher and operator tooling for the weXare micro-model PoC').version('0.1.0');
@@ -79,24 +81,28 @@ release
   .requiredOption('--key <file>', 'publisher key file')
   .requiredOption('--out <dir>', 'output directory (manifest.json, event.json, release.json)')
   .option('--base-event <file>', 'LoRA: the base release event.json')
-  .option('--ipfs-api <url>', 'Kubo RPC API', endpoints.kubo.a.api)
+  .option('--ipfs-api <url>', 'Kubo RPC API (WEXARE_IPFS_API)', publish.ipfsApi)
   .option('--no-ipfs', 'skip IPFS publication')
-  .option('--mirror-root <dir>', 'local artifact root served by apps/artifacts', paths.artifactRoot('main'))
-  .option('--mirror-name <name>', 'artifact root name on the artifacts server', 'main')
-  .option('--mirror-url <url>', 'artifacts server base URL', endpoints.artifacts)
-  .option('--tracker <url>', 'WebSocket tracker for torrents (repeatable)', collect, [])
+  .option('--mirror-root <dir>', 'local artifact root to upload to the mirror (WEXARE_MIRROR_ROOT)', publish.mirrorRoot)
+  .option('--mirror-name <name>', 'artifact root name on the mirror', 'main')
+  .option('--mirror-url <url>', 'mirror base URL (WEXARE_MIRROR_URL)', publish.mirrorUrl)
+  .option('--tracker <url>', 'WebSocket tracker for torrents, repeatable (WEXARE_TRACKERS)', collect, [])
+  .option('--no-check-urls', "don't download the files' urls to check their bytes")
   .action(
     run(async (o) => {
       const def = JSON.parse(await readFile(o.definition, 'utf8')) as ReleaseDefinition;
       const base = o.baseEvent ? { event: await loadEvent(o.baseEvent) } : def.base;
       def.files = def.files.map((f) => ({ ...f, source: resolve(join(o.definition, '..'), f.source) }));
+      const kinds = def.locations ?? [];
+      if (kinds.some((k) => k !== 'ipfs') && !o.mirrorUrl) throw new Error('this definition publishes to a mirror: give its address with --mirror-url or WEXARE_MIRROR_URL');
       const prepared = await prepareRelease(
         { ...def, ...(base ? { base } : {}) },
         {
-          mirror: { root: new ArtifactRoot(o.mirrorRoot), name: o.mirrorName, baseUrl: o.mirrorUrl },
+          ...(o.mirrorUrl ? { mirror: { root: new ArtifactRoot(o.mirrorRoot), name: o.mirrorName, baseUrl: o.mirrorUrl } } : {}),
           ...(o.ipfs ? { ipfs: new KuboClient(o.ipfsApi) } : {}),
-          trackers: o.tracker.length ? o.tracker : [endpoints.tracker.ws],
+          trackers: o.tracker.length ? o.tracker : publish.trackers,
         },
+        { checkUrls: o.checkUrls },
       );
       const key = await loadKey(o.key);
       const event = signRelease(prepared, key);
@@ -109,14 +115,16 @@ release
   .command('publish')
   .description('Publish the exact same signed event to several relays (safe to retry: same event, same release)')
   .requiredOption('--event <file>', 'portable event JSON')
-  .option('--relay <url>', 'relay URL (repeatable)', collect, [])
+  .option('--relay <url>', 'relay URL, repeatable (WEXARE_RELAYS)', collect, [])
   .option('--timeout <ms>', 'per-relay timeout', '8000')
   .action(
     run(async (o) => {
       const event = await loadEvent(o.event);
       const v = verifyReleaseEvent(event);
       if (!v.ok) throw new Error(`refusing to publish an invalid release: ${v.errors.map((e) => e.code).join(', ')}`);
-      const results = await publishToRelays(event, o.relay.length ? o.relay : endpoints.relays, Number(o.timeout));
+      const relays = o.relay.length ? o.relay : publish.relays;
+      if (!relays.length) throw new Error('no relay to publish to: give one with --relay or WEXARE_RELAYS');
+      const results = await publishToRelays(event, relays, Number(o.timeout));
       printPublishResults(`release ${event.id}`, results);
       if (!results.some((r) => r.outcome === 'accepted' || r.outcome === 'duplicate')) process.exitCode = 2;
     }),

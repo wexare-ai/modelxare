@@ -1239,6 +1239,10 @@ a.secondary {
   font-size: 16px;
 }
 
+.label-card dd code {
+  overflow-wrap: anywhere;
+}
+
 .does {
   display: flex;
   flex-wrap: wrap;
@@ -1263,7 +1267,7 @@ a.secondary {
   color: var(--muted);
 }
 
-/* your file, then the three places it is shared from */
+/* your file, matched against your link, then signed */
 .pack {
   display: flex;
   flex-wrap: wrap;

@@ -1,12 +1,14 @@
 import { useEffect, useRef, type ReactNode } from 'react';
+import { CLIENT_CONFIG } from '@wexare/web/src/lib/client-config.ts';
 import { Command } from './Command.tsx';
-import { relays } from './engine.ts';
+import { relays, trust } from './engine.ts';
 import { StageStrip } from './Train.tsx';
 
-// "Xare your model": how a model gets into this catalog, in four steps on the
+// "Xare your model": how a model gets into this catalog, in a few steps on the
 // publisher's computer. The commands are the real CLI's (apps/cli); the
 // starter file is public/starter-model.json, which apps/cli/test checks the
-// CLI accepts.
+// CLI accepts. A deployed app lists approved publishers only, so there it
+// ends with asking for approval.
 
 const PROTOCOL_DOC = 'https://github.com/wexare-ai/modelxare/blob/main/docs/protocol.md#publisher-definition-cli-input';
 
@@ -36,13 +38,13 @@ const STEPS: { icon: ReactNode; title: string; line: string; body: ReactNode }[]
   {
     icon: <TagIcon />,
     title: 'Describe your model',
-    line: 'Fill in the starter file and put it next to your model.',
+    line: 'Fill in the starter file: what it does, and your file’s link.',
     body: <Describe />,
   },
   {
     icon: <BoxIcon />,
-    title: 'Pack and sign',
-    line: 'Checks every byte, shares the file, signs the release.',
+    title: 'Check and sign',
+    line: 'Checks your link serves the exact bytes, then signs the release.',
     body: (
       <>
         <Pack />
@@ -56,6 +58,16 @@ const STEPS: { icon: ReactNode; title: string; line: string; body: ReactNode }[]
     line: 'Sends the signed release to the relays.',
     body: <Command text={['pnpm cli release publish', '--event out/event.json', ...relays.map((r) => `--relay ${r}`)].join(' \\\n  ')} />,
   },
+  ...(trust.open
+    ? []
+    : [
+        {
+          icon: <BadgeIcon />,
+          title: 'Get approved',
+          line: 'This app lists approved publishers. Send us your public key.',
+          body: <Approve />,
+        },
+      ]),
 ];
 
 export function Xare({ back }: { back: () => void }) {
@@ -83,10 +95,20 @@ export function Xare({ back }: { back: () => void }) {
           </span>
         </li>
         <li>
+          <CloudIcon />
+          <span>A place that serves it over HTTPS, like Hugging Face</span>
+        </li>
+        <li>
           <TerminalIcon />
-          <span>
-            This repo, with <code>pnpm infra:up</code> and <code>pnpm dev</code> running
-          </span>
+          {trust.open ? (
+            <span>
+              This repo, with <code>pnpm infra:up</code> and <code>pnpm dev</code> running
+            </span>
+          ) : (
+            <span>
+              This repo, after <code>pnpm install</code>
+            </span>
+          )}
         </li>
       </ul>
 
@@ -111,7 +133,7 @@ export function Xare({ back }: { back: () => void }) {
       </ol>
 
       <section className="xare-done" aria-labelledby="done-title">
-        <h2 id="done-title">It shows up here</h2>
+        <h2 id="done-title">{trust.open ? 'It shows up here' : 'Once approved, it shows up here'}</h2>
         <div className="xare-card" aria-hidden="true">
           <span className="model-name">My summarizer</span>
           <span className="model-status ready">New</span>
@@ -155,9 +177,13 @@ function Describe() {
         <dd>
           <code>en</code>, <code>es</code>, …
         </dd>
-        <dt>files</dt>
+        <dt>file</dt>
         <dd>
           <code>model.gguf</code>
+        </dd>
+        <dt>at</dt>
+        <dd>
+          <code>https://huggingface.co/you/model/resolve/…/model.gguf</code>
         </dd>
       </dl>
       <a className="secondary" href="./starter-model.json" download="model.json" data-testid="starter">
@@ -167,7 +193,7 @@ function Describe() {
   );
 }
 
-/** Your file, its fingerprint, and the three places it is shared from. */
+/** Your file, matched against your link, then signed. */
 function Pack() {
   return (
     <div className="pack" aria-hidden="true">
@@ -178,11 +204,26 @@ function Pack() {
         <path d="M8 34 C 34 22, 60 40, 86 28 M66 12 L 88 28 L 70 48" />
       </svg>
       <span className="pack-to">
-        <span>Mirror</span>
-        <span>IPFS</span>
-        <span>Torrent</span>
+        <span>Same bytes at your link</span>
+        <span>Signed with your key</span>
       </span>
     </div>
+  );
+}
+
+/** Your public key (never the key file), and where to send it. */
+function Approve() {
+  return (
+    <>
+      <Command text="pnpm cli pubkey --key me.key.json" />
+      {CLIENT_CONFIG.approvalRequest && (
+        <p className="train-go">
+          <a className="pill-yellow" href={CLIENT_CONFIG.approvalRequest} target="_blank" rel="noreferrer">
+            Ask for approval <span aria-hidden="true">↗</span>
+          </a>
+        </p>
+      )}
+    </>
   );
 }
 
@@ -237,6 +278,24 @@ function FileIcon() {
     <svg {...icon} className="i">
       <path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z" />
       <path d="M14 3v5h5" />
+    </svg>
+  );
+}
+
+function BadgeIcon() {
+  return (
+    <svg {...icon}>
+      <path d="M12 3l2.4 1.8 3 .1.9 2.9 2.4 1.8-.9 2.9.9 2.9-2.4 1.8-.9 2.9-3 .1L12 21l-2.4-1.8-3-.1-.9-2.9L3.3 14.4l.9-2.9-.9-2.9 2.4-1.8.9-2.9 3-.1z" />
+      <path d="M8.5 12l2.5 2.5 4.5-5" />
+    </svg>
+  );
+}
+
+function CloudIcon() {
+  return (
+    <svg {...icon} className="i">
+      <path d="M7 18a4 4 0 0 1-.5-8 6 6 0 0 1 11.5 1.5A3.5 3.5 0 0 1 17.5 18z" />
+      <path d="M12 11v5M9.5 13.5 12 16l2.5-2.5" />
     </svg>
   );
 }

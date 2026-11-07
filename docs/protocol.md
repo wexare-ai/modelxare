@@ -150,7 +150,14 @@ Tags: `t=wexare-micromodel-catalog`, `m=application/zip`, `x` (ZIP SHA-256), `si
     "operations": [{ "id": "text-generation", "prompt": { "mode": "completion", "template": "{{input}}" }, "generation": { "max_tokens": 24, "temperature": 0, "top_k": 1 } }],
     "requirements": { "context_length": 256, "hardware_profiles": ["cpu-wasm"] }
   },
-  "files": [{ "role": "weights", "path": "stories15M_MOE-F16.gguf", "source": "./models/stories15M_MOE-F16.gguf" }],
+  "files": [
+    {
+      "role": "weights",
+      "path": "stories15M_MOE-F16.gguf",
+      "source": "./models/stories15M_MOE-F16.gguf",
+      "urls": ["https://huggingface.co/…/resolve/<commit>/stories15M_MOE-F16.gguf"]
+    }
+  ],
   "locations": ["mirror", "ipfs", "torrent"]
 }
 ```
@@ -159,9 +166,20 @@ Tags: `t=wexare-micromodel-catalog`, `m=application/zip`, `x` (ZIP SHA-256), `si
   resolved relative to the definition file.
 - `input_schema` and `output_schema` are taken from the bundled contract when an operation ID matches
   one.
-- `locations` chooses where the bytes are published: `mirror` (local artifact root served by
-  `apps/artifacts`), `ipfs` (Kubo add + pin), and `torrent` (`.torrent` + magnet, seeded by `apps/artifacts`).
-  `missing-mirror` and `corrupt-mirror` exist for failure fixtures only.
+- `urls` (optional, per file) lists addresses that already serve the exact bytes over HTTPS, such as a
+  Hugging Face `resolve/<commit>/` link (a commit, not a branch, so the bytes never change). They come
+  first among the file's locations, as `https` (or loopback `http` in development). Before signing, the
+  CLI downloads each one and refuses it unless the size and SHA-256 match the local file and the response
+  allows cross-origin reads (`Access-Control-Allow-Origin`); `--no-check-urls` skips the download.
+- `locations` (optional) chooses where the CLI publishes the bytes itself: `mirror` (an artifact root
+  served by `apps/artifacts` or any static host, at `<mirror>/<name>/sha256/<hash>`), `ipfs` (Kubo add +
+  pin), and `torrent` (`.torrent` + magnet, web-seeded from the mirror). `missing-mirror` and
+  `corrupt-mirror` exist for failure fixtures only. A file needs at least one `url` or location. Only the
+  storage a definition names is used, and the manifest copies (`url`/`fallback` tags) go to that same
+  storage; the manifest itself always travels inside the event.
+- Defaults for `--mirror-url`, `--mirror-root`, `--ipfs-api`, `--tracker` and `release publish --relay`
+  come from `WEXARE_*` variables when any is set (see `infra/deploy/publisher.env.example`), and from the
+  local development services otherwise.
 - LoRAs pass `--base-event <base event.json>`. The CLI copies the base's release ID, manifest hash and
   weight hashes into `base`.
 
