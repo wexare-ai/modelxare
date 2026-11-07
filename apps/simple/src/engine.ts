@@ -8,9 +8,12 @@ import { createCatalogClient } from '@wexare/web/src/lib/catalog-client.ts';
 import { LiveDiscovery } from '@wexare/web/src/lib/live.ts';
 import { ArtifactManager } from '@wexare/web/src/lib/artifacts.ts';
 import { loadSettings } from '@wexare/web/src/lib/settings.ts';
+import { CLIENT_CONFIG } from '@wexare/web/src/lib/client-config.ts';
+import type { PublisherRole } from '@wexare/web/src/lib/client-config.ts';
 import { choiceGrammar, runtime, toCandidate } from '@wexare/web/src/lib/runtime.ts';
 import type { InitResult } from '@wexare/web/src/workers/catalog-api.ts';
 import { buildModels, size, TOPICS, type Model, type TaskId } from './models.ts';
+import { Trust } from './trust.ts';
 
 const settings = loadSettings();
 /** The relays this app listens to: publish there and a release shows up here. */
@@ -18,13 +21,21 @@ export const relays = settings.relays;
 export const { client: catalog, session } = createCatalogClient();
 export const live = new LiveDiscovery(catalog);
 export const artifacts = new ArtifactManager(catalog, () => settings);
+/** Whose releases this app shows and runs. */
+export const trust = new Trust(CLIENT_CONFIG.publishers);
 
 /** Storage first, then the model cache, then relay sync. */
 export const opened: Promise<InitResult> = session.open().then(async (r) => {
   await artifacts.init(r.persistent).catch((e) => console.warn('model cache', e));
-  if (settings.networkSync) live.start(settings.relays);
+  if (settings.networkSync) live.start(settings.relays, { authors: trust.authors() });
   return r;
 });
+
+/** Verified releases from publishers approved for `role`. */
+export async function approvedReleases(role: PublisherRole): Promise<CandidateRelease[]> {
+  await opened;
+  return (await catalog.candidates()).map(toCandidate).filter((c) => trust.allows(c.pubkey, role));
+}
 
 /** Re-render when an engine object reports a change. */
 export function useEvent(target: EventTarget, type = 'change'): number {
@@ -70,7 +81,7 @@ export function useModels(): { models: Model[]; loaded: boolean } {
     let current = true;
     void opened
       .then(() => catalog.candidates())
-      .then((rows) => current && setState({ models: buildModels(rows.map(toCandidate), artifacts.isCached), loaded: true }))
+      .then((rows) => current && setState({ models: buildModels(rows.map(toCandidate), artifacts.isCached, (c) => trust.allows(c.pubkey, 'models')), loaded: true }))
       .catch(() => current && setState((s) => ({ ...s, loaded: true })));
     return () => {
       current = false;

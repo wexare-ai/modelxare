@@ -182,8 +182,10 @@ none of them is required by the protocol.
   trusted catalog builders are configured in **Sources & diagnostics** and can be exported or imported
   as public JSON.
 - **Simple app only:** run `pnpm --filter @wexare/simple build` and serve `apps/simple/dist` with the
-  same two headers. It has no settings screen: it uses the endpoints from
-  `infra/dev-endpoints.json`, which are built into the app.
+  same two headers. Its addresses are built in. With no `WEXARE_*` variables, it uses the local
+  services in `infra/dev-endpoints.json` and shows every validly signed release. A deployment sets its
+  own addresses in environment variables (`infra/deploy/app.env.example`) and shows only the
+  publishers approved in `infra/publishers.json`; the build stops if a setting is wrong.
 - **Publisher CLI only:** `pnpm cli keygen --out my.key.json`, then `pnpm cli release prepare --definition
   def.json --key my.key.json --out out/ --ipfs-api http://… --mirror-url https://…`, then
   `pnpm cli release publish --event out/event.json --relay wss://…`.

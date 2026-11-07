@@ -3,8 +3,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
-
-const endpoints = JSON.parse(readFileSync(join(import.meta.dirname, '../../infra/dev-endpoints.json'), 'utf8'));
+import { loadClientConfig } from './client-config.ts';
 
 // Cross-origin isolation enables multithreaded WASM inference (SharedArrayBuffer).
 // Cross-origin fetches (gateways, mirrors) are CORS requests and are unaffected.
@@ -37,7 +36,7 @@ function offlineShell(): Plugin {
 
 export default defineConfig({
   plugins: [react(), offlineShell()],
-  define: { __DEV_ENDPOINTS__: JSON.stringify(endpoints) },
+  define: { __CLIENT_CONFIG__: JSON.stringify(loadClientConfig()) },
   server: { port: 5173, strictPort: true, headers: isolation },
   preview: { port: 4173, strictPort: true, headers: isolation },
   optimizeDeps: { exclude: ['@sqlite.org/sqlite-wasm', '@wllama/wllama'] },

@@ -5,8 +5,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { LayaWorkerClient } from '@wexare/laya-web';
 import type { CandidateRelease } from '@wexare/orchestrator';
 import { REMOTE_OFF, layaBundle, pickRouter, remoteHelp, route, routerFiles, type RemoteSettings, type RunResult, type Step, type System1 } from '@wexare/router';
-import { capabilities, toCandidate } from '@wexare/web/src/lib/runtime.ts';
-import { artifacts, catalog, fetchFiles, live, noSpaceText, opened, runTask, touch, useEvent, type Fetched } from './engine.ts';
+import { capabilities } from '@wexare/web/src/lib/runtime.ts';
+import { approvedReleases, artifacts, fetchFiles, live, noSpaceText, runTask, touch, useEvent, type Fetched } from './engine.ts';
 
 /** How each kind of step reads to a person. */
 export const STEP_WORDS: Record<string, { name: string; result: string; doing: string }> = {
@@ -73,9 +73,7 @@ class RouterModel extends EventTarget {
   }
 
   async refresh(): Promise<void> {
-    await opened;
-    const rows = await catalog.candidates();
-    this.release = pickRouter(rows.map(toCandidate), capabilities.features, artifacts.isCached);
+    this.release = pickRouter(await approvedReleases('router'), capabilities.features, artifacts.isCached);
     if (this.client) return this.set('ready');
     this.set(!this.release ? 'missing' : this.missingBytes > 0 ? 'not-downloaded' : 'downloaded');
   }
@@ -200,7 +198,7 @@ export function useAsk() {
     if (stopped()) return setState(IDLE);
 
     setState((s) => ({ ...s, activity: 'Working out what to do' }));
-    const candidates = (await catalog.candidates()).map(toCandidate);
+    const candidates = await approvedReleases('models');
     const result = await route(request, system1, {
       candidates,
       isCached: artifacts.isCached,

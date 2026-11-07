@@ -33,6 +33,7 @@ export class LiveDiscovery extends EventTarget {
   private relays = new Map<string, AbstractRelay>();
   private buffers = new Map<string, unknown[]>();
   private timer: ReturnType<typeof setInterval> | null = null;
+  private authors: string[] | undefined;
 
   constructor(private readonly catalog: CatalogClient) {
     super();
@@ -48,8 +49,10 @@ export class LiveDiscovery extends EventTarget {
     this.changed();
   }
 
-  start(urls: string[]): void {
+  /** `authors`: ask relays only for these publishers' releases (all when absent). */
+  start(urls: string[], opts: { authors?: string[] } = {}): void {
     this.stop();
+    this.authors = opts.authors;
     for (const url of urls) void this.connect(url);
     this.timer = setInterval(() => void this.flush(), 300);
   }
@@ -81,7 +84,7 @@ export class LiveDiscovery extends EventTarget {
       b.push(e);
       this.buffers.set(url, b);
     };
-    relay.subscribe([releaseRelayFilter({ limit: 1000 }) as never, { kinds: [FILE_METADATA_KIND], '#t': [CATALOG_TAG], limit: 100 }], {
+    relay.subscribe([releaseRelayFilter({ limit: 1000, ...(this.authors ? { authors: this.authors } : {}) }) as never, { kinds: [FILE_METADATA_KIND], '#t': [CATALOG_TAG], limit: 100 }], {
       onevent: push,
       oninvalidevent: push,
       oneose: () => this.set(url, { status: 'live', eoseAt: Date.now() }),

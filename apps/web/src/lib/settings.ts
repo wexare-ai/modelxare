@@ -1,15 +1,6 @@
 // Public client configuration. Never contains private keys; export/import is plain JSON.
 import type { NostrEvent } from '@wexare/protocol';
-
-declare const __DEV_ENDPOINTS__: {
-  relays: string[];
-  kubo: { a: { gateway: string }; b: { gateway: string } };
-  tracker: { ws: string };
-  artifacts: string;
-  indexer: { status: string };
-  indexer2: { status: string };
-  arweaveGateways: string[];
-};
+import { CLIENT_CONFIG } from './client-config.ts';
 
 export interface TrustedCatalog {
   builderPubkey: string;
@@ -35,15 +26,15 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   version: 1,
-  relays: __DEV_ENDPOINTS__.relays,
-  ipfsGateways: [__DEV_ENDPOINTS__.kubo.a.gateway, __DEV_ENDPOINTS__.kubo.b.gateway],
-  arweaveGateways: __DEV_ENDPOINTS__.arweaveGateways,
+  relays: CLIENT_CONFIG.relays,
+  ipfsGateways: CLIENT_CONFIG.ipfsGateways,
+  arweaveGateways: CLIENT_CONFIG.arweaveGateways,
   extraMirrors: {},
   catalogs: [],
   preferredPublishers: [],
-  torrent: { enabled: true, trackers: [__DEV_ENDPOINTS__.tracker.ws], webSeedDelayMs: 4000, seed: false, preferForArchives: true },
+  torrent: { enabled: CLIENT_CONFIG.trackers.length > 0, trackers: CLIENT_CONFIG.trackers, webSeedDelayMs: 4000, seed: false, preferForArchives: true },
   networkSync: true,
-  operatorStatusUrls: [__DEV_ENDPOINTS__.indexer.status, __DEV_ENDPOINTS__.indexer2.status],
+  operatorStatusUrls: CLIENT_CONFIG.operatorStatusUrls,
 };
 
 const KEY = 'wexare.settings.v1';

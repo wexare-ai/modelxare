@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { noSpaceText, removeFromDevice, useModels, useRun } from './engine.ts';
+import { noSpaceText, removeFromDevice, trust, useModels, useRun } from './engine.ts';
 import { TASKS, languageList, size, taskById, type TaskId } from './models.ts';
 
 const DOING: Record<TaskId, string> = {
@@ -34,6 +34,7 @@ export function ModelPage(p: { id: string; preferredTask: TaskId | null; back: (
   const task = taskById(taskId)!;
   const busy = run.phase === 'downloading' || run.phase === 'preparing' || run.phase === 'working';
   const downloaded = model.downloadBytes < model.totalBytes;
+  const publisher = trust.describe(model.release.pubkey);
   const answer = run.answer?.task === taskId ? run.answer : null;
 
   const tryExample = () => {
@@ -149,6 +150,12 @@ export function ModelPage(p: { id: string; preferredTask: TaskId | null; back: (
           </dd>
           <dt>License</dt>
           <dd>{model.license}</dd>
+          {publisher && (
+            <>
+              <dt>Published by</dt>
+              <dd>{publisher}</dd>
+            </>
+          )}
           <dt>Checked</dt>
           <dd>Before it runs, this device checks the model is exactly what its publisher released.</dd>
         </dl>

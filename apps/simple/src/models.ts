@@ -94,7 +94,12 @@ const friendlyName = (name: string) => name.replace(/\s*\([^)]*\)\s*$/, '').trim
 
 const newer = (a: CandidateRelease, b: CandidateRelease) => a.version.localeCompare(b.version, undefined, { numeric: true }) > 0;
 
-export function buildModels(candidates: CandidateRelease[], isCached: (sha256: string) => boolean): Model[] {
+/**
+ * `shown` picks the releases listed (approved publishers). Any release in the
+ * local catalog can still be a listed style add-on's base: the add-on pins it
+ * by hash.
+ */
+export function buildModels(candidates: CandidateRelease[], isCached: (sha256: string) => boolean, shown: (c: CandidateRelease) => boolean = () => true): Model[] {
   const byId = new Map(candidates.map((c) => [c.eventId, c]));
   const fileOf = (sha256: string): ModelFile | undefined => {
     for (const c of candidates) {
@@ -107,6 +112,7 @@ export function buildModels(candidates: CandidateRelease[], isCached: (sha256: s
   // One entry per model: the newest version a publisher released.
   const latest = new Map<string, CandidateRelease>();
   for (const c of candidates) {
+    if (!shown(c)) continue;
     const key = `${c.pubkey}:${c.modelId}`;
     const seen = latest.get(key);
     if (!seen || newer(c, seen)) latest.set(key, c);

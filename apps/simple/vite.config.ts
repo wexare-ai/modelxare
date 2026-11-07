@@ -3,11 +3,11 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
+import { loadClientConfig } from '../web/client-config.ts';
 
 // The simple app runs the same engine as apps/web (catalog worker, verified
 // downloads, wllama), so it needs the same endpoints, isolation headers and
 // dependency handling.
-const endpoints = JSON.parse(readFileSync(join(import.meta.dirname, '../../infra/dev-endpoints.json'), 'utf8'));
 
 const isolation = {
   'Cross-Origin-Opener-Policy': 'same-origin',
@@ -35,7 +35,7 @@ function offlineShell(): Plugin {
 
 export default defineConfig({
   plugins: [react(), offlineShell()],
-  define: { __DEV_ENDPOINTS__: JSON.stringify(endpoints) },
+  define: { __CLIENT_CONFIG__: JSON.stringify(loadClientConfig()) },
   server: { port: 5174, strictPort: true, headers: isolation },
   preview: { port: 4174, strictPort: true, headers: isolation },
   // Pre-bundling these breaks the paths they use to load their .wasm files.
