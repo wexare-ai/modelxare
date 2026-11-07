@@ -57,12 +57,14 @@ entry (usually `"roles": ["models"]`), and push. Vercel redeploys on its own.
 
 ## 2. The app on Vercel
 
-1. Import the repository into Vercel. Keep the **Root Directory** at the repository root: `vercel.json`
-   there installs only the simple app's packages, builds it, and sends the headers it needs
-   (`Cross-Origin-Opener-Policy` and `Cross-Origin-Embedder-Policy` for multithreaded inference, and
-   caching).
-2. **Settings → General → Node.js Version:** 22.x.
-3. **Settings → Environment Variables** (Production and Preview), from
+1. Import the repository into Vercel. Vercel finds several apps in it and offers to group them as
+   **Services** or to import one alone: do neither. Keep the **Root Directory** at `./` and set
+   **Application Preset** to **Other**. `vercel.json` there installs only the simple app's packages,
+   builds it, and sends the headers it needs (`Cross-Origin-Opener-Policy` and
+   `Cross-Origin-Embedder-Policy` for multithreaded inference, and caching); importing `apps/simple`
+   alone would leave those headers out.
+2. Node.js 22 needs no setting: Vercel follows `engines` in `package.json`.
+3. **Environment Variables** (on the import screen, later under Settings; Production and Preview), from
    [`infra/deploy/app.env.example`](../infra/deploy/app.env.example):
 
    | Variable | Example |
