@@ -20,3 +20,8 @@ tests/.cache/
 .env.*
 !.env.example
 .DS_Store
+
+# Local copies of the deployment settings examples (public addresses, but per machine).
+*.env
+infra/deploy/server/models/
+deploy-releases/

@@ -108,6 +108,7 @@ describe('publishing defaults', () => {
     expect(d.relays).toEqual(['wss://relay.example.org']);
     expect(d.mirrorUrl).toBeUndefined();
     expect(d.trackers).toEqual([]);
+    expect(d.ipfsApi).toBeUndefined();
     expect(d.mirrorRoot).toMatch(/deploy-mirror$/);
   });
 });

@@ -58,8 +58,9 @@ export function publishDefaults(env: Record<string, string | undefined> = proces
     mirrorUrl: env.WEXARE_MIRROR_URL?.trim() || undefined,
     // Kept apart from the development mirror, so only this deployment's files get uploaded.
     mirrorRoot: env.WEXARE_MIRROR_ROOT?.trim() || join(DATA, 'deploy-mirror'),
-    // The publisher's own IPFS node, or the server's through an SSH tunnel; never a public port.
-    ipfsApi: env.WEXARE_IPFS_API?.trim() || 'http://127.0.0.1:5001',
+    // The server's node through an SSH tunnel (never a public port). No default: on this
+    // machine 5001 may be the development node, which must not get a deployment's pins.
+    ipfsApi: env.WEXARE_IPFS_API?.trim() || undefined,
     trackers: list(env.WEXARE_TRACKERS),
   };
 }

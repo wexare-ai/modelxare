@@ -1,0 +1,43 @@
+# Caddy: HTTPS for the three public names (certificates are automatic once DNS
+# points here), from the addresses in .env.
+
+# Relay: WebSocket to strfry, passing the client's address for rate limits.
+{$RELAY_DOMAIN} {
+	reverse_proxy relay:7777 {
+		header_up X-Real-IP {remote_host}
+	}
+}
+
+# IPFS gateway: only what this node pins (Gateway.NoFetch). Kubo sends the
+# CORS and range headers browsers need.
+{$IPFS_DOMAIN} {
+	reverse_proxy kubo:8080
+}
+
+# Mirror: the CLI's artifact root, uploaded to MODELS_DIR as <name>/sha256/<hash>
+# and <name>/torrents/<infohash>.torrent. Immutable bytes, readable from any site.
+{$MODELS_DOMAIN} {
+	header {
+		Access-Control-Allow-Origin *
+		Access-Control-Allow-Methods "GET, HEAD, OPTIONS"
+		Access-Control-Allow-Headers "Range, Cache-Control, If-None-Match, If-Modified-Since"
+		Access-Control-Expose-Headers "Content-Length, Content-Range, Accept-Ranges"
+		Cross-Origin-Resource-Policy cross-origin
+		X-Content-Type-Options nosniff
+	}
+	@preflight method OPTIONS
+	handle @preflight {
+		header Access-Control-Max-Age 86400
+		respond 204
+	}
+	@blob path_regexp ^/[a-z0-9-]+/(sha256/[0-9a-f]{64}|torrents/[0-9a-f]{40}\.torrent)$
+	handle @blob {
+		root * /srv/models
+		header Cache-Control "public, max-age=31536000, immutable"
+		header Content-Type application/octet-stream
+		file_server
+	}
+	handle {
+		respond 404
+	}
+}

@@ -13,7 +13,8 @@ entirely inside the browser.
 
 There is no central registry, account or search API, and no remote inference unless a person turns on
 online help with their own key. See [docs/protocol.md](docs/protocol.md)
-for the data contract and [docs/acceptance.md](docs/acceptance.md) for what has been verified, and how.
+for the data contract, [docs/acceptance.md](docs/acceptance.md) for what has been verified, and how, and
+[docs/deployment.md](docs/deployment.md) to put modelXare online with your own domains.
 
 ![The publisher, catalog operator and browser exchange signed metadata through Nostr relays and bytes through storage](docs/architecture.svg)
 

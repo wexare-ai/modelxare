@@ -109,6 +109,35 @@ async function toDefinition(name: string, d: FixtureDefinition): Promise<Release
   };
 }
 
+/** The demo releases that are real models, not failure fixtures: what a deployment's own catalog starts with. */
+export const DEPLOYABLE_RELEASES = ['laya-router', 'story-base', 'shakespeare-lora', 'tiny-summarizer', 'community-assistant'];
+
+/**
+ * Write a full release definition for each deployable demo model: its manifest,
+ * the verified local copy, and the exact Hugging Face commit link it came from
+ * (so browsers download from Hugging Face first). `locations` adds weXare's own
+ * copies; the style add-on still needs its base: `--base-event`.
+ */
+export async function exportDefinitions(outDir: string, locations: NonNullable<ReleaseDefinition['locations']>): Promise<string[]> {
+  const models = await fixtureModels();
+  const link = (source: string) => {
+    const m = models.find((x) => join(paths.fixtureModels, x.file) === source);
+    if (!m) throw new Error(`no pinned upstream for ${source}`);
+    return `${m.repository}/resolve/${m.revision}/${m.file}`;
+  };
+  await mkdir(outDir, { recursive: true });
+  const written: string[] = [];
+  for (const name of DEPLOYABLE_RELEASES) {
+    const d = await readJson<FixtureDefinition>(join(ROOT, 'fixtures/releases', `${name}.json`));
+    const def = await toDefinition(name, { ...d, base: undefined });
+    const out: ReleaseDefinition = { manifest: def.manifest, files: def.files.map((f) => ({ ...f, urls: [link(f.source)] })), locations };
+    const file = join(outDir, `${name}.json`);
+    await writeFile(file, JSON.stringify(out, null, 2) + '\n');
+    written.push(file);
+  }
+  return written;
+}
+
 async function storageTargets(skipIpfs: boolean): Promise<StorageTargets> {
   const ipfs = skipIpfs ? undefined : new KuboClient(endpoints.kubo.a.api);
   if (ipfs) {

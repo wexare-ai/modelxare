@@ -13,7 +13,7 @@ import {
 } from '@wexare/protocol';
 import { ArtifactRoot, KuboClient } from '@wexare/storage/node';
 import { buildSnapshot, publishArchive } from './archive.ts';
-import { demoBoundedFixture, demoPrepare, demoPublish, demoReset, fetchFixtureModels } from './demo.ts';
+import { demoBoundedFixture, demoPrepare, demoPublish, demoReset, exportDefinitions, fetchFixtureModels } from './demo.ts';
 import { generateKeyFile, loadKey } from './keys.ts';
 import { endpoints, paths, publishDefaults } from './paths.ts';
 import { printPublishResults, publishToRelays } from './relays.ts';
@@ -95,11 +95,12 @@ release
       def.files = def.files.map((f) => ({ ...f, source: resolve(join(o.definition, '..'), f.source) }));
       const kinds = def.locations ?? [];
       if (kinds.some((k) => k !== 'ipfs') && !o.mirrorUrl) throw new Error('this definition publishes to a mirror: give its address with --mirror-url or WEXARE_MIRROR_URL');
+      if (kinds.includes('ipfs') && o.ipfs && !o.ipfsApi) throw new Error('this definition pins on IPFS: give the Kubo RPC API with --ipfs-api or WEXARE_IPFS_API, or pass --no-ipfs');
       const prepared = await prepareRelease(
         { ...def, ...(base ? { base } : {}) },
         {
           ...(o.mirrorUrl ? { mirror: { root: new ArtifactRoot(o.mirrorRoot), name: o.mirrorName, baseUrl: o.mirrorUrl } } : {}),
-          ...(o.ipfs ? { ipfs: new KuboClient(o.ipfsApi) } : {}),
+          ...(o.ipfs && o.ipfsApi ? { ipfs: new KuboClient(o.ipfsApi) } : {}),
           trackers: o.tracker.length ? o.tracker : publish.trackers,
         },
         { checkUrls: o.checkUrls },
@@ -306,6 +307,20 @@ demo
   .command('fetch-models')
   .description('Download and verify the pinned upstream model fixtures only')
   .action(run(async () => fetchFixtureModels()));
+demo
+  .command('export')
+  .description("Write release definitions for the demo's real models, linked to their Hugging Face commits, to publish them to a deployment")
+  .requiredOption('--out <dir>', 'where to write one <name>.json per release')
+  .option('--location <kind>', 'also publish copies here: mirror or ipfs (repeatable; default both)', collect, [])
+  .action(
+    run(async (o) => {
+      const kinds = o.location.length ? o.location : ['mirror', 'ipfs'];
+      if (kinds.some((k: string) => k !== 'mirror' && k !== 'ipfs')) throw new Error('--location takes mirror or ipfs');
+      await fetchFixtureModels();
+      for (const f of await exportDefinitions(resolve(o.out), kinds)) console.log(`wrote ${f}`);
+    }),
+  );
+
 demo
   .command('publish')
   .option('--relay <url>', 'relay (repeatable)', collect, [])

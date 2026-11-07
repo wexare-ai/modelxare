@@ -1,0 +1,57 @@
+# One small server for a public modelXare deployment: the relay, the IPFS node
+# and the file mirror, behind Caddy (HTTPS). The app itself is static and
+# hosted elsewhere (Vercel). Settings come from .env (see .env.example);
+# docs/deployment.md has the whole procedure.
+name: modelxare
+
+services:
+  caddy:
+    image: caddy:2.11.9-alpine@sha256:78bd35025c7ba85961dd149ae670315129954e77abe2383ac47c89106b35ade9
+    restart: unless-stopped
+    environment:
+      RELAY_DOMAIN: ${RELAY_DOMAIN:?set RELAY_DOMAIN in .env}
+      IPFS_DOMAIN: ${IPFS_DOMAIN:?set IPFS_DOMAIN in .env}
+      MODELS_DOMAIN: ${MODELS_DOMAIN:?set MODELS_DOMAIN in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${MODELS_DIR:-./models}:/srv/models:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on: [relay, kubo]
+
+  relay:
+    build: ./relay
+    image: modelxare-relay:0.1.0
+    restart: unless-stopped
+    environment:
+      RELAY_NAME: ${RELAY_NAME:-modelXare relay}
+      RELAY_CONTACT: ${RELAY_CONTACT:-}
+      RELAY_EVENTS_PER_MINUTE: ${RELAY_EVENTS_PER_MINUTE:-30}
+    volumes:
+      - relay-db:/app/strfry-db
+
+  kubo:
+    image: ipfs/kubo:v0.43.1@sha256:b293923d66e490e70ced64df42ea7a6cf7eac2740e3fb29101df18070fa7be48
+    restart: unless-stopped
+    environment:
+      IPFS_DOMAIN: ${IPFS_DOMAIN:?set IPFS_DOMAIN in .env}
+      IPFS_PUBLIC: ${IPFS_PUBLIC:-1}
+    ports:
+      # Peer-to-peer: other IPFS nodes fetch pinned files from here.
+      - "4001:4001"
+      - "4001:4001/udp"
+      # RPC API: this machine only (publish through an SSH tunnel).
+      - "127.0.0.1:5001:5001"
+    volumes:
+      - ./kubo-init.sh:/container-init.d/010-modelxare.sh:ro
+      - kubo-data:/data/ipfs
+
+volumes:
+  caddy-data:
+  caddy-config:
+  relay-db:
+  kubo-data:
