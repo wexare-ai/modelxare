@@ -1,7 +1,6 @@
 /**
- * The weXare look (STYLE.md, 2026-10 brand): the SVG filters the paper and
- * crayon effects use (the weXare site's, from wexare-mvp
- * src/pages/home/LandingDefs.tsx, unchanged), and modelXare's own crayon
+ * The weXare look (2026-10 brand): the SVG filters the paper and crayon
+ * effects use (unchanged from the weXare website), and modelXare's own crayon
  * drawings for the home page's margins, in the same style.
  */
 

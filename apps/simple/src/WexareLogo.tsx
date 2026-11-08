@@ -1,4 +1,4 @@
-// Copied unchanged from the weXare site (wexare-mvp src/pages/home/WexareLogo.tsx, 2026-10 brand).
+// Copied unchanged from the weXare website (2026-10 brand).
 // Keep the two in step; never redraw or restyle the shapes.
 
 import { useId, type SVGProps } from "react";

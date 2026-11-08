@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1100" viewBox="0 0 1800 1100" font-family="Liberation Sans, Arial, Helvetica, sans-serif">
 <defs><marker id="m-meta" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6b4fd8"/></marker><marker id="m-bytes" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0e8a7a"/></marker><marker id="m-plain" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8a867c"/></marker></defs>
 <rect width="1800" height="1100" fill="#f7f6f2"/>
-<text x="40" y="58" font-size="30" font-weight="700" fill="#1f1d1a" text-anchor="start">weXare micro-model marketplace: the big picture</text>
+<text x="40" y="58" font-size="30" font-weight="700" fill="#1f1d1a" text-anchor="start">modelXare, a decentralized AI model platform: the big picture</text>
 <text x="40" y="90" font-size="16" font-weight="400" fill="#5b5852" text-anchor="start">No central registry, account, search API or inference server. Everything is signed, hash-checked and runs in your browser.</text>
 <line x1="1330" y1="50" x2="1392" y2="50" stroke="#6b4fd8" stroke-width="3.2" marker-end="url(#m-meta)"/>
 <text x="1404" y="55" font-size="15" font-weight="400" fill="#1f1d1a" text-anchor="start">signed metadata (Nostr events)</text>

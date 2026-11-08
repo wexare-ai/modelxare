@@ -1,6 +1,6 @@
-# weXare micro-model marketplace: proof of concept
+# modelXare: a decentralized AI model platform
 
-Small AI models published as signed Nostr releases, stored on IPFS, torrents and HTTP mirrors,
+A proof of concept by weXare. Small AI models published as signed Nostr releases, stored on IPFS, torrents and HTTP mirrors,
 collected by independent indexers into signed catalog snapshots, then searched, verified and run
 entirely inside the browser.
 
@@ -12,9 +12,15 @@ entirely inside the browser.
 - **Route.** In the simple app, a System 1 router works out every task a request asks for, and sends each step to a model on the device. The router is [Laya](https://github.com/wexare-ai/browser-laya), itself a signed catalog release. If the person adds their own API key, steps no local model can do go to an online model.
 
 There is no central registry, account or search API, and no remote inference unless a person turns on
-online help with their own key. See [docs/protocol.md](docs/protocol.md)
-for the data contract, [docs/acceptance.md](docs/acceptance.md) for what has been verified, and how, and
-[docs/deployment.md](docs/deployment.md) to put modelXare online with your own domains.
+online help with their own key. Anyone can run all of it:
+
+- **On one machine**, with local relays, IPFS nodes and a file mirror in Docker: [Quick start](#quick-start).
+- **On the internet, with your own domains**: the app on any static host, your releases on public
+  Nostr relays, and later your own relay, IPFS gateway and file mirror on one server:
+  [docs/deployment.md](docs/deployment.md).
+
+See [docs/protocol.md](docs/protocol.md) for the data contract and [docs/acceptance.md](docs/acceptance.md)
+for what has been verified, and how.
 
 ![The publisher, catalog operator and browser exchange signed metadata through Nostr relays and bytes through storage](docs/architecture.svg)
 
@@ -186,7 +192,8 @@ none of them is required by the protocol.
   same two headers. Its addresses are built in. With no `WEXARE_*` variables, it uses the local
   services in `infra/dev-endpoints.json` and shows every validly signed release. A deployment sets its
   own addresses in environment variables (`infra/deploy/app.env.example`) and shows only the
-  publishers approved in `infra/publishers.json`; the build stops if a setting is wrong.
+  publishers approved in `infra/publishers.json` (weXare's key, for weXare's deployment; yours lists
+  your own); the build stops if a setting is wrong.
 - **Publisher CLI only:** `pnpm cli keygen --out my.key.json`, then `pnpm cli release prepare --definition
   def.json --key my.key.json --out out/ --ipfs-api http://… --mirror-url https://…`, then
   `pnpm cli release publish --event out/event.json --relay wss://…`.
@@ -234,8 +241,9 @@ disposable. Private keys stay in the CLI and never reach the browser.
 - Gateway availability, storage retention and browser P2P connectivity are separate concerns. A pinned
   CID or a seeded torrent says nothing about whether a particular gateway or peer is reachable.
 - The router (Laya fp16) is English only. Loading it takes about 3 GB of memory on top of the page.
-  On this project's 8 GB build VM, it could not be loaded safely, so routing decisions with the real
-  router have not been run yet. Run the `WEXARE_TEST_LAYA=1` checks on a larger machine.
+  Its routing decisions were checked with native ONNX Runtime, but not yet in the browser: the 8 GB
+  machine this proof of concept was built on could not load it there safely. Run the
+  `WEXARE_TEST_LAYA=1` checks on a larger machine.
 - The simple app's offline cache includes the router's 28 MB WebAssembly runtime, even if routing is
   never used.
 - P1 items that are not implemented: Arweave uploads (only `ar://` resolution is implemented),

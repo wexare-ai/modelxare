@@ -1,15 +1,16 @@
 # Deploying modelXare
 
-How to put the simple app (modelXare) on the internet with your own domains. No domain is written into
-the code: the app reads its addresses from build environment variables, the publishing CLI from
-`WEXARE_*` variables, and the optional server from its `.env`. The examples use weXare's names; replace
-them with yours.
+How to put the simple app (modelXare) on the internet with your own domains, as weXare does or as
+anyone can with their own copy of this repository. No domain or key is written into the code: the app
+reads its addresses from build environment variables and its approved publishers from a file, the
+publishing CLI reads `WEXARE_*` variables, and the optional server its `.env`. The examples are
+weXare's deployment; replace its names and key with yours.
 
 It starts with no server at all:
 
 | Piece | Where it runs | Example address |
 | --- | --- | --- |
-| The app (`apps/simple`), static files | Vercel | `https://modelxare.wexare.com` |
+| The app (`apps/simple`), static files | Vercel, or any static host | `https://modelxare.wexare.com` |
 | Relays, where releases are announced | Public Nostr relays | `wss://relay.damus.io`, `wss://nos.lol`, `wss://relay.primal.net` |
 | Model files | Hugging Face, at exact commits | `https://huggingface.co/…/resolve/<commit>/…` |
 
@@ -55,6 +56,10 @@ Add the public key to `infra/publishers.json`, then commit and push:
 another publisher later, they send you the output of `pnpm cli pubkey --key <their key>`, you add an
 entry (usually `"roles": ["models"]`), and push. Vercel redeploys on its own.
 
+The file in this repository lists weXare's key, for weXare's deployment. For your own, replace that
+entry with yours, or add yours next to it to also show weXare's releases. To keep the file untouched,
+point `WEXARE_PUBLISHERS` at another list.
+
 ## 2. The app on Vercel
 
 1. Import the repository into Vercel. Vercel finds several apps in it and offers to group them as
@@ -79,6 +84,10 @@ entry (usually `"roles": ["models"]`), and push. Vercel redeploys on its own.
    of what to fix.
 4. **Settings → Domains:** add `modelxare.wexare.com` and create the DNS record Vercel shows.
 
+Any other static host works too: build with the same variables set
+(`pnpm install --filter @wexare/simple...` then `pnpm --filter @wexare/simple build`), serve
+`apps/simple/dist`, and send the headers listed in `vercel.json`.
+
 To try a deployment build locally first:
 
 ```sh
@@ -86,7 +95,7 @@ set -a; . infra/deploy/app.env; set +a      # your copy of app.env.example
 pnpm --filter @wexare/simple build && pnpm --filter @wexare/simple preview
 ```
 
-## 3. Publish weXare's models
+## 3. Publish the models
 
 From the repository root, on the machine with the key, all in one terminal (the settings loaded from
 `publisher.env` last only for it):
@@ -119,6 +128,10 @@ done
 Each relay's answer is printed: `accepted` (or `duplicate`, already there) is what you want. A relay that
 rejects the releases should come out of `WEXARE_RELAYS`, in Vercel and in `publisher.env`; one accepting
 relay is enough to work, three give room for one to fail.
+
+These are the sample models, linked to their Hugging Face commits. Your own models take the same
+`release prepare` and `release publish` steps with your own definitions: the simple app's **Xare your
+model** page has a starter file, and [protocol.md](protocol.md#publisher-definition-cli-input) describes every field.
 
 Keep `deploy-releases/out/*/event.json`: they are the signed releases, needed to send them again. The
 folder holds no key, and Git ignores it.
