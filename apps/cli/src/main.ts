@@ -90,6 +90,8 @@ release
   .option('--no-check-urls', "don't download the files' urls to check their bytes")
   .action(
     run(async (o) => {
+      // Before hashing anything: a wrong key path shouldn't cost a pass over every file.
+      const key = await loadKey(o.key);
       const def = JSON.parse(await readFile(o.definition, 'utf8')) as ReleaseDefinition;
       const base = o.baseEvent ? { event: await loadEvent(o.baseEvent) } : def.base;
       def.files = def.files.map((f) => ({ ...f, source: resolve(join(o.definition, '..'), f.source) }));
@@ -105,7 +107,6 @@ release
         },
         { checkUrls: o.checkUrls },
       );
-      const key = await loadKey(o.key);
       const event = signRelease(prepared, key);
       await saveRelease(resolve(o.out), prepared.manifest.model_id, key.label, prepared, event);
       console.log(`release ${event.id}\nmanifest sha256 ${prepared.manifestSha256}\nwrote ${resolve(o.out)}/{manifest.json,event.json,release.json}`);

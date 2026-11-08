@@ -41,6 +41,7 @@ export async function generateKeyFile(path: string, label: string, opts: { force
 }
 
 export async function loadKey(path: string): Promise<LoadedKey> {
+  if (!path.trim()) throw new Error('no key file: the key path is empty (if it comes from a shell variable, set it in this shell)');
   const st = await stat(path).catch(() => null);
   if (!st) throw new Error(`key file ${path} not found (create one with: wexare keygen --out ${path})`);
   if ((st.mode & 0o077) !== 0) console.warn(`warning: ${path} is readable by other users; run chmod 600`);

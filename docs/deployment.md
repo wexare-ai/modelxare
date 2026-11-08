@@ -88,7 +88,8 @@ pnpm --filter @wexare/simple build && pnpm --filter @wexare/simple preview
 
 ## 3. Publish weXare's models
 
-From the repository root, on the machine with the key:
+From the repository root, on the machine with the key, all in one terminal (the settings loaded from
+`publisher.env` last only for it):
 
 ```sh
 cp infra/deploy/publisher.env.example infra/deploy/publisher.env   # the same relays as the app
@@ -100,7 +101,7 @@ Then prepare each release, in this order (the style add-on needs its base first)
 
 ```sh
 for n in laya-router story-base tiny-summarizer community-assistant; do
-  pnpm cli release prepare --definition deploy-releases/$n.json --key wexare.key.json --out deploy-releases/out/$n
+  pnpm cli release prepare --definition deploy-releases/$n.json --key wexare.key.json --out deploy-releases/out/$n || break
 done
 pnpm cli release prepare --definition deploy-releases/shakespeare-lora.json --key wexare.key.json \
   --out deploy-releases/out/shakespeare-lora --base-event deploy-releases/out/story-base/event.json
@@ -111,7 +112,7 @@ it (1.8 GB in all; `--no-check-urls` skips that), then signs. Publish:
 
 ```sh
 for n in laya-router story-base shakespeare-lora tiny-summarizer community-assistant; do
-  pnpm cli release publish --event deploy-releases/out/$n/event.json
+  pnpm cli release publish --event deploy-releases/out/$n/event.json || break
 done
 ```
 
