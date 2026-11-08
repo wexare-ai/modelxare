@@ -13,7 +13,7 @@ test('simple app: find a model by task, then one button downloads, checks and ru
   const hosts = new Set<string>();
   context.on('request', (r) => /^https?:/.test(r.url()) && hosts.add(new URL(r.url()).host));
   const page = context.pages()[0] ?? (await context.newPage());
-  await page.goto(`${SIMPLE}/`);
+  await page.goto(`${SIMPLE}/#/try`);
 
   const names = page.locator('.model-name');
   await expect(names.filter({ hasText: 'Community message assistant' })).toBeVisible({ timeout: 30_000 });

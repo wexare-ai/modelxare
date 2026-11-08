@@ -23,7 +23,7 @@ test('space: a new model makes room by removing the one used longest ago', async
     if (!localStorage.getItem('wexare.simple.space.v1')) localStorage.setItem('wexare.simple.space.v1', JSON.stringify({ limit: 400e6 }));
   });
   const page = context.pages()[0] ?? (await context.newPage());
-  await page.goto(`${SIMPLE}/`);
+  await page.goto(`${SIMPLE}/#/try`);
   const status = (name: string) => page.locator('.model', { hasText: name }).locator('.model-status');
   await expect(page.locator('.model', { hasText: 'Bedtime story base' })).toBeVisible({ timeout: 30_000 });
 
@@ -64,7 +64,7 @@ async function browser(name: string, fake?: string) {
     }, fake);
   }
   const page = context.pages()[0] ?? (await context.newPage());
-  await page.goto(`${SIMPLE}/`);
+  await page.goto(`${SIMPLE}/#/try`);
   await expect(page.locator('.model', { hasText: 'Bedtime story base' })).toBeVisible({ timeout: 30_000 });
   /** Let the browser store only `bytes` more than it holds now (a real limit: writes past it fail). */
   const limitRoom = async (bytes: number) => {

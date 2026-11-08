@@ -12,7 +12,7 @@ test('Xare your model: from the catalog to the training guide, the publishing st
   const context = await chromium.launchPersistentContext(profile, { headless: true, acceptDownloads: true });
   try {
     const page = context.pages()[0] ?? (await context.newPage());
-    await page.goto(`${SIMPLE}/`);
+    await page.goto(`${SIMPLE}/#/try`);
     await page.getByRole('link', { name: /Xare your model/ }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Xare your model');
     const steps = page.locator('.xare-step');

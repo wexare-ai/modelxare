@@ -1,0 +1,659 @@
+/* The front page (Landing.tsx, Story.tsx), in the app's weXare look: tokens,
+   faces, filters and buttons come from styles.css. */
+
+.landing {
+  display: block;
+}
+
+/* A hand-lettered label on torn paper. AI's are navy; people's (modelXare's side) are pink. */
+.l-tag {
+  position: relative;
+  isolation: isolate;
+  display: inline-block;
+  padding: 8px 14px 4px;
+  rotate: -2deg;
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--white);
+}
+
+.l-tag::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--machine);
+  filter: url(#wx-torn);
+}
+
+.l-tag.human::before {
+  background: var(--human);
+}
+
+.l-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 18px;
+}
+
+.landing a.primary {
+  text-decoration: none;
+}
+
+/* ───────────── Hero ───────────── */
+.l-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(24px, 4vw, 64px);
+  max-width: 1280px;
+  min-height: calc(100svh - 62px);
+  margin: 0 auto;
+  padding: clamp(32px, 5vw, 64px) var(--gutter) clamp(72px, 9vw, 110px);
+}
+
+.l-hero-text {
+  display: grid;
+  justify-items: start;
+  gap: clamp(18px, 2.2vw, 26px);
+}
+
+.l-hero-text .l-tag {
+  animation: fade-up 0.6s var(--soft) both;
+}
+
+.l-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-variation-settings: 'opsz' 96;
+  font-size: clamp(56px, 8.6vw, 128px);
+  line-height: 0.9;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+  animation: fade-up 0.7s var(--soft) 0.08s both;
+}
+
+.l-lede {
+  max-width: 26ch;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(20px, 2vw, 26px);
+  line-height: 1.25;
+  color: var(--muted);
+  text-wrap: pretty;
+  animation: fade-up 0.7s var(--soft) 0.2s both;
+}
+
+.l-hero-text .l-ctas {
+  margin-top: 6px;
+  animation: fade-up 0.7s var(--soft) 0.32s both;
+}
+
+.l-orbit {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 0.86;
+  animation: fade-up 0.9s var(--soft) 0.25s both;
+}
+
+.l-laptop {
+  position: absolute;
+  top: 50%;
+  left: 22%;
+  z-index: 2;
+  width: 56%;
+  overflow: visible;
+  transform: translateY(-50%);
+  animation: float 7s ease-in-out infinite;
+}
+
+/* The hearts on the screen beat now and then. */
+.l-beat {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: beat-slow 3.2s ease-in-out 1.2s infinite;
+}
+
+.l-tile {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  isolation: isolate;
+  padding: 12px 20px 7px;
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: clamp(17px, 1.8vw, 26px);
+  line-height: 1;
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+  will-change: transform, opacity;
+}
+
+.l-tile::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 3px;
+  background: var(--sheet, var(--white));
+  filter: url(#wx-torn);
+}
+
+.l-more {
+  position: absolute;
+  bottom: clamp(18px, 3vw, 30px);
+  left: 50%;
+  translate: -50% 0;
+  display: inline-flex;
+  gap: 8px;
+  padding: 6px 4px;
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 19px;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.l-more span {
+  display: inline-block;
+  animation: nudge 1.8s ease-in-out infinite;
+}
+
+/* ───────────── The story ───────────── */
+/* Tall, so scrolling plays it; the stage stays pinned while it does. */
+.l-story {
+  position: relative;
+  height: 430vh;
+  border-top: 2px dashed var(--skyline);
+}
+
+.l-stage {
+  position: sticky;
+  top: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: clamp(8px, 2vh, 20px);
+  height: 100svh;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: calc(62px + clamp(14px, 3vh, 34px)) var(--gutter) clamp(16px, 3vh, 28px);
+}
+
+.l-caps {
+  position: relative;
+  min-height: clamp(104px, 17vh, 160px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.l-cap {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 14px;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 0.45s var(--soft),
+    transform 0.45s var(--soft);
+}
+
+.l-cap.on {
+  opacity: 1;
+  transform: none;
+}
+
+.l-cap-text {
+  max-width: 24ch;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-variation-settings: 'opsz' 72;
+  font-size: clamp(28px, 4.2vw, 56px);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+.l-scene {
+  position: relative;
+  min-height: 0;
+}
+
+.l-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.l-middle {
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 26px;
+  fill: var(--muted);
+}
+
+/* Their own layers, so what moves every frame never makes the crayon filter run again. */
+.l-live,
+.l-towers {
+  will-change: transform;
+}
+
+.l-rail {
+  display: flex;
+  gap: 10px;
+  width: min(100%, 720px);
+  margin: 0 auto;
+}
+
+.l-rail-part {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  flex-basis: 0;
+}
+
+.l-rail-bar {
+  position: relative;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--skyline);
+}
+
+.l-rail-bar span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: var(--navy);
+}
+
+.l-rail-part:last-child .l-rail-bar span {
+  background: var(--human);
+}
+
+.l-rail-label {
+  overflow: hidden;
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Without motion: the before and after, side by side. */
+.l-story-still {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
+  gap: 32px;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: clamp(64px, 9vw, 120px) var(--gutter) 0;
+  border-top: 2px dashed var(--skyline);
+}
+
+.l-story-still figure {
+  display: grid;
+  gap: 18px;
+  margin: 0;
+}
+
+.l-story-still figcaption {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+}
+
+.l-story-still .l-cap-text {
+  font-size: clamp(26px, 3vw, 38px);
+}
+
+.l-story-still .l-scene {
+  aspect-ratio: 1000 / 600;
+}
+
+/* ───────────── Sections ───────────── */
+.l-section {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: clamp(96px, 13vw, 170px) var(--gutter) 0;
+}
+
+.l-h2 {
+  max-width: 17ch;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-variation-settings: 'opsz' 96;
+  font-size: clamp(42px, 6.4vw, 92px);
+  line-height: 0.94;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+}
+
+.l-sub {
+  max-width: 30ch;
+  margin-top: clamp(14px, 1.8vw, 22px);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(20px, 2vw, 26px);
+  line-height: 1.25;
+  color: var(--muted);
+}
+
+/* What stays yours: four sheets, each with its keepsake and a pink heart. */
+.l-keeps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(16px, 2.4vw, 30px);
+  margin-top: clamp(40px, 6vw, 72px);
+  padding: 0;
+  list-style: none;
+}
+
+.l-keep {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 26px 22px 26px;
+  rotate: var(--turn, 0deg);
+  transition: rotate 0.35s var(--snap);
+}
+
+.l-keep::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 3px;
+  background: var(--sheet, var(--white));
+  filter: url(#wx-torn);
+}
+
+.l-keep:hover {
+  rotate: 0deg;
+}
+
+.l-keep-icon {
+  width: clamp(64px, 7vw, 92px);
+  height: auto;
+  margin-bottom: 8px;
+  overflow: visible;
+}
+
+.l-kept {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 26px;
+  height: 26px;
+  fill: var(--human);
+}
+
+.l-keep.in .l-kept {
+  animation: beat 1s ease-in-out calc(0.6s + var(--i, 0) * 0.15s);
+}
+
+.l-keep h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(22px, 2.1vw, 28px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.l-keep p {
+  margin: 0;
+  font-size: 17px;
+  color: var(--muted);
+}
+
+/* The catalog wall. */
+.l-wall {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: clamp(10px, 1.4vw, 16px);
+  margin-top: clamp(40px, 6vw, 72px);
+  padding: 0;
+  list-style: none;
+}
+
+.l-brick {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: flex-end;
+  min-height: clamp(76px, 8vw, 96px);
+  padding: 14px 14px 12px;
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: clamp(16px, 1.5vw, 19px);
+  line-height: 1.1;
+  rotate: var(--turn, 0deg);
+  transition:
+    transform 0.45s var(--snap),
+    rotate 0.45s var(--snap);
+}
+
+.l-brick::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 3px;
+  background: var(--sheet, var(--white));
+  filter: url(#wx-torn);
+}
+
+/* each brick was shared by someone: a pink dot in its corner */
+.l-brick::after {
+  content: '';
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--human);
+}
+
+.l-brick.reused {
+  z-index: 2;
+  transform: translateY(-10px) scale(1.06);
+  rotate: -2deg;
+}
+
+.l-reuse {
+  position: absolute;
+  top: -14px;
+  right: 8px;
+  isolation: isolate;
+  padding: 5px 9px 2px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--white);
+  opacity: 0;
+  transform: translateY(6px) rotate(3deg);
+  transition:
+    opacity 0.3s,
+    transform 0.45s var(--snap);
+}
+
+.l-reuse::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--machine);
+  filter: url(#wx-torn);
+}
+
+.l-brick.reused .l-reuse {
+  opacity: 1;
+  transform: rotate(3deg);
+}
+
+.l-brick.yours a {
+  color: var(--navy);
+  text-decoration: none;
+}
+
+.l-brick.yours a::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.l-brick.yours:hover {
+  transform: translateY(-4px);
+  rotate: -1deg;
+}
+
+/* ───────────── The end ───────────── */
+.l-final {
+  display: grid;
+  justify-items: center;
+  gap: clamp(22px, 3vw, 34px);
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: clamp(120px, 16vw, 210px) var(--gutter) clamp(90px, 12vw, 150px);
+  text-align: center;
+}
+
+.l-final .l-h2 {
+  max-width: 16ch;
+}
+
+.l-h2-next {
+  display: block;
+  margin-top: 0.3em;
+  font-size: 0.62em;
+  letter-spacing: -0.02em;
+  color: var(--muted);
+}
+
+.l-h2-next .accent {
+  color: var(--human);
+}
+
+.l-final-mark {
+  width: clamp(84px, 9vw, 120px);
+  height: auto;
+  overflow: visible;
+}
+
+.l-final-mark.in {
+  animation:
+    land 0.8s var(--snap) both,
+    beat 1s ease-in-out 1s;
+}
+
+.l-final .l-ctas {
+  justify-content: center;
+}
+
+/* ───────────── Reveal ───────────── */
+.landing [data-reveal]:not(.in) {
+  opacity: 0;
+}
+
+.landing [data-reveal].in {
+  animation: land 0.8s var(--snap) calc(var(--i, 0) * 90ms) both;
+}
+
+@keyframes beat-slow {
+  0%,
+  20%,
+  100% {
+    transform: scale(1);
+  }
+  10% {
+    transform: scale(1.12);
+  }
+}
+
+@keyframes nudge {
+  0%,
+  100% {
+    transform: translateY(-2px);
+  }
+  50% {
+    transform: translateY(4px);
+  }
+}
+
+/* ───────────── Nav on the front page ───────────── */
+.nav-try {
+  padding: 8px 18px;
+}
+
+/* ───────────── Smaller screens ───────────── */
+@media (max-width: 899px) {
+  .l-hero {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+    padding-bottom: 96px;
+  }
+  .l-orbit {
+    width: min(100%, 520px);
+    margin: 0 auto;
+  }
+  .l-keeps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .l-wall {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .l-wall li:nth-child(n + 12):not(.yours) {
+    display: none;
+  }
+}
+
+@media (max-width: 639px) {
+  .nav-hide-small {
+    display: none;
+  }
+  .l-keep {
+    padding: 20px 16px;
+  }
+  .l-kept {
+    top: 14px;
+    right: 14px;
+    width: 22px;
+    height: 22px;
+  }
+  .l-wall {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .l-rail-label {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 379px) {
+  .l-keeps {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing [data-reveal]:not(.in) {
+    opacity: 1;
+  }
+}

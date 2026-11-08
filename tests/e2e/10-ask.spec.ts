@@ -32,7 +32,7 @@ async function simpleApp(opts: { holdDownloads?: boolean } = {}) {
   const page = context.pages()[0] ?? (await context.newPage());
   const urls: string[] = [];
   context.on('request', (r) => urls.push(r.url()));
-  await page.goto(`${SIMPLE}/`);
+  await page.goto(`${SIMPLE}/#/try`);
   return { page, urls, held, close: async () => (await context.close(), rmSync(profile, { recursive: true, force: true })) };
 }
 

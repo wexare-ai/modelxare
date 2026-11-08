@@ -40,7 +40,7 @@ test('Ask: one request that asks for two things gets both, from models on this d
   const hosts = new Set<string>();
   context.on('request', (r) => /^https?:/.test(r.url()) && hosts.add(new URL(r.url()).host));
   const page = context.pages()[0] ?? (await context.newPage());
-  await page.goto(`${SIMPLE}/`);
+  await page.goto(`${SIMPLE}/#/try`);
   const t0 = Date.now();
 
   await askAndFollow(page, 'Categorize and Summarize this message: There has been a water leak near the entrance since this morning. Can someone inspect it?');

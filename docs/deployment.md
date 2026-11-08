@@ -138,7 +138,7 @@ folder holds no key, and Git ignores it.
 
 ## 4. Check it end to end
 
-In a private window on another network: open the app, wait for the dot next to the logo to say online,
+In a private window on another network: open the app, choose **Try modelXare**, wait for the dot next to the logo to say online,
 open a model, run it (the first run downloads and checks it), and try an example request on the home page
 (this downloads the 904 MB router). **About this model** names the publisher.
 
