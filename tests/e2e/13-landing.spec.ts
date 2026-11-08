@@ -30,6 +30,12 @@ test('the front page tells the story by scrolling and leads to the app', async (
     await expect(await at(0.95)).toHaveText('People share models, never their data.');
     await expect(page.locator('.l-middle')).toHaveText('nobody in the middle');
 
+    // System 1 + System 2: the router's real verdicts, then two catalog models answer.
+    await page.locator('.l-browser').scrollIntoViewIfNeeded();
+    await expect(page.locator('.l-model.done')).toHaveCount(2);
+    await expect(page.locator('.l-verdict-out').first()).toHaveText('Sort 0.99');
+    await expect(page.locator('.l-model.idle .l-model-head strong')).toHaveText('Write');
+
     // The sections below land as they come into view.
     await page.locator('.l-final').scrollIntoViewIfNeeded();
     await expect(page.locator('.l-final .l-h2')).toHaveClass(/\bin\b/);
@@ -58,6 +64,9 @@ test('without motion, the front page shows the before and after side by side', a
     await expect(still.nth(0)).toContainText('Your questions and your data all flow into their data centers.');
     await expect(still.nth(1)).toContainText('Small models run on your own laptop. Your data stays with you.');
     await expect(page.locator('.l-story')).toHaveCount(0);
+    // System 1 + System 2 shows its end state: the whole request and both answers.
+    await expect(page.locator('.l-model.done')).toHaveCount(2);
+    await expect(page.locator('.l-typed')).toContainText('anyone can walk in.');
     // Nothing is left hidden waiting for an animation.
     await page.locator('.l-final').scrollIntoViewIfNeeded();
     await expect(page.locator('.l-final .l-h2')).toHaveCSS('opacity', '1');

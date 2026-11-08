@@ -59,7 +59,9 @@ demonstration, including relay failure, offline reload and a second operator.
 For people without a technical background, open <http://localhost:5174> instead. That app
 (`apps/simple`), shown as **modelXare by weXare** in the weXare brand, opens on a front page
 that shows what modelXare is for: a before and after played by scrolling, from a few labs' data
-centers to small models on everyone's own laptop. **Try modelXare** (`#/try`) lists models by what they
+centers to small models on everyone's own laptop, then one request played through System 1 (the
+router decides) and System 2 (language models do the work) in the browser. **Try modelXare**
+(`#/try`) lists models by what they
 do (Summarize, Sort, Write). Opening a model gives you a text box and one button. The first
 press downloads and checks the model, then it runs on the device. It uses the same engine as the
 PoC but hides keys, hashes, relays and storage. It is a separate site, so it keeps its own

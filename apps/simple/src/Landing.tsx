@@ -4,6 +4,7 @@
  * working app is one click away at #/try.
  */
 import { useEffect, useRef, type CSSProperties, type ReactNode, type RefObject } from 'react';
+import { Minds } from './Minds.tsx';
 import { Story } from './Story.tsx';
 import { WexareLogo } from './WexareLogo.tsx';
 import './landing.css';
@@ -336,6 +337,7 @@ export function Landing() {
       <div id="why">
         <Story />
       </div>
+      <Minds />
       <Yours />
       <Together />
       <Finale />
