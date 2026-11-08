@@ -249,6 +249,11 @@ disposable. Private keys stay in the CLI and never reach the browser.
 - P1 items that are not implemented: Arweave uploads (only `ar://` resolution is implemented),
   incremental or sharded catalogs, and browser publishing with a Nostr signer.
 
+## Contributing and security
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) to set up, test and send changes. Report vulnerabilities
+privately as described in [SECURITY.md](SECURITY.md). Contact: hello@wexare.com.
+
 ## License
 
 Apache-2.0. Model fixtures keep their upstream licenses; see `fixtures/models.json`.
