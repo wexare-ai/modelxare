@@ -1,13 +1,21 @@
 # modelXare: a decentralized AI model platform
 
-modelXare, by weXare, is the seed of a new way of using AI models: small models that anyone can
-publish and anyone can run on their own device, with no lab, account or central registry in between. Models
-are published as signed Nostr releases, stored on IPFS, torrents and HTTP mirrors, collected by
-independent indexers into signed catalog snapshots, then searched, verified and run on the person's
-own device: entirely inside the browser, or natively behind a local OpenAI-compatible API.
+**A few labs run the world's AI.** Every question you ask it, every document you paste in and every
+idea you work through goes to their data centers, runs on their terms and at their prices, and may
+train their next model. What people know is being poured into AI that a handful of companies own.
 
-All of what follows works end to end today, and there is a lot more to build: see
-[Known limitations](#known-limitations).
+**It doesn't have to work that way.** Many everyday jobs, like sorting a message, summarizing a page
+or drafting a reply, don't need a giant model in a data center. Small models, each good at one
+thing, run on an ordinary laptop or in a browser tab. modelXare, by weXare, turns them into a
+commons: anyone can publish a model, or teach one what they know, and anyone can find it, check
+where it came from and run it on their own device. No lab, no account, no central registry, and
+what you type stays with you.
+
+**Under the hood**, models are published as signed Nostr releases, stored on IPFS, torrents and
+HTTP mirrors, collected by independent indexers into signed catalog snapshots, then searched,
+verified and run on the person's own device: entirely inside the browser, or natively behind a
+local OpenAI-compatible API. All of it runs end to end today;
+[Known limitations](#known-limitations) lists what comes next.
 
 - **Publish.** A CLI writes a manifest for real model files, signs a NIP-94 release event, and publishes it to two relays. Each relay's acknowledgment is reported separately.
 - **Collect.** A restartable indexer watches several relays and deduplicates. It never claims coverage it did not get.
