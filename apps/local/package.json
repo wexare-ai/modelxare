@@ -1,0 +1,29 @@
+{
+  "name": "@wexare/local",
+  "version": "0.1.0",
+  "private": true,
+  "description": "modelXare on your own machine: catalog models run natively (no browser memory limits), behind an OpenAI-compatible API for agents.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": { "modelxare": "dist/main.js" },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsx src/main.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@huggingface/tokenizers": "0.2.0",
+    "@wexare/laya-web": "0.1.1",
+    "@wexare/orchestrator": "workspace:*",
+    "@wexare/protocol": "workspace:*",
+    "@wexare/router": "workspace:*",
+    "@wexare/runtime": "workspace:*",
+    "commander": "14.0.3",
+    "node-llama-cpp": "3.22.2",
+    "nostr-tools": "2.25.4",
+    "onnxruntime-node": "1.30.0"
+  },
+  "devDependencies": {
+    "tsup": "8.5.1"
+  }
+}

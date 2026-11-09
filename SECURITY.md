@@ -39,6 +39,9 @@ A report that breaks any of these is in scope:
   shown in errors, logs or exports.
 - **Requests stay on the device.** Nothing a person types leaves the browser unless they turn on online
   help, and the apps send no analytics.
+- **The local runtime's API stays local.** `modelxare serve` ([docs/local.md](docs/local.md)) listens
+  on this machine only unless it is given an API key. It answers no web page from another origin
+  unless allowed, accepts only localhost `Host` names on loopback, and never logs requests or answers.
 - **The server stack** in [`infra/deploy/server`](infra/deploy/server) keeps only modelXare releases on
   its relay, serves only files it pins or mirrors, and keeps the IPFS admin API off the network.
 

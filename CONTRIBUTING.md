@@ -30,8 +30,9 @@ pnpm test:e2e       # browser acceptance tests, after infra:up and demo:prepare
 ```
 
 Run `pnpm test:e2e` when you change anything a browser sees or that talks to relays, storage or the
-indexer. `pnpm test:models` (real models in the browser, about 0.9 GB) and the `WEXARE_TEST_LAYA=1`
-router checks (4 to 5 GB of free memory) are opt-in; say in the pull request if you ran them. In the
+indexer. `pnpm test:models` (real models in the browser, about 0.9 GB), the `WEXARE_TEST_LAYA=1`
+router checks (4 to 5 GB of free memory) and `WEXARE_TEST_LOCAL=<data folder>` (the local runtime's
+API with real models, about 4 GB) are opt-in; say in the pull request if you ran them. In the
 description, say what you changed and why, how you checked it, and anything you couldn't check.
 
 ## Rules the code keeps
@@ -56,7 +57,8 @@ description, say what you changed and why, how you checked it, and anything you 
   test vectors in `packages/protocol`, and in a way existing releases still verify.
 - **Pinned dependencies.** Exact versions only, and Docker images pinned by digest. Some pins are
   load-bearing: the LoRA path depends on wllama 3.8.1's internals, and the router on the
-  `onnxruntime-web` version in `pnpm-workspace.yaml`.
+  `onnxruntime-web` version in `pnpm-workspace.yaml` (and `onnxruntime-node` in `apps/local` on the
+  same version).
 - **Plain words in the simple app.** `apps/simple` is for people without a technical background: no
   keys, hashes, relays or storage terms on screen. The PoC app (`apps/web`) can show the machinery.
 

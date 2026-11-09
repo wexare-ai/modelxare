@@ -9,6 +9,12 @@ allowBuilds:
   ip-set: false
   # Native WebRTC for the Node WebTorrent seeder (prebuilt binary download).
   node-datachannel: true
+  # Native llama.cpp for apps/local: prebuilt binaries come as optional
+  # dependencies; its postinstall would only build from source when none fits.
+  node-llama-cpp: false
+  # Native ONNX Runtime for apps/local's System 1 router: the CPU build ships in
+  # the package; its postinstall only fetches optional CUDA libraries.
+  onnxruntime-node: false
   # Postinstall only prints a notice; not needed by onnxruntime-web (Laya).
   protobufjs: false
   utf-8-validate: false

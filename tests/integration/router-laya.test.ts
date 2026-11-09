@@ -4,6 +4,10 @@
 //
 //   WEXARE_TEST_LAYA=1 pnpm vitest run --project integration tests/integration/router-laya.test.ts
 //
+// WEXARE_TEST_LAYA=native runs the same requests through the local runtime's
+// native router (apps/local, onnxruntime-node), about 2.5 GB, reading the files
+// from .data/artifacts; it needs no running services.
+//
 // Only the router is real here. Mini-models can't run in Node, so no step
 // runs: what is checked is which steps System 1 plans for each request, never
 // what a model would write. Every probability goes to the evidence file, to
@@ -18,11 +22,12 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Laya } from '@wexare/laya-web';
-import { layaBundle, route, type Hooks, type System1 } from '@wexare/router';
+import { layaBundle, route, routerFiles, type Hooks, type System1 } from '@wexare/router';
 import type { CandidateRelease } from '@wexare/orchestrator';
 import { DATA, endpoints, evidence } from '../support/env.ts';
 
-const RUN = process.env.WEXARE_TEST_LAYA === '1';
+const RUN = process.env.WEXARE_TEST_LAYA === '1' || process.env.WEXARE_TEST_LAYA === 'native';
+const NATIVE = process.env.WEXARE_TEST_LAYA === 'native';
 
 function routerRelease(): CandidateRelease {
   const ev = JSON.parse(readFileSync(join(DATA, 'releases/laya-router/event.json'), 'utf8')) as { id: string; pubkey: string; tags: string[][] };
@@ -41,20 +46,30 @@ const decisionsOnly = (): Hooks => ({
   clarify: async () => null,
 });
 
-describe.skipIf(!RUN)('System 1 router (real Laya)', () => {
-  let laya: Laya;
+describe.skipIf(!RUN)(`System 1 router (real Laya${NATIVE ? ', native' : ''})`, () => {
   let system1: System1;
+  let close: () => Promise<void> = async () => undefined;
   const log: Record<string, unknown>[] = [];
 
   beforeAll(async () => {
     const release = routerRelease();
-    laya = await Laya.load({ bundle: layaBundle(release, (sha) => `${endpoints.artifacts}/main/sha256/${sha}`), device: 'wasm' });
-    system1 = laya;
+    if (NATIVE) {
+      const { NativeLaya } = await import('../../apps/local/src/laya.ts');
+      const f = routerFiles(release.manifest)!;
+      const at = (x: { sha256: string }) => join(DATA, 'artifacts/main/sha256', x.sha256);
+      const native = await NativeLaya.load({ weights: at(f.weights), tokenizer: at(f.tokenizer), tokenizerConfig: at(f.tokenizerConfig), config: at(f.config) });
+      system1 = native;
+      close = () => native.close();
+    } else {
+      const laya = await Laya.load({ bundle: layaBundle(release, (sha) => `${endpoints.artifacts}/main/sha256/${sha}`), device: 'wasm' });
+      system1 = laya;
+      close = () => laya.close();
+    }
   }, 600_000);
 
   afterAll(async () => {
-    evidence('ROUTER', { decisions: log });
-    await laya?.close();
+    evidence(NATIVE ? 'ROUTER-NATIVE' : 'ROUTER', { decisions: log });
+    await close();
   });
 
   // [steps the request asks for, in the order asked; request]

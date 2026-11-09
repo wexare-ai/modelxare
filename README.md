@@ -10,6 +10,7 @@ entirely inside the browser.
 - **Discover.** The browser app reads relays directly (Live), imports archives (Archives), or both (Combined), into SQLite WASM + FTS5 on OPFS. Searches stay on the device.
 - **Run.** The browser downloads model files with source fallback, verifies every byte against the signed manifest, and runs GGUF models locally with wllama. It composes classification → summarization, and can apply a LoRA adapter at runtime.
 - **Route.** In the simple app, a System 1 router works out every task a request asks for, and sends each step to a model on the device. The router is [Laya](https://github.com/wexare-ai/browser-laya), itself a signed catalog release. If the person adds their own API key, steps no local model can do go to an online model.
+- **Run it natively.** `pnpm modelxare` runs the same releases on your own machine with native llama.cpp and ONNX Runtime, with no browser memory limits. It serves them behind an OpenAI-compatible API (`http://127.0.0.1:8796/v1`) for agents such as OpenCode, Hermes Agent and OpenClaw. Its `auto` model puts System 1 in front of the catalog's models: [docs/local.md](docs/local.md).
 
 There is no central registry, account or search API, and no remote inference unless a person turns on
 online help with their own key. Anyone can run all of it:
@@ -18,6 +19,8 @@ online help with their own key. Anyone can run all of it:
 - **On the internet, with your own domains**: the app on any static host, your releases on public
   Nostr relays, and later your own relay, IPFS gateway and file mirror on one server:
   [docs/deployment.md](docs/deployment.md).
+- **On your laptop, for agents and apps**: the catalog's models behind a local OpenAI-compatible
+  API, reading the public catalog: [docs/local.md](docs/local.md).
 
 See [docs/protocol.md](docs/protocol.md) for the data contract and [docs/acceptance.md](docs/acceptance.md)
 for what has been verified, and how.
@@ -146,6 +149,7 @@ where.
 | `pnpm build` | Static web builds (`apps/web/dist`, `apps/simple/dist`) and bundled operator programs (`apps/*/dist`) |
 | `pnpm demo:reset --force` | Delete the demo data under `.data/`. `--volumes` also deletes relay and IPFS data, and `--downloads` the fixture models. Without `--force` it only lists what it would delete. |
 | `pnpm cli <args>` | The publisher/builder CLI (`wexare --help`) |
+| `pnpm modelxare <args>` | The local runtime: `list`, `pull`, `run`, `serve` (the OpenAI-compatible API), `rm`. See [docs/local.md](docs/local.md) |
 
 ### Tests
 
@@ -158,6 +162,9 @@ where.
 - `pnpm vitest run --project integration` runs the Node-side checks against the same services. The
   mirror and torrent checks also need the artifacts server on :8790, which `pnpm dev` starts.
   `WEXARE_TEST_ARWEAVE=1` adds the public Arweave gateway test, which needs internet access.
+- `WEXARE_TEST_LOCAL=<data folder>` runs `apps/local/test/real-models.test.ts`: the local runtime's
+  API with the real models already pulled into that folder (`pnpm modelxare pull auto`). It needs
+  about 4 GB of free memory.
 - `WEXARE_TEST_LAYA=1` turns on the checks that load the real router:
   `tests/integration/router-laya.test.ts` (routing decisions, Node) and `tests/models/router.spec.ts`
   (the Ask box end to end). They need about 4 to 5 GB of free memory, so they are off by default.
@@ -177,6 +184,7 @@ where.
 | `apps/artifacts` | Static HTTP mirror (range, CORS, immutable caching) and WebRTC torrent seeder |
 | `apps/web` | The browser app: Discover, Model library, Playground, Sources & diagnostics |
 | `apps/simple` | The plain-language app: find a model by task and use it, built on the `apps/web` engine |
+| `apps/local` | `modelxare`: catalog models on native llama.cpp and ONNX Runtime, behind an OpenAI-compatible API, with `auto` (System 1 + System 2) |
 | `infra/` | Docker Compose for strfry ×2, Kubo ×2 and the WebSocket tracker, with images pinned by digest |
 | `fixtures/` | Pinned upstream model fixtures, release definitions, sample messages, the Arweave fixture |
 | `tests/` | Playwright acceptance (`e2e/`, `models/`), integration tests, the runtime compatibility spike |
@@ -221,6 +229,7 @@ none of them is required by the protocol.
 | Indexer operator A / B (status only) | 8791 / 8792 |
 | Web app (dev / preview) | 5173 / 4173 |
 | Simple app (dev / preview) | 5174 / 4174 |
+| Local runtime API (`pnpm modelxare serve`) | 8796 |
 
 ## Data and keys
 
@@ -245,9 +254,9 @@ disposable. Private keys stay in the CLI and never reach the browser.
 - Gateway availability, storage retention and browser P2P connectivity are separate concerns. A pinned
   CID or a seeded torrent says nothing about whether a particular gateway or peer is reachable.
 - The router (Laya fp16) is English only. Loading it takes about 3 GB of memory on top of the page.
-  Its routing decisions were checked with native ONNX Runtime, but not yet in the browser: the 8 GB
-  machine this proof of concept was built on could not load it there safely. Run the
-  `WEXARE_TEST_LAYA=1` checks on a larger machine.
+  Its routing decisions were checked with native ONNX Runtime (and run natively by `modelxare`), but
+  not yet in the browser: the 8 GB machine this proof of concept was built on could not load it there
+  safely. Run the `WEXARE_TEST_LAYA=1` checks on a larger machine.
 - The simple app's offline cache includes the router's 28 MB WebAssembly runtime, even if routing is
   never used.
 - P1 items that are not implemented: Arweave uploads (only `ar://` resolution is implemented),
