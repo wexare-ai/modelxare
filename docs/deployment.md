@@ -10,7 +10,7 @@ It starts with no server at all:
 
 | Piece | Where it runs | Example address |
 | --- | --- | --- |
-| The app (`apps/simple`), static files | Vercel, or any static host | `https://modelxare.wexare.com` |
+| The app (`apps/simple`), static files | Vercel, or any static host | `https://modelxare.com` |
 | Relays, where releases are announced | Public Nostr relays | `wss://relay.damus.io`, `wss://nos.lol`, `wss://relay.primal.net` |
 | Model files | Hugging Face, at exact commits | `https://huggingface.co/…/resolve/<commit>/…` |
 
@@ -82,7 +82,10 @@ point `WEXARE_PUBLISHERS` at another list.
    `WEXARE_IPFS_GATEWAYS` is only needed once releases have `ipfs://` locations. The build checks every
    setting: a non-`wss://` relay, a non-`https://` gateway, or no approved publisher stops it with a list
    of what to fix.
-4. **Settings → Domains:** add `modelxare.wexare.com` and create the DNS record Vercel shows.
+4. **Settings → Domains:** add your domain (weXare's is `modelxare.com`, with `modelxare.wexare.com` as
+   a second address) and create the DNS records Vercel shows. Make one address the primary and have
+   the others redirect to it. To a browser each address is a separate site, so models downloaded and
+   settings saved on one aren't there on another.
 
 Any other static host works too: build with the same variables set
 (`pnpm install --filter @wexare/simple...` then `pnpm --filter @wexare/simple build`), serve
