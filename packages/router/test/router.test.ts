@@ -86,7 +86,7 @@ function hooks(over: Partial<Hooks> & { cached?: string[] } = {}) {
     async runLocal(release, capability, input) {
       calls.local.push(`${release.name}:${capability}`);
       calls.inputs.push(input);
-      return capability === 'text-classification' ? { topic: 'maintenance' } : { text: `${capability} by ${release.name}` };
+      return capability === 'text-classification' ? { topic: 'travel' } : { text: `${capability} by ${release.name}` };
     },
     remote: null,
     async confirmDownload() {
@@ -156,7 +156,7 @@ describe('routing plan', () => {
       ['sort', 'done', { probability: 0.99, by: 'instruction', text: 'Categorize' }],
       ['summarize', 'done', { probability: 1, by: 'instruction', text: 'summarize this message' }],
     ]);
-    expect(r.steps.map((s) => s.output)).toEqual([{ topic: 'maintenance' }, { text: `summarization by ${assistant.name}` }]);
+    expect(r.steps.map((s) => s.output)).toEqual([{ topic: 'travel' }, { text: `summarization by ${assistant.name}` }]);
     expect(calls.local).toEqual([`${assistant.name}:text-classification`, `${assistant.name}:summarization`]);
     expect(calls.inputs).toEqual([leak, leak]); // local models get the message, without the instruction
     expect(r).toMatchObject({ instruction: 'Categorize and summarize this message', message: leak, ended: 'done' });

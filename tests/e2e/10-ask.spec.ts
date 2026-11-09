@@ -42,7 +42,7 @@ test('Ask: the router downloads without a question, and Stop cancels it with not
   await expect(page.locator('.ask-box .hint')).toContainText('downloads a 904 MB router', { timeout: 30_000 });
   // An example fills the box; Go runs it.
   await page.getByTestId('ask-example').first().click();
-  await expect(page.getByTestId('ask-input')).toHaveValue(/^Summarize and categorize this message: The garage door/);
+  await expect(page.getByTestId('ask-input')).toHaveValue(/^Summarize and categorize this message: Your electricity bill/);
   await expect(page.getByTestId('ask-input')).toBeFocused();
   await page.getByTestId('ask-go').click();
   await expect(page.locator('.ask-box .progress')).toContainText('Downloading the router');

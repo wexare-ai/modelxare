@@ -47,12 +47,12 @@ const smol = cand({ caps: ['summarization'], size: 386 });
 const onnx = cand({ caps: ['summarization'], size: 10, family: 'onnx-web' });
 const all = [qwen, smol, onnx];
 const none = () => false;
-const MSG = 'There has been a water leak near the entrance since this morning. Can someone inspect it?';
+const MSG = 'Hi Sam, because of a storm your flight to Lisbon on Friday will leave two hours late, at 16:40. Your seat and bags stay the same.';
 
 describe('planning (A12)', () => {
   it('detects English and Spanish', () => {
     expect(detectLanguage(MSG)).toBe('en');
-    expect(detectLanguage('Hay una fuga de agua cerca de la entrada desde esta mañana. ¿Alguien puede revisarla?')).toBe('es');
+    expect(detectLanguage('Tu vuelo a Lisboa del viernes se retrasa dos horas por una tormenta. La nueva hora de salida es las 16:40.')).toBe('es');
     expect(detectLanguage('ok')).toBe('und');
   });
 
@@ -90,7 +90,7 @@ describe('planning (A12)', () => {
   });
 
   it('filters by language and reports missing stages visibly', () => {
-    const es = planWorkflow('Hay una fuga de agua cerca de la entrada desde esta mañana.', all, {}, none);
+    const es = planWorkflow('Tu vuelo a Lisboa del viernes se retrasa dos horas por una tormenta.', all, {}, none);
     expect(es.language).toBe('es');
     expect(es.stages.map((s) => s.release?.eventId)).toEqual([qwen.eventId, qwen.eventId]);
     const missing = planWorkflow(MSG, [smol], {}, none);
@@ -133,9 +133,11 @@ describe('LoRA dependencies (A13)', () => {
 /** Fake runtime: records loads; generation is scripted per stage. */
 function fakeRuntime(script: Record<string, string[]>) {
   const loads: string[] = [];
+  const prompts: string[] = [];
   let loaded: { key: string } | null = null;
   return {
     loads,
+    prompts,
     get loaded() {
       return loaded as never;
     },
@@ -146,6 +148,7 @@ function fakeRuntime(script: Record<string, string[]>) {
     },
     async generate(r: GenerateRequest) {
       const stage = r.grammar ? 'text-classification' : 'summarization';
+      prompts.push(r.prompt);
       const text = script[stage]!.shift() ?? '';
       r.onToken?.(text);
       return { text, promptTokens: 10, completionTokens: 3, ms: 2, finishReason: 'stop' };
@@ -166,37 +169,39 @@ const deps = (rt: ReturnType<typeof fakeRuntime>, verified: string[] = []) => ({
 
 describe('execution', () => {
   it('runs both stages sequentially with two models and composes a typed result', async () => {
-    const rt = fakeRuntime({ 'text-classification': ['maintenance'], summarization: ['A water leak near the entrance needs inspection.'] });
+    const rt = fakeRuntime({ 'text-classification': ['travel'], summarization: ['The Friday flight to Lisbon leaves two hours late.'] });
     const verified: string[] = [];
     const r = await executeWorkflow(planWorkflow(MSG, all, {}, none), deps(rt, verified));
     expect(r.status).toBe('completed');
-    expect(r.category).toBe('maintenance');
-    expect(r.summary).toMatch(/water leak/);
+    expect(r.category).toBe('travel');
+    expect(r.summary).toMatch(/Lisbon/);
+    // Each topic is listed with what it covers.
+    expect(rt.prompts[0]).toContain('travel (flights, trains, hotels and trips), health (');
     expect(rt.loads).toHaveLength(2);
     expect(verified).toHaveLength(2);
     expect(r.trace.map((t) => t.releaseId)).toEqual([qwen.eventId, smol.eventId]);
-    expect(r.composed!.text).toContain('Category: maintenance');
+    expect(r.composed!.text).toContain('Category: travel');
   });
 
   it('reuses the resident model when both stages use the same release', async () => {
-    const rt = fakeRuntime({ 'text-classification': ['safety'], summarization: ['Short.'] });
+    const rt = fakeRuntime({ 'text-classification': ['money'], summarization: ['Short.'] });
     const r = await executeWorkflow(planWorkflow(MSG, all, { explicit: { summarization: qwen.eventId } }, none), deps(rt));
     expect(rt.loads).toHaveLength(1);
     expect(r.trace[1]!.reusedLoadedModel).toBe(true);
   });
 
   it('retries once, then fails visibly without inventing a category', async () => {
-    const rt = fakeRuntime({ 'text-classification': ['plumbing', 'plumbing'], summarization: ['Leak at the entrance.'] });
+    const rt = fakeRuntime({ 'text-classification': ['airport', 'airport'], summarization: ['Flight delayed.'] });
     const r = await executeWorkflow(planWorkflow(MSG, all, {}, none), deps(rt));
     expect(r.status).toBe('partial');
     expect(r.category).toBeUndefined();
     expect(r.trace[0]!.state).toBe('failed');
-    expect(r.trace[0]!.attempts.map((a) => a.raw)).toEqual(['plumbing', 'plumbing']);
+    expect(r.trace[0]!.attempts.map((a) => a.raw)).toEqual(['airport', 'airport']);
     expect(r.composed!.text).toContain('(classification failed)');
   });
 
   it('cancels and unloads', async () => {
-    const rt = fakeRuntime({ 'text-classification': ['maintenance'], summarization: ['x'] });
+    const rt = fakeRuntime({ 'text-classification': ['travel'], summarization: ['x'] });
     const ac = new AbortController();
     ac.abort();
     const r = await executeWorkflow(planWorkflow(MSG, all, {}, none), deps(rt), ac.signal);
@@ -205,11 +210,12 @@ describe('execution', () => {
   });
 
   it('parses outputs against bundled contracts', () => {
-    expect(parseStageOutput('text-classification', ' Maintenance.\n').value).toEqual({ category: 'maintenance' });
+    expect(parseStageOutput('text-classification', ' Travel.\n').value).toEqual({ category: 'travel' });
     expect(parseStageOutput('text-classification', 'other stuff').error).toBeDefined();
-    expect(parseStageOutput('summarization', 'Summary: "A leak."').value).toEqual({ summary: 'A leak.' });
+    expect(parseStageOutput('summarization', 'Summary: "A delay."').value).toEqual({ summary: 'A delay.' });
     expect(parseStageOutput('summarization', 'x'.repeat(500)).error).toBeDefined();
-    expect(MESSAGE_CATEGORIES).toHaveLength(6);
+    expect(MESSAGE_CATEGORIES).toHaveLength(9);
+    expect(parseStageOutput('text-classification', 'maintenance').error).toBeDefined();
   });
 
   it('runs a single release in one-model mode', async () => {

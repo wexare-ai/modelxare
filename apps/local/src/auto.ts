@@ -5,6 +5,7 @@
 // this machine, or System 1 isn't sure, a general chat model answers the whole
 // conversation instead, tools included. The response says which path it took.
 import { runSingle, type CandidateRelease } from '@wexare/orchestrator';
+import { MESSAGE_CATEGORIES } from '@wexare/protocol';
 import { route, type Hooks, type RunResult, type Step, type StepOutput } from '@wexare/router';
 import type { Engine } from './engine.ts';
 import type { ChatRun, Output } from './llama.ts';
@@ -19,8 +20,8 @@ export const STEP_LABELS: Record<string, string> = {
   answer: 'Answer',
 };
 
-/** Topic names for the bundled message categories. */
-const TOPICS: Record<string, string> = { maintenance: 'Maintenance', safety: 'Safety', security: 'Security', noise: 'Noise', cleanliness: 'Cleanliness', other: 'Other' };
+/** Topic names for the bundled message categories: "travel" → "Travel". */
+const TOPICS: Record<string, string> = Object.fromEntries(MESSAGE_CATEGORIES.map((c) => [c, c[0]!.toUpperCase() + c.slice(1)]));
 
 export interface RouteReport {
   /** 'specialists': System 1 planned steps and catalog models did each; 'general': one chat model answered. */

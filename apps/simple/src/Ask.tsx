@@ -9,8 +9,8 @@ const words = (id: string) => STEP_WORDS[id] ?? { name: id, result: id, doing: '
 
 /** Requests the real router plans right (tests/integration/router-laya.test.ts) that models on this device can finish. */
 export const EXAMPLES = [
-  { label: 'Summarize and sort a message', request: 'Summarize and categorize this message: The garage door has been stuck open since yesterday evening, anyone can walk in.' },
-  { label: 'Sort a message by topic', request: 'What category is this? The hallway lights flicker every evening.' },
+  { label: 'Summarize and sort a message', request: 'Summarize and categorize this message: Your electricity bill of $84.20 is due on March 3. Pay online before then to avoid a late fee.' },
+  { label: 'Sort a message by topic', request: 'What category is this? Your order of running shoes has shipped and will arrive on Wednesday.' },
   { label: 'Continue a story', request: 'Continue this story: Once upon a time, a little fox' },
 ];
 
@@ -36,7 +36,7 @@ export function Ask({ lede }: { lede: string }) {
           rows={4}
           disabled={busy}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Paste a message or say what you need, for example: Sort this message and summarize it: there is a water leak near the entrance."
+          placeholder="Paste a message or say what you need, for example: Sort this message and summarize it: your flight on Friday is delayed by two hours."
           data-testid="ask-input"
         />
       </label>

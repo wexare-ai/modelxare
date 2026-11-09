@@ -4,6 +4,7 @@
 import {
   MESSAGE_CATEGORIES,
   OPERATION_CONTRACTS,
+  categoryList,
   renderPromptTemplate,
   validateOperationOutput,
   type ReleaseManifest,
@@ -93,7 +94,7 @@ export function parseStageOutput(stage: string, raw: string): { value?: Record<s
 function stageInputs(m: ReleaseManifest, stage: string, input: string, language: string) {
   const op = m.operations.find((o) => o.id === stage);
   if (!op) throw new Error(`release has no ${stage} operation`);
-  const vars = { input, categories: MESSAGE_CATEGORIES.join(', '), language: LANGUAGE_NAMES[language] ?? language };
+  const vars = { input, categories: categoryList(), language: LANGUAGE_NAMES[language] ?? language };
   return {
     op,
     system: op.prompt.system ? renderPromptTemplate(op.prompt.system, vars) : undefined,

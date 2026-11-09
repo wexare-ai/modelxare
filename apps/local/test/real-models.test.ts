@@ -55,7 +55,7 @@ describe.skipIf(!HOME)('local runtime with real models', () => {
   });
 
   it('answers a chat request', async () => {
-    const r = await post('/chat/completions', { model: 'tiny-summarizer', temperature: 0, max_tokens: 60, messages: [{ role: 'system', content: 'Summarize the message in one short sentence.' }, { role: 'user', content: 'The elevator in building B has been out of order since Monday and elderly residents cannot reach their flats.' }] });
+    const r = await post('/chat/completions', { model: 'tiny-summarizer', temperature: 0, max_tokens: 60, messages: [{ role: 'system', content: 'Summarize the message in one short sentence.' }, { role: 'user', content: 'Hi Sam, because of a storm your flight to Lisbon on Friday will leave two hours late, at 16:40. Your seat and bags stay the same.' }] });
     evidence.chat = r.body.choices?.[0];
     expect(r.status).toBe(200);
     expect(r.body.choices[0].message.content.length).toBeGreaterThan(10);
@@ -89,7 +89,7 @@ describe.skipIf(!HOME)('local runtime with real models', () => {
   }, 5 * MINUTES);
 
   it('keeps to a JSON schema', async () => {
-    const r = await post('/chat/completions', { model: 'community-assistant', temperature: 0, max_tokens: 60, messages: [{ role: 'user', content: 'Give a short title for a conversation about a broken elevator.' }], response_format: { type: 'json_schema', json_schema: { name: 'title', strict: true, schema: { type: 'object', properties: { title: { type: 'string' } }, required: ['title'], additionalProperties: false } } } });
+    const r = await post('/chat/completions', { model: 'community-assistant', temperature: 0, max_tokens: 60, messages: [{ role: 'user', content: 'Give a short title for a conversation about a delayed flight.' }], response_format: { type: 'json_schema', json_schema: { name: 'title', strict: true, schema: { type: 'object', properties: { title: { type: 'string' } }, required: ['title'], additionalProperties: false } } } });
     evidence.json = r.body.choices[0].message.content;
     expect(typeof JSON.parse(r.body.choices[0].message.content).title).toBe('string');
   }, 5 * MINUTES);
@@ -102,7 +102,7 @@ describe.skipIf(!HOME)('local runtime with real models', () => {
   }, 5 * MINUTES);
 
   it('auto: System 1 hands each task to a specialist', async () => {
-    const r = await post('/chat/completions', { model: 'auto', messages: [{ role: 'user', content: 'Categorize and summarize this message: The heating in the community room has not worked for three days and it is freezing.' }] });
+    const r = await post('/chat/completions', { model: 'auto', messages: [{ role: 'user', content: 'Categorize and summarize this message: Hi Sam, because of a storm your flight to Lisbon on Friday will leave two hours late, at 16:40. Your seat and bags stay the same.' }] });
     evidence.autoSpecialists = { content: r.body.choices[0].message.content, route: r.body.modelxare };
     expect(r.body.modelxare.answered_by).toBe('specialists');
     expect(r.body.modelxare.steps.map((s: { task: string; model: string }) => `${s.task}→${s.model}`)).toEqual(['sort→community-assistant', 'summarize→tiny-summarizer']);

@@ -51,7 +51,7 @@ test('A16: with both relays down, archived records stay searchable', async () =>
   await infra('stop', 'relay-a', 'relay-b');
   await page.reload();
   await expect(page.getByText('catalog: OPFS')).toBeVisible({ timeout: 30_000 });
-  const found = await search(page, { mode: 'Archives', text: 'Community message assistant' });
+  const found = await search(page, { mode: 'Archives', text: 'Message assistant' });
   expect(found.total).toBeGreaterThan(0);
   const tagged = await search(page, { mode: 'Archives', capabilities: ['text-classification', 'summarization'] });
   expect(tagged.total).toBeGreaterThan(0);

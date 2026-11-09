@@ -6,6 +6,8 @@ import {
   MESSAGE_CATEGORIES,
   OPERATION_CONTRACTS,
   buildReleaseEventTemplate,
+  categoryList,
+  operationMatchesContract,
   canonicalJson,
   matchesTagQuery,
   narrowingRelayFilters,
@@ -169,8 +171,24 @@ describe('schemas and helpers', () => {
   });
   it('bundled contracts are valid manifest operation schemas', () => {
     expect(Object.keys(OPERATION_CONTRACTS)).toContain('text-classification');
-    expect(MESSAGE_CATEGORIES).toContain('maintenance');
+    expect(MESSAGE_CATEGORIES).toContain('travel');
     expect(validateManifestSchema({})).not.toEqual([]);
+  });
+  it('accepts releases signed with the first topic list, and nothing wider', () => {
+    const op = (categories: string[]) => ({
+      id: 'text-classification',
+      prompt: { mode: 'chat' as const, template: '{{input}}' },
+      input_schema: OPERATION_CONTRACTS['text-classification']!.input_schema,
+      output_schema: { type: 'object', additionalProperties: false, required: ['category'], properties: { category: { enum: categories } } },
+    });
+    expect(operationMatchesContract(op([...MESSAGE_CATEGORIES]))).toBe(true);
+    expect(operationMatchesContract(op(['maintenance', 'safety', 'security', 'noise', 'cleanliness', 'other']))).toBe(true);
+    expect(operationMatchesContract(op([...MESSAGE_CATEGORIES, 'secrets']))).toBe(false);
+    expect(operationMatchesContract({ ...op(['maintenance', 'safety', 'security', 'noise', 'cleanliness', 'other']), id: 'summarization' })).toBe(false);
+  });
+  it('lists each topic with what it covers', () => {
+    expect(categoryList()).toMatch(/^family \(parents, children, partners and relatives\), friends \(/);
+    expect(categoryList().split('), ')).toHaveLength(MESSAGE_CATEGORIES.length);
   });
   it('renders prompt placeholders as text', () => {
     expect(renderPromptTemplate('A {{input}} B {{ categories }} {{unknown}}', { input: '<b>x</b>', categories: 'a, b' })).toBe('A <b>x</b> B a, b {{unknown}}');

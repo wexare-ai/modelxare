@@ -44,7 +44,7 @@ test('A15: a second operator exports a catalog the browser imports through setti
   const row = page.locator(`[data-testid="source-row"][data-source="catalog:${builder}"]`);
   await expect(row).toHaveAttribute('data-count', String(records));
 
-  const archived = await search(page, { mode: 'Archives', text: 'Community message assistant' });
+  const archived = await search(page, { mode: 'Archives', text: 'Message assistant' });
   expect(archived.total).toBeGreaterThan(0);
 
   // The exported public configuration names the trusted builder and holds no secrets.

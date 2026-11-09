@@ -10,8 +10,9 @@ import { gotoPage, openApp, search, type AppHandle } from '../support/app.ts';
 
 test.describe.configure({ mode: 'serial' });
 
-const CATEGORIES = ['maintenance', 'safety', 'security', 'noise', 'cleanliness', 'other'];
-const samples = JSON.parse(readFileSync(join(ROOT, 'fixtures/messages.json'), 'utf8')).messages as { id: string; text: string; language: string }[];
+const fixtures = JSON.parse(readFileSync(join(ROOT, 'fixtures/messages.json'), 'utf8')) as { categories: string[]; messages: { id: string; text: string; language: string }[] };
+const CATEGORIES = fixtures.categories;
+const samples = fixtures.messages;
 let app: AppHandle;
 const runs: Record<string, unknown>[] = [];
 
@@ -58,8 +59,8 @@ async function runWorkflow(page: Page, label: string) {
 test('A11: two distinct real models classify and summarize a message locally', async () => {
   const { page } = app;
   await gotoPage(page, 'playground');
-  await page.getByTestId('sample-en-water-leak').click();
-  const r = await runWorkflow(page, 'en-water-leak');
+  await page.getByTestId('sample-en-flight-delay').click();
+  const r = await runWorkflow(page, 'en-flight-delay');
   expect(r.status).toBe('completed');
   expect(CATEGORIES).toContain(r.category);
   expect(r.summary.length).toBeGreaterThan(0);
@@ -75,8 +76,8 @@ test('A11: two distinct real models classify and summarize a message locally', a
 test('A11: the Spanish sample runs with releases that declare Spanish', async () => {
   const { page } = app;
   await gotoPage(page, 'playground');
-  await page.getByTestId('sample-es-water-leak').click();
-  const r = await runWorkflow(page, 'es-water-leak');
+  await page.getByTestId('sample-es-flight-delay').click();
+  const r = await runWorkflow(page, 'es-flight-delay');
   expect(r.status).toBe('completed');
   expect(CATEGORIES).toContain(r.category);
   expect(r.summary.length).toBeGreaterThan(0);
@@ -86,11 +87,11 @@ test('A12: choosing another compatible release changes the execution trace', asy
   const { page } = app;
   const ids = demoState().releases;
   await gotoPage(page, 'playground');
-  await page.getByTestId('sample-en-water-leak').click();
+  await page.getByTestId('sample-en-flight-delay').click();
   const auto = await page.getByTestId('plan-summarization').getAttribute('data-release');
   const alternative = auto === ids['community-assistant']!.event_id ? ids['tiny-summarizer']!.event_id : ids['community-assistant']!.event_id;
   await page.getByTestId('choose-summarization').selectOption(alternative);
-  const r = await runWorkflow(page, 'en-water-leak, summarization switched');
+  const r = await runWorkflow(page, 'en-flight-delay, summarization switched');
   expect(r.status).toBe('completed');
   expect(r.trace.summarization).toBe(alternative);
   expect(r.trace.summarization).not.toBe(auto);
@@ -126,10 +127,10 @@ test('A14: offline reload, local search and the two-stage workflow with no netwo
   page.on('request', (r) => offline.push(r.url()));
   await page.reload();
   await expect(page.getByText('catalog: OPFS')).toBeVisible({ timeout: 30_000 });
-  expect((await search(page, { mode: 'Combined', text: 'Community message assistant' })).total).toBeGreaterThan(0);
+  expect((await search(page, { mode: 'Combined', text: 'Message assistant' })).total).toBeGreaterThan(0);
   await gotoPage(page, 'playground');
-  await page.getByTestId('sample-en-loud-music').click();
-  const r = await runWorkflow(page, 'en-loud-music, offline');
+  await page.getByTestId('sample-en-package').click();
+  const r = await runWorkflow(page, 'en-package, offline');
   expect(r.status).toBe('completed');
   expect(CATEGORIES).toContain(r.category);
   await context.setOffline(false);

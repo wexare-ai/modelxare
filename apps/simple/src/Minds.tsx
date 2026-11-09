@@ -3,23 +3,23 @@
  * browser tab. The System 1 model (Laya) splits it and decides what each part
  * asks for; System 2 language models from the catalog do the work.
  *
- * The request is the one the real router was checked on
- * (docs/acceptance.md, "Real routing decisions": "Categorize" → sort 0.99,
- * "summarize this message" → summarize 1.00), and the System 2 models are the
- * catalog's: Qwen2.5 0.5B sorts messages, SmolLM2 360M summarizes them.
+ * Everything shown is what the real models did with this request
+ * (docs/acceptance.md, "Everyday examples"): the router read "Categorize" as
+ * sort 0.99 and "summarize this message" as summarize 0.99; Qwen2.5 0.5B
+ * sorted the message as Travel and SmolLM2 360M wrote the summary.
  */
 import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
 
-const REQUEST = 'Categorize and summarize this message: The garage door has been stuck open since yesterday evening, anyone can walk in.';
+const REQUEST = 'Categorize and summarize this message: Hi Sam, because of a storm your flight to Lisbon on Friday will leave two hours late, at 16:40. Your seat and bags stay the same.';
 
 const PARTS = [
   { text: 'Categorize', intent: 'Sort', score: '0.99', width: 99, model: 0 },
-  { text: 'summarize this message', intent: 'Summarize', score: '1.00', width: 100, model: 1 },
+  { text: 'summarize this message', intent: 'Summarize', score: '0.99', width: 99, model: 1 },
 ];
 
 const MODELS = [
-  { verb: 'Sort', name: 'Qwen2.5 0.5B', result: 'Security', sheet: 'var(--pinkl)' },
-  { verb: 'Summarize', name: 'SmolLM2 360M', result: 'The garage door has been open since last night, so anyone can get in.', sheet: 'var(--sunl)' },
+  { verb: 'Sort', name: 'Qwen2.5 0.5B', result: 'Travel', sheet: 'var(--pinkl)' },
+  { verb: 'Summarize', name: 'SmolLM2 360M', result: 'Your flight to Lisbon on Friday will leave two hours late at 16:40. Your seat and bags stay the same.', sheet: 'var(--sunl)' },
   { verb: 'Write', name: 'Stories 15M', result: '', sheet: 'var(--sky)' },
 ];
 

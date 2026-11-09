@@ -15,9 +15,9 @@ export interface Intent {
 export const INTENTS: Intent[] = [
   {
     id: 'sort',
-    criterion: 'put the message into one topic category, such as maintenance, safety, security, noise or cleanliness',
+    criterion: 'put the message into one topic category, such as family, work, money, shopping or travel',
     capability: 'text-classification',
-    instruction: 'Classify the message into exactly one of: maintenance, safety, security, noise, cleanliness, other. Reply with the category only.',
+    instruction: 'Sort the message into exactly one of these topics: family, friends, work, money, shopping, travel, health, home, other. Reply with the topic only.',
   },
   {
     id: 'summarize',

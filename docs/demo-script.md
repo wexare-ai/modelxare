@@ -111,7 +111,7 @@ Queries report their local time in milliseconds.
 
 ## 7. Download, verify and run the composition workflow
 
-Open **Playground**, which defaults to the English water-leak sample.
+Open **Playground**, which defaults to the English flight-delay sample.
 
 1. The plan picks a classification release and a summarization release from the verified catalog
    and explains why. You can choose another compatible release per stage. Incompatible releases are

@@ -112,7 +112,7 @@ from Hugging Face.
 pnpm install
 pnpm modelxare --env infra/deploy/app.env.example list        # the catalog, and what is downloaded
 pnpm modelxare --env infra/deploy/app.env.example pull auto   # the router and every model, about 1.9 GB
-pnpm modelxare --env infra/deploy/app.env.example run auto "Categorize and summarize this message: The garage door has been stuck open since yesterday evening, anyone can walk in."
+pnpm modelxare --env infra/deploy/app.env.example run auto "Categorize and summarize this message: Hi Sam, because of a storm your flight to Lisbon on Friday will leave two hours late, at 16:40. Your seat and bags stay the same."
 pnpm modelxare --env infra/deploy/app.env.example serve       # http://127.0.0.1:8796/v1
 ```
 

@@ -3,9 +3,9 @@
   "publisher": "publisher-a",
   "manifest": {
     "model_id": "community-assistant",
-    "name": "Community message assistant (Qwen2.5 0.5B Q4_K_M)",
-    "description": "Classifies community messages into a small issue category set and writes one-sentence summaries. English and Spanish.",
-    "version": "1.0.0",
+    "name": "Message assistant (Qwen2.5 0.5B Q4_K_M)",
+    "description": "Sorts everyday messages, such as texts and emails, by topic and writes one-sentence summaries. English and Spanish.",
+    "version": "1.1.0",
     "kind": "model",
     "capabilities": [
       "text-classification",
@@ -31,7 +31,7 @@
         "id": "text-classification",
         "prompt": {
           "mode": "chat",
-          "system": "You classify messages written by residents of a building or neighborhood. Answer with exactly one category from this list: {{categories}}.",
+          "system": "You sort everyday messages, such as texts and emails, by topic. Answer with exactly one category from this list: {{categories}}.",
           "template": "Message: {{input}}"
         },
         "generation": {
@@ -43,7 +43,7 @@
         "id": "summarization",
         "prompt": {
           "mode": "chat",
-          "system": "You summarize a resident's message in one short sentence written in {{language}}. Keep the key facts. Do not add anything.",
+          "system": "You summarize a message in one short sentence written in {{language}}. Keep the key facts. Do not add anything.",
           "template": "{{input}}"
         },
         "generation": {

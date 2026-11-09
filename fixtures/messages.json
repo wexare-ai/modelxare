@@ -1,28 +1,28 @@
 {
-  "description": "Sample community messages for the two-stage workflow. `representative_category` is what a reasonable classifier is expected to pick; tests validate output shapes and contracts, never exact model prose.",
-  "categories": ["maintenance", "safety", "security", "noise", "cleanliness", "other"],
+  "description": "Sample everyday messages for the two-stage workflow. `representative_category` is what a reasonable classifier is expected to pick; tests validate output shapes and contracts, never exact model prose.",
+  "categories": ["family", "friends", "work", "money", "shopping", "travel", "health", "home", "other"],
   "expected_result_shape": {
     "category": "one of categories",
     "summary": "non-empty string, at most 400 characters, one sentence"
   },
   "messages": [
     {
-      "id": "en-water-leak",
+      "id": "en-flight-delay",
       "language": "en",
-      "text": "There has been a water leak near the entrance since this morning. Can someone inspect it?",
-      "representative_category": "maintenance"
+      "text": "Hi Sam, because of a storm your flight to Lisbon on Friday will leave two hours late, at 16:40. Your seat and bags stay the same, nothing to do.",
+      "representative_category": "travel"
     },
     {
-      "id": "es-water-leak",
+      "id": "es-flight-delay",
       "language": "es",
-      "text": "Hay una fuga de agua cerca de la entrada desde esta mañana. ¿Alguien puede revisarla?",
-      "representative_category": "maintenance"
+      "text": "Tu vuelo a Lisboa del viernes se retrasa dos horas por una tormenta. La nueva hora de salida es las 16:40.",
+      "representative_category": "travel"
     },
     {
-      "id": "en-loud-music",
+      "id": "en-package",
       "language": "en",
-      "text": "The people in apartment 4B have been playing loud music past midnight every night this week. Could someone please talk to them?",
-      "representative_category": "noise"
+      "text": "Good news! Your running shoes have shipped. They should arrive on Wednesday, and we will text you when they are out for delivery.",
+      "representative_category": "shopping"
     }
   ]
 }

@@ -200,7 +200,7 @@ export async function demoPrepare(opts: { skipIpfs?: boolean; replicate?: boolea
   const badDir = paths.release('_invalid-manifest-hash');
   let bad = await loadEvent(join(badDir, 'event.json')).catch(() => null);
   if (!bad) {
-    const tags = good.tags.map((t) => (t[0] === 'wexare-manifest' ? [t[0], t[1]!.replace('"version":"1.0.0"', '"version":"1.0.1"')] : t));
+    const tags = good.tags.map((t) => (t[0] === 'wexare-manifest' ? [t[0], t[1]!.replace(/"version":"[^"]+"/, '"version":"9.9.9"')] : t));
     bad = finalizeEvent({ kind: 1063, created_at: Math.floor(Date.now() / 1000), content: 'Negative fixture: altered inline manifest.', tags }, keys['publisher-b']!.secretKey) as unknown as NostrEvent;
     await mkdir(badDir, { recursive: true });
     await writeFile(join(badDir, 'event.json'), JSON.stringify(bad, null, 2) + '\n');

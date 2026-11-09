@@ -2,7 +2,7 @@
 // (keys, hashes, runtimes, locations) stays in the engine; this layer only keeps
 // models this browser can actually run, and says what they do.
 import { resolveLoraDependency, type CandidateRelease } from '@wexare/orchestrator';
-import type { FileLocation } from '@wexare/protocol';
+import { MESSAGE_CATEGORIES, type FileLocation } from '@wexare/protocol';
 
 export type TaskId = 'summarization' | 'text-classification' | 'text-generation';
 
@@ -26,9 +26,9 @@ export const TASKS: Task[] = [
     result: 'Summary',
     placeholder: 'Paste or type a message to summarize',
     examples: [
-      'There has been a water leak near the entrance since this morning. Can someone inspect it?',
-      'Hay una fuga de agua cerca de la entrada desde esta mañana. ¿Alguien puede revisarla?',
-      'The people in apartment 4B have been playing loud music past midnight every night this week. Could someone please talk to them?',
+      'Hi Sam, because of a storm your flight to Lisbon on Friday will leave two hours late, at 16:40. Your seat and bags stay the same.',
+      'Tu vuelo a Lisboa del viernes se retrasa dos horas por una tormenta. La nueva hora de salida es las 16:40.',
+      'Your electricity bill of $84.20 is due on March 3. Pay online before then to avoid a late fee.',
     ],
   },
   {
@@ -38,9 +38,9 @@ export const TASKS: Task[] = [
     result: 'Topic',
     placeholder: 'Paste or type a message to sort by topic',
     examples: [
-      'There has been a water leak near the entrance since this morning. Can someone inspect it?',
-      'The back gate lock is broken and anyone can walk in at night.',
-      'The people in apartment 4B have been playing loud music past midnight every night this week. Could someone please talk to them?',
+      'Your order of running shoes has shipped and will arrive on Wednesday.',
+      'Your electricity bill of $84.20 is due on March 3. Pay online before then to avoid a late fee.',
+      'Your train to Berlin leaves from platform 7 in 20 minutes.',
     ],
   },
   {
@@ -55,15 +55,8 @@ export const TASKS: Task[] = [
 
 export const taskById = (id: string) => TASKS.find((t) => t.id === id);
 
-/** Topic names for the bundled message categories. */
-export const TOPICS: Record<string, string> = {
-  maintenance: 'Maintenance',
-  safety: 'Safety',
-  security: 'Security',
-  noise: 'Noise',
-  cleanliness: 'Cleanliness',
-  other: 'Other',
-};
+/** Topic names for the bundled message categories: "travel" → "Travel". */
+export const TOPICS: Record<string, string> = Object.fromEntries(MESSAGE_CATEGORIES.map((c) => [c, c[0]!.toUpperCase() + c.slice(1)]));
 
 export interface ModelFile {
   sha256: string;

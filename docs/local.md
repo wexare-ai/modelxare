@@ -47,7 +47,7 @@ the same way. The commands below leave out `--env`; add it to each one, or expor
 ```sh
 pnpm modelxare list                  # what the catalog offers, and what is downloaded
 pnpm modelxare pull auto             # the System 1 router and every model (about 1.9 GB)
-pnpm modelxare run auto "Categorize and summarize this message: The garage door has been stuck open since yesterday evening, anyone can walk in."
+pnpm modelxare run auto "Categorize and summarize this message: Hi Sam, because of a storm your flight to Lisbon on Friday will leave two hours late, at 16:40. Your seat and bags stay the same."
 pnpm modelxare serve                 # http://127.0.0.1:8796/v1
 ```
 
@@ -116,7 +116,7 @@ chat format. A chat request to them continues the last user message.
 ```sh
 curl http://127.0.0.1:8796/v1/chat/completions -H 'content-type: application/json' -d '{
   "model": "tiny-summarizer",
-  "messages": [{"role": "user", "content": "Summarize: the elevator in building B has been out of order since Monday."}]
+  "messages": [{"role": "user", "content": "Summarize: your order of running shoes has shipped and will arrive on Wednesday."}]
 }'
 ```
 
@@ -154,18 +154,18 @@ The response carries what was decided, in a `modelxare` field that OpenAI client
 the last chunk when streaming. A real run on the 8 GB build VM, CPU only:
 
 ```json
-"choices": [{"message": {"content": "Topic: Maintenance\nSummary: The heating in the community room has not worked for three days and it is freezing."}}],
+"choices": [{"message": {"content": "Topic: Travel\nSummary: Your flight to Lisbon on Friday will leave two hours late at 16:40. Your seat and bags stay the same."}}],
 "modelxare": {
   "answered_by": "specialists",
-  "system1": {"router": "Laya System 1 router (English, fp16)", "latency_ms": 3355,
-    "readings": [{"text": "Categorize", "choice": "sort", "probability": 0.9862},
-                 {"text": "summarize this message", "choice": "summarize", "probability": 0.9935}]},
-  "steps": [{"task": "sort", "model": "community-assistant", "output": "Maintenance", "ms": 6367},
-            {"task": "summarize", "model": "tiny-summarizer", "output": "The heating in the community room…", "ms": 4199}]
+  "system1": {"router": "Laya System 1 router (English, fp16)", "latency_ms": 2832,
+    "readings": [{"text": "Categorize", "choice": "sort", "probability": 0.9893},
+                 {"text": "summarize this message", "choice": "summarize", "probability": 0.9932}]},
+  "steps": [{"task": "sort", "model": "community-assistant", "output": "Travel", "ms": 8341},
+            {"task": "summarize", "model": "tiny-summarizer", "output": "Your flight to Lisbon on Friday…", "ms": 7026}]
 }
 ```
 
-`"What is the capital of France?"` gives a different route. System 1 reads it as `answer` (0.73),
+`"What is the capital of France?"` gives a different route. System 1 reads it as `answer` (0.77),
 no specialist does that, so the response has `"answered_by": "general"`, with the reason and
 `"general_model": "community-assistant"`.
 

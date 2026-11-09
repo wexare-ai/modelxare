@@ -66,7 +66,7 @@ test('without motion, the front page shows the before and after side by side', a
     await expect(page.locator('.l-story')).toHaveCount(0);
     // System 1 + System 2 shows its end state: the whole request and both answers.
     await expect(page.locator('.l-model.done')).toHaveCount(2);
-    await expect(page.locator('.l-typed')).toContainText('anyone can walk in.');
+    await expect(page.locator('.l-typed')).toContainText('Your seat and bags stay the same.');
     // Nothing is left hidden waiting for an animation.
     await page.locator('.l-final').scrollIntoViewIfNeeded();
     await expect(page.locator('.l-final .l-h2')).toHaveCSS('opacity', '1');

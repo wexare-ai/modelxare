@@ -188,14 +188,14 @@ function Spec() {
   return (
     <dl className="label-card" aria-label="Example">
       <dt>job</dt>
-      <dd>Sort a tenant’s message</dd>
+      <dd>Sort a message by topic</dd>
       <dt>in</dt>
-      <dd>“The hallway light is broken again.”</dd>
+      <dd>“Your order has shipped and arrives Wednesday.”</dd>
       <dt>out</dt>
       <dd className="does">
-        <span>maintenance</span>
-        <span>noise</span>
-        <span>safety</span>
+        <span>shopping</span>
+        <span>travel</span>
+        <span>money</span>
         <span>…</span>
       </dd>
       <dt>base</dt>
@@ -209,8 +209,8 @@ function Data() {
     <div className="pic" aria-hidden="true">
       <div className="chat">
         <span className="bubble system">Sort the message into one topic.</span>
-        <span className="bubble user">The hallway light is broken again.</span>
-        <span className="bubble ai">maintenance</span>
+        <span className="bubble user">Your order has shipped and arrives Wednesday.</span>
+        <span className="bubble ai">shopping</span>
       </div>
       <div className="split">
         <span style={{ flex: 8 }}>train</span>
@@ -244,8 +244,8 @@ function Distill() {
         </li>
       </ol>
       <p className="prompt-card">
-        Write 50 short messages tenants send about building problems. Vary the tone, length and typos. Label each one: maintenance, noise or safety. One JSON line
-        per message.
+        Write 50 short texts and emails people get every day. Vary the tone, length and typos. Label each one: family, work, money, shopping or travel. One JSON
+        line per message.
       </p>
       <p className="tools">
         <a className="tool" href="https://github.com/argilla-io/distilabel" target="_blank" rel="noreferrer">
@@ -358,8 +358,8 @@ function Browser() {
         <span>modelXare</span>
       </span>
       <span className="browser-body">
-        <span className="bubble user">The hallway light is broken again.</span>
-        <span className="bubble ai">maintenance</span>
+        <span className="bubble user">Your order has shipped and arrives Wednesday.</span>
+        <span className="bubble ai">shopping</span>
       </span>
     </div>
   );

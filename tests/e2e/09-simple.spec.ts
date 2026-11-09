@@ -16,7 +16,7 @@ test('simple app: find a model by task, then one button downloads, checks and ru
   await page.goto(`${SIMPLE}/#/try`);
 
   const names = page.locator('.model-name');
-  await expect(names.filter({ hasText: 'Community message assistant' })).toBeVisible({ timeout: 30_000 });
+  await expect(names.filter({ hasText: 'Message assistant' })).toBeVisible({ timeout: 30_000 });
   await expect(names.filter({ hasText: 'Bedtime story base' })).toHaveCount(1); // re-published copies are merged
   expect(await page.locator('main').innerText()).not.toMatch(TECHNICAL);
 
