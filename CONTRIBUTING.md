@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping with modelXare. It's a proof of concept of a decentralized AI model platform, so
+Thanks for helping with modelXare. It's the seed of a new way of using AI models, and
 the code changes quickly. Questions, bug reports and pull requests are all welcome. For anything
 larger than a fix, open an issue first so we can agree on the approach before you spend time on it.
 
@@ -60,7 +60,7 @@ description, say what you changed and why, how you checked it, and anything you 
   `onnxruntime-web` version in `pnpm-workspace.yaml` (and `onnxruntime-node` in `apps/local` on the
   same version).
 - **Plain words in the simple app.** `apps/simple` is for people without a technical background: no
-  keys, hashes, relays or storage terms on screen. The PoC app (`apps/web`) can show the machinery.
+  keys, hashes, relays or storage terms on screen. The developer app (`apps/web`) can show the machinery.
 
 ## Commits
 

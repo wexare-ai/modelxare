@@ -216,5 +216,5 @@ have `ipfs://` locations. On the server, back up the relay's database (`relay-db
 
 - Community approvals: signed approval lists from curators the app trusts, added as another source in
   `apps/simple/src/trust.ts`.
-- The PoC app (`apps/web`), the indexer, catalog archives and torrents. They work with the same
+- The developer app (`apps/web`), the indexer, catalog archives and torrents. They work with the same
   variables but aren't part of this deployment.

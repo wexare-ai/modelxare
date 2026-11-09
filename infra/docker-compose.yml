@@ -1,4 +1,4 @@
-# weXare micro-model PoC development services. Managed by `pnpm infra:up` / `pnpm infra:down`.
+# modelXare local development services. Managed by `pnpm infra:up` / `pnpm infra:down`.
 # Images are pinned by digest. All ports are published on 127.0.0.1 only.
 # Data lives in named volumes; `pnpm infra:down` keeps them, `pnpm demo:reset --force` removes them.
 name: wexare

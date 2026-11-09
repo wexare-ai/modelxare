@@ -1,4 +1,4 @@
-// The same engine as the PoC (apps/web), wired once for this app: the local
+// The same engine as the developer app (apps/web), wired once for this app: the local
 // catalog, live discovery from relays, verified downloads and on-device
 // inference. The screens only see models, tasks and answers.
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';

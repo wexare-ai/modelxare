@@ -2,7 +2,7 @@
   "name": "wexare-tracker",
   "private": true,
   "type": "module",
-  "description": "Local WebTorrent-compatible (WebSocket) tracker for the weXare PoC.",
+  "description": "Local WebTorrent-compatible (WebSocket) tracker for modelXare development.",
   "dependencies": {
     "bittorrent-tracker": "11.2.3"
   }

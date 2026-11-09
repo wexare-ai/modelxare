@@ -1,6 +1,6 @@
 // Acceptance tests against real services: two strfry relays, two Kubo nodes and
 // the tracker (pnpm infra:up), demo data (pnpm demo:prepare), plus the artifacts
-// server and the built web apps (the PoC and the simple app), which Playwright
+// server and the built web apps (the developer app and the simple app), which Playwright
 // starts here.
 //
 //   pnpm test:e2e     deterministic service/browser checks (tiny real model only)

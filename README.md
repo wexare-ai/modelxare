@@ -1,9 +1,13 @@
 # modelXare: a decentralized AI model platform
 
-A proof of concept by weXare. Small AI models published as signed Nostr releases, stored on IPFS, torrents and HTTP mirrors,
-collected by independent indexers into signed catalog snapshots, then searched, verified and run
-on the person's own device: entirely inside the browser, or natively behind a local
-OpenAI-compatible API.
+modelXare, by weXare, is the seed of a new way of using AI models: small models that anyone can
+publish and anyone can run on their own device, with no lab, account or central registry in between. Models
+are published as signed Nostr releases, stored on IPFS, torrents and HTTP mirrors, collected by
+independent indexers into signed catalog snapshots, then searched, verified and run on the person's
+own device: entirely inside the browser, or natively behind a local OpenAI-compatible API.
+
+All of what follows works end to end today, and there is a lot more to build: see
+[Known limitations](#known-limitations).
 
 - **Publish.** A CLI writes a manifest for real model files, signs a NIP-94 release event, and publishes it to two relays. Each relay's acknowledgment is reported separately.
 - **Collect.** A restartable indexer watches several relays and deduplicates. It never claims coverage it did not get.
@@ -52,12 +56,12 @@ for what has been verified, and how.
 pnpm install
 pnpm infra:up          # relays A/B, Kubo A/B, tracker (docker compose; data volumes persist)
 pnpm demo:prepare      # keys, fixture download + verification, releases, IPFS pins, torrents, synthetic catalog
-pnpm dev               # web app :5173, simple app :5174, indexer (operator A) :8791, artifacts mirror/seeder :8790
+pnpm dev               # developer app :5173, simple app :5174, indexer (operator A) :8791, artifacts mirror/seeder :8790
 pnpm demo:publish      # in another terminal: publish to both relays, per-relay outcomes
 pnpm catalog:build     # freeze operator A's indexer into a signed, seeded snapshot
 ```
 
-Open <http://localhost:5173>. Releases appear under **Discover → Live**. To import the snapshot, go to
+Open <http://localhost:5173>, the developer app (`apps/web`). Releases appear under **Discover → Live**. To import the snapshot, go to
 **Sources & diagnostics** and paste the announcement JSON that `catalog:build` printed (saved under
 `.data/operators/a/archives/`), or look it up by event ID. To run the classification → summarization
 workflow, use **Playground**. [docs/demo-script.md](docs/demo-script.md) walks through the full
@@ -71,7 +75,7 @@ router decides) and System 2 (language models do the work) in the browser. **Try
 (`#/try`) lists models by what they
 do (Summarize, Sort, Write). Opening a model gives you a text box and one button. The first
 press downloads and checks the model, then it runs on the device. It uses the same engine as the
-PoC but hides keys, hashes, relays and storage. It is a separate site, so it keeps its own
+developer app but hides keys, hashes, relays and storage. It is a separate site, so it keeps its own
 downloads. Its **What do you need?** box sends a request through the System 1 router; see
 [Routing with System 1](#routing-with-system-1). **Xare your model**, next to the catalog, shows
 how to publish a model of your own, with a starter file to fill in. Its first step is a visual guide
@@ -185,7 +189,7 @@ The router is a catalog release like any model: `fixtures/releases/laya-router.j
 ONNX export of Laya (`wexare/laya-onnx`, pinned revision) with `runtime.family: "laya"` and the
 `intent-routing` capability. Its four files (weights, tokenizer, tokenizer config, calibration) are
 downloaded the first time a request needs them, verified, and checked again before loading, like
-every model file. Clients that don't bundle `@wexare/laya-web`, such as the PoC app, list it as
+every model file. Clients that don't bundle `@wexare/laya-web`, such as the developer app, list it as
 unsupported. `modelxare` runs the same release with native ONNX Runtime.
 
 **Online help** (Settings) takes any OpenAI-compatible service: OpenRouter, OpenAI, or a custom
@@ -245,7 +249,7 @@ where.
 | `apps/cli` | `wexare`: keys, `release prepare/publish`, `archive build/verify/publish`, `demo …` |
 | `apps/indexer` | Persistent multi-relay collector with a read-only status endpoint |
 | `apps/artifacts` | Static HTTP mirror (range, CORS, immutable caching) and WebRTC torrent seeder |
-| `apps/web` | The browser app: Discover, Model library, Playground, Sources & diagnostics |
+| `apps/web` | The developer app: Discover, Model library, Playground, Sources & diagnostics, with every key, hash and source on screen |
 | `apps/simple` | The plain-language app: find a model by task and use it, built on the `apps/web` engine |
 | `apps/local` | `modelxare`: catalog models on native llama.cpp and ONNX Runtime, behind an OpenAI-compatible API, with `auto` (System 1 + System 2) |
 | `infra/` | Docker Compose for strfry ×2, Kubo ×2 and the WebSocket tracker, with images pinned by digest |
@@ -258,7 +262,7 @@ where.
 Every component reads its endpoints from flags. The defaults are in `infra/dev-endpoints.json`, and
 none of them is required by the protocol.
 
-- **Web app only:** run `pnpm --filter @wexare/web build` and serve `apps/web/dist` from any static host
+- **Developer app only:** run `pnpm --filter @wexare/web build` and serve `apps/web/dist` from any static host
   that sends `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy:
   require-corp`; those headers enable multithreaded inference. Relays, gateways, trackers and
   trusted catalog builders are configured in **Sources & diagnostics** and can be exported or imported
@@ -326,7 +330,7 @@ events, verified again whenever they are read) and `files/sha256/<hash>`. It hol
   CID or a seeded torrent says nothing about whether a particular gateway or peer is reachable.
 - The router (Laya fp16) is English only. Loading it takes about 3 GB of memory on top of the page.
   Its routing decisions were checked with native ONNX Runtime (and run natively by `modelxare`), but
-  not yet in the browser: the 8 GB machine this proof of concept was built on could not load it there
+  not yet in the browser: the 8 GB machine modelXare was built on could not load it there
   safely. Run the `WEXARE_TEST_LAYA=1` checks on a larger machine.
 - The simple app's offline cache includes the router's 28 MB WebAssembly runtime, even if routing is
   never used.

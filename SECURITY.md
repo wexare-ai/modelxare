@@ -18,7 +18,7 @@ published if you'd like. Please give us a reasonable time to fix it before you d
 
 ## Supported versions
 
-modelXare is a proof of concept. Only the latest commit on `main` is supported, and fixes land there.
+There are no versioned releases yet: only the latest commit on `main` is supported, and fixes land there.
 
 ## What modelXare guarantees
 

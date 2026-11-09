@@ -57,7 +57,7 @@ export function App() {
         {route.page === 'sources' && <Sources />}
       </main>
       <footer>
-        Proof of concept. Signatures prove who published a record and hashes prove byte integrity; neither is a quality endorsement. Searches, prompts and outputs stay on
+        Signatures prove who published a record and hashes prove byte integrity; neither is a quality endorsement. Searches, prompts and outputs stay on
         this device.
       </footer>
     </div>

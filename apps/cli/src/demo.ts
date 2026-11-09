@@ -87,7 +87,7 @@ async function toDefinition(name: string, d: FixtureDefinition): Promise<Release
     path = d.fixture_path ?? 'file.bin';
     source = join(dir, `${name}-${path}`);
     await writeFile(source, d.fixture.slice('@bytes:'.length));
-    license = { id: 'Apache-2.0', attribution: 'weXare PoC test fixture (placeholder bytes, not a model)' };
+    license = { id: 'Apache-2.0', attribution: 'modelXare test fixture (placeholder bytes, not a model)' };
   } else {
     const m = models.find((x) => x.id === d.fixture);
     if (!m) throw new Error(`unknown fixture ${d.fixture}`);

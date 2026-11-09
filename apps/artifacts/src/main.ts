@@ -12,7 +12,7 @@ import { ArtifactRoot } from '@wexare/storage/node';
 
 const program = new Command()
   .name('wexare-artifacts')
-  .description('Static artifact mirror + torrent seeder for weXare PoC artifact roots')
+  .description('Static artifact mirror + torrent seeder for modelXare artifact roots')
   .option('--root <name=dir>', 'serve an artifact root (repeatable)', (v: string, p: string[] = []) => [...p, v], [])
   .option('--roots-dir <dir>', 'serve every subdirectory as a root (re-scanned periodically)')
   .option('--port <port>', 'HTTP port', '8790')

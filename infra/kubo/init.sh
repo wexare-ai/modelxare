@@ -1,5 +1,5 @@
 #!/bin/sh
-# weXare PoC Kubo node configuration. Runs from /container-init.d on every start (idempotent).
+# modelXare development Kubo node configuration. Runs from /container-init.d on every start (idempotent).
 set -e
 # API and gateway listen inside the container; compose publishes them on 127.0.0.1 only.
 ipfs config Addresses.API /ip4/0.0.0.0/tcp/5001

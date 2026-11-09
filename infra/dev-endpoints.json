@@ -1,5 +1,5 @@
 {
-  "description": "Default local endpoints for the PoC. Every component accepts overrides (flags, env, or browser settings); none of these are required by the protocol.",
+  "description": "Default local endpoints for development. Every component accepts overrides (flags, env, or browser settings); none of these are required by the protocol.",
   "relays": ["ws://127.0.0.1:7777", "ws://127.0.0.1:7778"],
   "kubo": {
     "a": { "api": "http://127.0.0.1:5001", "gateway": "http://127.0.0.1:8080" },

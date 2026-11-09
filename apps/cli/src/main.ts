@@ -1,4 +1,4 @@
-// wexare: publisher and operator CLI for the weXare micro-model PoC.
+// wexare: publisher and operator CLI for modelXare.
 import { readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { Command } from 'commander';
@@ -38,7 +38,7 @@ async function readEventFiles(files: string[]): Promise<NostrEvent[]> {
 const publish = publishDefaults();
 
 const program = new Command();
-program.name('wexare').description('Publisher and operator tooling for the weXare micro-model PoC').version('0.1.0');
+program.name('wexare').description('Publisher and operator tooling for modelXare').version('0.1.0');
 const collect = (v: string, prev: string[] = []) => [...prev, v];
 const run = (fn: (...a: any[]) => Promise<void>) => async (...a: any[]) => {
   try {

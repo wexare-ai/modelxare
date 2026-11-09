@@ -1,4 +1,4 @@
-// Local WebTorrent-compatible tracker (HTTP + WebSocket signaling) for the weXare PoC.
+// Local WebTorrent-compatible tracker (HTTP + WebSocket signaling) for modelXare development.
 // Browsers find WebRTC peers through the WebSocket endpoint; no UDP.
 import Server from 'bittorrent-tracker/server';
 

@@ -74,7 +74,7 @@ wllama 3.8.1 only. Upgrading wllama requires rerunning `pnpm --filter @wexare/te
 
 ## App-level results (2026-11-01, same VM)
 
-These are measured inside the web app through `pnpm test:models`, not in the spike page. Files come
+These are measured inside the developer app through `pnpm test:models`, not in the spike page. Files come
 from the verified OPFS cache and are re-hashed before every load.
 
 | Run | Releases (classification → summarization) | Result | Wall time |

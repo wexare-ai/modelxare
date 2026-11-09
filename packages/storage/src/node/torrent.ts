@@ -36,7 +36,7 @@ export async function createSingleFileTorrent(input: string | Uint8Array, opts: 
         // Web seeds live only in the magnet (ws=), so clients can try WebRTC peers
         // first and add HTTP seeds as an explicit fallback. The info hash is unaffected.
         urlList: [],
-        createdBy: 'wexare-poc/0.1',
+        createdBy: 'modelxare/0.1',
         creationDate: new Date(0),
         private: false,
         comment: undefined,
