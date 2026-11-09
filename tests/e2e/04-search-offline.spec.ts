@@ -62,7 +62,7 @@ test('A08: 10,000 synthetic records import, survive reload, and search locally w
     user_agent: await page.evaluate(() => navigator.userAgent),
     hardware_concurrency: await page.evaluate(() => navigator.hardwareConcurrency),
   });
-  // Target on the reference laptop is <500 ms; this guard only catches regressions.
+  // The target is under 500 ms on a typical laptop; this guard only catches regressions.
   expect(worst).toBeLessThan(2000);
 });
 

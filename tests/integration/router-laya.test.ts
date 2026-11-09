@@ -13,8 +13,8 @@
 // what a model would write. Every probability goes to the evidence file, to
 // tune the thresholds from.
 //
-// On 2026-11-02 the same release, run with native ONNX Runtime (the 8 GB
-// build machine can't hold the WebAssembly build), planned all of these
+// On 2026-11-02 the same release, run with native ONNX Runtime (an 8 GB
+// machine can't hold the WebAssembly build), planned all of these
 // correctly, and missed one more request that is kept out of the list:
 // "Classify this complaint and draft a reply" reads "Classify this complaint"
 // as summarize (0.78), not sort. Rewording the sort option did not fix it.

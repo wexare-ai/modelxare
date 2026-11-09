@@ -13,7 +13,7 @@ export type UnsignedEventTemplate = Pick<NostrEvent, 'kind' | 'created_at' | 'ta
 
 export type FileRole = 'weights' | 'adapter' | 'tokenizer' | 'config';
 
-/** Transports recognized in P0. Unknown transports are valid data but ignored by clients. */
+/** Transports recognized in protocol 0.1. Unknown transports are valid data but ignored by clients. */
 export type KnownTransport = 'ipfs' | 'https' | 'http' | 'torrent' | 'arweave';
 
 export interface FileLocation {

@@ -233,8 +233,10 @@ where.
 - `pnpm test:e2e` and `pnpm test:models` need `pnpm infra:up` and `pnpm demo:prepare`. Playwright
   starts the artifacts server (reusing one on :8790) and a production build served by `vite preview`
   on :4173, with the service worker. Tests start their own indexers on :8793 to :8795, with data under
-  `.data/e2e/<run>/`. Evidence is written as JSON to `tests/results/`. The e2e run stops and restarts the
-  relay containers for A16, and publishes labeled synthetic records to both relays for A17.
+  `.data/e2e/<run>/`. Evidence is written as JSON to `tests/results/<ID>.json`, where the ID is one
+  of the checks listed in [docs/acceptance.md](docs/acceptance.md). The e2e run stops and restarts the
+  relay containers for the relay-failure check (A16), and publishes labeled synthetic records to both
+  relays for the bounded-collection check (A17).
 - `pnpm vitest run --project integration` runs the Node-side checks against the same services. The
   mirror and torrent checks also need the artifacts server on :8790, which `pnpm dev` starts.
   `WEXARE_TEST_ARWEAVE=1` adds the public Arweave gateway test, which needs internet access.
@@ -342,16 +344,16 @@ events, verified again whenever they are read) and `files/sha256/<hash>`. It hol
   CID or a seeded torrent says nothing about whether a particular gateway or peer is reachable.
 - The router (Laya fp16) is English only. Loading it takes about 3 GB of memory on top of the page.
   Its routing decisions were checked with native ONNX Runtime (and run natively by `modelxare`), but
-  not yet in the browser: the 8 GB machine modelXare was built on could not load it there
-  safely. Run the `WEXARE_TEST_LAYA=1` checks on a larger machine.
+  not yet in the browser: the 8 GB test machine could not load it there safely. Run the `WEXARE_TEST_LAYA=1` checks on a larger machine.
 - The simple app's offline cache includes the router's 28 MB WebAssembly runtime, even if routing is
   never used.
 - The local runtime runs one request at a time; the others wait their turn. It doesn't load models
   split into several GGUF files yet, and downloads over https, IPFS and Arweave but not torrents. It
-  was checked on Linux x64 without a GPU (the 8 GB build VM); macOS, Windows and GPUs are untested.
+  was checked on Linux x64 with 4 cores, 8 GB of memory and no GPU; macOS, Windows and GPUs are
+  untested.
   The agent settings in [docs/local.md](docs/local.md) follow each project's documentation, but only
   raw HTTP and the official OpenAI SDK were run against the server.
-- P1 items that are not implemented: Arweave uploads (only `ar://` resolution is implemented),
+- Not implemented yet: Arweave uploads (only `ar://` resolution is implemented),
   incremental or sharded catalogs, and browser publishing with a Nostr signer.
 
 ## Contributing and security

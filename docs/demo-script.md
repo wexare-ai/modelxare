@@ -1,9 +1,10 @@
 # Demo script
 
-Follows the end-to-end demonstration in the spec (§5), with the commands to run and what to look
-for. Every step uses real relays, IPFS, torrents and models. The only synthetic data is the
-10,000-record scale catalog and the A17 bounded-collection set. Both are labeled `synthetic`, hidden
-by default, and never runnable.
+A walk through the whole system, from publishing a model to running it in the browser, with the
+commands to run and what to look for. Every step uses real relays, IPFS, torrents and models. The
+only synthetic data is the 10,000-record scale catalog and the bounded-collection set (check A17 in
+[acceptance.md](acceptance.md)). Both are labeled `synthetic`, hidden by default, and never
+runnable.
 
 Setup, once: `pnpm install && pnpm infra:up && pnpm demo:prepare`. Then keep `pnpm dev` running in
 its own terminal.

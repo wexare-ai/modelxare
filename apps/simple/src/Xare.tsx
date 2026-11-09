@@ -227,7 +227,7 @@ function Approve() {
   );
 }
 
-// Round-capped line icons (STYLE.md §9), drawn in currentColor.
+// Line icons with round caps and joins, drawn in currentColor so they follow the text.
 const icon = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true } as const;
 
 function SparkIcon() {

@@ -1,4 +1,4 @@
-// A18 runtime LoRA (P1): an unmerged base plus a separate adapter, both hashes
+// A18 runtime LoRA: an unmerged base plus a separate adapter, both hashes
 // re-verified before loading, executed with and without the adapter, and the
 // runtime's own (native llama.cpp) log as evidence of the active adapter.
 import { expect, test } from '@playwright/test';

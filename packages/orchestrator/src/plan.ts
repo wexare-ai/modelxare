@@ -83,7 +83,7 @@ export function compatibility(c: CandidateRelease, stage: string, language: stri
 }
 
 /**
- * Selection order (spec §F6): explicit user choice, compatible cached release,
+ * Selection order: explicit user choice, compatible cached release,
  * smaller compatible download, then stable publisher / release-ID tie-break.
  * Works for any operation ID; the workflow uses its two stages.
  */

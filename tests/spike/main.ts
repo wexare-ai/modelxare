@@ -1,4 +1,4 @@
-// Compatibility spike page (spec §15 step 1). Driven by run-spike.ts through
+// Runtime compatibility spike page (docs/runtime-compatibility.md). Driven by run-spike.ts through
 // Playwright; exposes a few probes on window.spike and records native logs.
 import { Wllama } from '@wllama/wllama';
 import wasmUrl from '@wllama/wllama/esm/wasm/wllama.wasm?url';

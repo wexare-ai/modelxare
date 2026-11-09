@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-// The brand's faces (STYLE.md §4), bundled so the app keeps its look offline.
+// weXare's typefaces, bundled so the app keeps its look offline.
 import '@fontsource-variable/bricolage-grotesque/opsz.css';
 import '@fontsource-variable/outfit/wght.css';
 import '@fontsource/kalam/latin-400.css';

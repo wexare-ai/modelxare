@@ -175,7 +175,7 @@
       "additionalProperties": false,
       "required": ["transport", "uri"],
       "properties": {
-        "transport": { "description": "P0 recognizes ipfs, https, http (loopback, development only), torrent and arweave. Clients ignore unknown transports.", "$ref": "#/$defs/slug" },
+        "transport": { "description": "Protocol 0.1 recognizes ipfs, https, http (loopback, development only), torrent and arweave. Clients ignore unknown transports.", "$ref": "#/$defs/slug" },
         "uri": { "type": "string", "minLength": 1, "maxLength": 4096 },
         "path": { "description": "Torrent only: exact file path inside the torrent.", "type": "string", "minLength": 1, "maxLength": 400 }
       },

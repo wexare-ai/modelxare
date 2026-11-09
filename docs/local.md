@@ -151,7 +151,7 @@ offered tool and its arguments always parse. A few things to know:
    - the conversation continues after tool results.
 
 The response carries what was decided, in a `modelxare` field that OpenAI clients ignore. It is in
-the last chunk when streaming. A real run on the 8 GB build VM, CPU only:
+the last chunk when streaming. A real run on a 4-core, 8 GB Linux machine, CPU only:
 
 ```json
 "choices": [{"message": {"content": "Topic: Travel\nSummary: Your flight to Lisbon on Friday will leave two hours late at 16:40. Your seat and bags stay the same."}}],
@@ -273,7 +273,7 @@ export OPENAI_BASE_URL=http://127.0.0.1:8796/v1 OPENAI_API_KEY=local
   its signed SHA-256 when it is downloaded, and again when a server first loads a file downloaded
   earlier. A file changed on disk is deleted, not loaded.
 
-## Measured on the 8 GB build VM (4 CPU cores, no GPU, 2026-11-09)
+## Measured on a 4-core, 8 GB Linux machine without a GPU (2026-11-09)
 
 | | |
 | --- | --- |

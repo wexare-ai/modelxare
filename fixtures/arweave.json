@@ -1,5 +1,5 @@
 {
-  "description": "Public Arweave transaction used to test ar:// resolution through configurable gateways. Third-party test data (a small NFT-metadata JSON document stored as text/plain), unrelated to weXare. Nothing was uploaded by this project: Arweave uploads are P1.",
+  "description": "Public Arweave transaction used to test ar:// resolution through configurable gateways. Third-party test data (a small NFT-metadata JSON document stored as text/plain), unrelated to weXare. Nothing was uploaded by this project: Arweave uploads are not implemented yet.",
   "transaction": "Edj83od3HsD7Rp5TLxxAlLyJNr42L1PLJwVdixc4zDE",
   "block_height": 768548,
   "content_type": "text/plain",

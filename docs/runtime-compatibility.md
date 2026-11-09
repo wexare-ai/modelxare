@@ -1,6 +1,8 @@
 # Runtime compatibility report
 
-Spec §2 (LoRA compatibility gate) and §15 step 1. Raw spike output lives in
+Which browser runtime modelXare uses to run models, and whether it can run a LoRA adapter on top of
+its base model without merging them. These results come from a small spike page that loads real
+models in the runtime before the app depended on it. Raw spike output lives in
 [`docs/compat/`](compat/); rerun with `pnpm --filter @wexare/tests spike [lora|smollm|qwen]`.
 
 ## Selected runtime
@@ -16,13 +18,13 @@ Spec §2 (LoRA compatibility gate) and §15 step 1. Raw spike output lives in
 | Item | Value |
 | --- | --- |
 | Browser | Chromium headless shell 156.0.8078.4 (Playwright 1.64.1) |
-| OS / hardware | Ubuntu 24.04 VM, x86_64, 4 vCPU, 7.8 GiB RAM, virtio GPU (no WebGPU adapter) |
+| OS / hardware | Ubuntu 24.04 virtual machine, x86_64, 4 vCPU, 7.8 GiB RAM, virtio GPU (no WebGPU adapter) |
 | Isolation | COOP `same-origin` + COEP `require-corp` → `crossOriginIsolated = true`, SharedArrayBuffer available |
 | Threads | wllama default `n_threads = hardwareConcurrency / 2` = 2; `isMultithread() = true` |
-| GPU | `n_gpu_layers: 0` (CPU). WebGPU `requestAdapter()` returned null on this VM. |
+| GPU | `n_gpu_layers: 0` (CPU). WebGPU `requestAdapter()` returned null on this machine. |
 
-This is **not** the spec's reference Apple Silicon laptop. Real-model acceptance there is still
-outstanding; see the acceptance checklist.
+Results on other hardware, such as an Apple Silicon Mac, are still to be recorded; see
+[acceptance.md](acceptance.md#recording-a-run-on-other-hardware).
 
 ## Results
 
@@ -69,23 +71,23 @@ adapter's GGUF metadata (`general.type = adapter`, `adapter.type = lora`).
 
 ### Gate decision
 
-**Passed, with the private-API workaround above.** P1 browser adapter execution is implemented for
+**Passed, with the private-API workaround above.** Browser adapter execution is implemented for
 wllama 3.8.1 only. Upgrading wllama requires rerunning `pnpm --filter @wexare/tests spike lora`.
 
-## App-level results (2026-11-01, same VM)
+## App-level results (2026-11-01, same machine)
 
 These are measured inside the developer app through `pnpm test:models`, not in the spike page. Files come
 from the verified OPFS cache and are re-hashed before every load.
 
 | Run | Releases (classification → summarization) | Result | Wall time |
 | --- | --- | --- | --- |
-| English water-leak sample | Qwen2.5-0.5B Q4_K_M → SmolLM2-360M Q8_0 | `maintenance`; "Water leak near entrance." | 54.0 s, including both model loads |
+| English water-leak sample (earlier building-complaint samples) | Qwen2.5-0.5B Q4_K_M → SmolLM2-360M Q8_0 | `maintenance`; "Water leak near entrance." | 54.0 s, including both model loads |
 | Spanish water-leak sample | Qwen → Qwen (SmolLM2 declares only `en`) | `maintenance`; "La residente ha notado una fuga de agua en la entrada." | 45.4 s |
 | English sample, summarization switched to Qwen | Qwen → Qwen (resident model reused) | `maintenance`; "A water leak has been found near the entrance." | 19.5 s |
-| Loud-music sample, offline after reload | Qwen → SmolLM2 | `maintenance` (the fixture lists `noise` as representative); summary close to a copy of the input | 57.6 s |
+| Loud-music sample, offline after reload | Qwen → SmolLM2 | `maintenance`, where `noise` was expected; summary close to a copy of the input | 57.6 s |
 | LoRA (one-model mode) | stories15M MoE F16 + Shakespeare adapter, scale 1 / 0 | Matches upstream for both scales; native adapter log captured | load 3.1 s, generate 2.0 s |
 
 The runtime loaded with 3 threads (multithreaded, cross-origin isolated) on 4 logical cores. It
 reports `webgpu ✓` as a browser feature, but runs CPU/WASM only (`n_gpu_layers: 0`). Classification
 uses the bundled contract's choice grammar, so the output is always a valid category; whether that
-category is right is a model-quality question, which is outside acceptance (spec §14).
+category is right is a model-quality question, outside the acceptance checks.

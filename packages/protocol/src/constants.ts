@@ -30,7 +30,7 @@ export const TAG_PREFIX = {
   artifact: 'artifact:',
 } as const;
 
-/** Archive member names allowed in a P0 catalog ZIP. */
+/** Archive member names allowed in a catalog ZIP (protocol 0.1). */
 export const ARCHIVE_FILES = {
   inventory: 'catalog.json',
   releases: 'releases.jsonl',
