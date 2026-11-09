@@ -2,7 +2,8 @@
 
 A proof of concept by weXare. Small AI models published as signed Nostr releases, stored on IPFS, torrents and HTTP mirrors,
 collected by independent indexers into signed catalog snapshots, then searched, verified and run
-entirely inside the browser.
+on the person's own device: entirely inside the browser, or natively behind a local
+OpenAI-compatible API.
 
 - **Publish.** A CLI writes a manifest for real model files, signs a NIP-94 release event, and publishes it to two relays. Each relay's acknowledgment is reported separately.
 - **Collect.** A restartable indexer watches several relays and deduplicates. It never claims coverage it did not get.
@@ -10,7 +11,7 @@ entirely inside the browser.
 - **Discover.** The browser app reads relays directly (Live), imports archives (Archives), or both (Combined), into SQLite WASM + FTS5 on OPFS. Searches stay on the device.
 - **Run.** The browser downloads model files with source fallback, verifies every byte against the signed manifest, and runs GGUF models locally with wllama. It composes classification → summarization, and can apply a LoRA adapter at runtime.
 - **Route.** In the simple app, a System 1 router works out every task a request asks for, and sends each step to a model on the device. The router is [Laya](https://github.com/wexare-ai/browser-laya), itself a signed catalog release. If the person adds their own API key, steps no local model can do go to an online model.
-- **Run it natively.** `pnpm modelxare` runs the same releases on your own machine with native llama.cpp and ONNX Runtime, with no browser memory limits. It serves them behind an OpenAI-compatible API (`http://127.0.0.1:8796/v1`) for agents such as OpenCode, Hermes Agent and OpenClaw. Its `auto` model puts System 1 in front of the catalog's models: [docs/local.md](docs/local.md).
+- **Run natively.** `pnpm modelxare` runs the same releases on your own machine with native llama.cpp and ONNX Runtime, with no browser memory limits. It serves them behind an OpenAI-compatible API (`http://127.0.0.1:8796/v1`) for agents and apps such as OpenCode, Hermes Agent and OpenClaw. Its `auto` model puts the System 1 router in front of the catalog's models: [Run models on your own machine](#run-models-on-your-own-machine).
 
 There is no central registry, account or search API, and no remote inference unless a person turns on
 online help with their own key. Anyone can run all of it:
@@ -20,7 +21,7 @@ online help with their own key. Anyone can run all of it:
   Nostr relays, and later your own relay, IPFS gateway and file mirror on one server:
   [docs/deployment.md](docs/deployment.md).
 - **On your laptop, for agents and apps**: the catalog's models behind a local OpenAI-compatible
-  API, reading the public catalog: [docs/local.md](docs/local.md).
+  API, reading the public catalog, with no Docker: [Run models on your own machine](#run-models-on-your-own-machine).
 
 See [docs/protocol.md](docs/protocol.md) for the data contract and [docs/acceptance.md](docs/acceptance.md)
 for what has been verified, and how.
@@ -32,13 +33,16 @@ for what has been verified, and how.
 - Node.js 22.12 or later, below 23 (`.nvmrc` pins 22.22.2), and pnpm 11 (`corepack enable`). With
   nvm, run `nvm install && nvm use` in the repository. Newer Node versions print an "Unsupported
   engine" warning and are untested.
-- Docker with Compose v2, for the two strfry relays, two Kubo nodes and the tracker. It must be
-  running before `pnpm infra:up`.
+- Docker with Compose v2, for the two strfry relays, two Kubo nodes and the tracker of the local
+  demo. It must be running before `pnpm infra:up`. The local runtime with the public catalog
+  ([Run models on your own machine](#run-models-on-your-own-machine)) doesn't need it.
   - macOS: Docker Desktop, OrbStack or Colima. The pinned images support Apple Silicon.
   - Ubuntu: `sudo apt-get install -y docker.io docker-compose-v2 && sudo usermod -aG docker $USER`.
     The infra script falls back to `sg docker` until you log in again.
-- About 10 GB of free disk. The pinned model fixtures total 1.87 GB, including the 904 MB router,
-  and they are copied into IPFS, the mirror and the browser.
+- About 10 GB of free disk for the demo. The pinned model fixtures total 1.87 GB, including the
+  904 MB router, and they are copied into IPFS, the mirror and the browser. `pnpm install` also
+  brings the local runtime's prebuilt llama.cpp and ONNX Runtime binaries: about 1 GB on Linux x64,
+  where the CUDA and Vulkan builds are included, and less elsewhere.
 - Network access the first time, to download the pinned fixtures from Hugging Face. No accounts are needed.
 - Chrome or Chromium for the app; other browsers are untested. `pnpm --filter @wexare/tests exec playwright install chromium` provides one for tests.
 
@@ -97,10 +101,66 @@ running? pnpm infra:up)`, start Docker, then run `pnpm infra:up`. It is safe to 
 prints a ✓ for each service once it answers. Relay and IPFS data live in docker volumes, so events
 you published earlier are still there after a restart.
 
+## Run models on your own machine
+
+`pnpm modelxare` ([`apps/local`](apps/local)) runs the catalog's models natively, without the
+browser's memory limits, and serves them behind an OpenAI-compatible API. It needs neither Docker nor
+the demo services: with weXare's public settings it reads the public catalog and downloads the files
+from Hugging Face.
+
+```sh
+pnpm install
+pnpm modelxare --env infra/deploy/app.env.example list        # the catalog, and what is downloaded
+pnpm modelxare --env infra/deploy/app.env.example pull auto   # the router and every model, about 1.9 GB
+pnpm modelxare --env infra/deploy/app.env.example run auto "Categorize and summarize this message: The garage door has been stuck open since yesterday evening, anyone can walk in."
+pnpm modelxare --env infra/deploy/app.env.example serve       # http://127.0.0.1:8796/v1
+```
+
+- **Same trust as the apps.** It reads the same signed releases, lists only approved publishers
+  (`infra/publishers.json`), and checks every file against its signed SHA-256: when it is
+  downloaded, and again when a server first loads it. Without `--env` or `WEXARE_*` variables, it
+  reads the local development relays and shows every validly signed release, like the apps.
+- **Native engines.**
+  - The GGUF models run on llama.cpp ([node-llama-cpp](https://node-llama-cpp.withcat.ai)), using
+    Metal, CUDA or Vulkan when there is a GPU, else the CPU. Each model gets its full trained
+    context, up to 32,768 tokens.
+  - The System 1 router runs on native ONNX Runtime, with the browser build's request rendering and
+    calibration.
+- **The API.**
+  - `GET /v1/models`.
+  - `POST /v1/chat/completions`: streaming with usage, tools, and `json_object` or `json_schema`
+    output.
+  - `POST /v1/completions`.
+
+  Model ids are the releases' `model_id`s (`community-assistant`, `tiny-summarizer`, `story-base`,
+  `shakespeare-lora`), plus `auto`.
+- **`auto`: System 1 + System 2 behind one model id.**
+  - The router reads each task in the last message, as in [Routing with System 1](#routing-with-system-1),
+    and hands each to the catalog model that specializes in it.
+  - There is no person to ask, so a task without a specialist, or a request the router isn't sure
+    about, goes to a general chat model instead.
+  - A `modelxare` field in the response says which path was taken.
+- **Agents.** Point any OpenAI-compatible client at the base URL. [docs/local.md](docs/local.md)
+  has settings for OpenCode, Hermes Agent and OpenClaw.
+  - The catalog's models are small (15 to 500 million parameters). They are good for titles,
+    summaries, sorting and simple tool calls, not as a coding agent's main model.
+  - Hermes requires 64K tokens of context for its main model, so they fit only its auxiliary slots.
+- **Safe defaults.**
+  - It listens on `127.0.0.1`; any other address needs `--api-key`.
+  - Requests from web pages on other sites are refused unless allowed with `--cors-origin`: bodies
+    must be JSON, and only localhost `Host` names are accepted.
+  - Requests and answers are never logged.
+
+Models and releases are kept in `~/.local/share/modelxare` (Linux),
+`~/Library/Application Support/modelxare` (macOS) or `%LOCALAPPDATA%\modelxare` (Windows), or
+wherever `--home` says.
+[docs/local.md](docs/local.md) has every command and option, the full API, how `auto` decides, and
+measured speed and memory.
+
 ## Routing with System 1
 
-The simple app opens with one box: **What do you need?** A request such as "Categorize and summarize
-this message: …" is handled like this:
+**Try modelXare** (`#/try`) in the simple app opens with one box: **What do you need?** A request
+such as "Categorize and summarize this message: …" is handled like this:
 
 1. The instruction is the part before a colon near the start ("Categorize and summarize this
    message"), or a first sentence that is a question with more text after it. It is split where it
@@ -125,8 +185,8 @@ The router is a catalog release like any model: `fixtures/releases/laya-router.j
 ONNX export of Laya (`wexare/laya-onnx`, pinned revision) with `runtime.family: "laya"` and the
 `intent-routing` capability. Its four files (weights, tokenizer, tokenizer config, calibration) are
 downloaded the first time a request needs them, verified, and checked again before loading, like
-every model file. Clients
-that don't bundle `@wexare/laya-web`, such as the PoC app, list it as unsupported.
+every model file. Clients that don't bundle `@wexare/laya-web`, such as the PoC app, list it as
+unsupported. `modelxare` runs the same release with native ONNX Runtime.
 
 **Online help** (Settings) takes any OpenAI-compatible service: OpenRouter, OpenAI, or a custom
 address. The API key is kept in this browser's local storage only and sent only to that service.
@@ -143,13 +203,13 @@ where.
 | `pnpm dev` | Web app, simple app, indexer and artifacts mirror/seeder, with live logs |
 | `pnpm demo:publish` | Publish every fixture release (and the negative fixture) to both relays |
 | `pnpm catalog:build` | Build, sign, publish and seed a snapshot from operator A's indexer database |
-| `pnpm test` | Fast unit tests: protocol, catalog and golden queries, storage, runtime, orchestrator, collector |
+| `pnpm test` | Fast unit tests: protocol, catalog and golden queries, storage, runtime, orchestrator, router, collector, the local runtime's API |
 | `pnpm test:e2e` | Browser and service acceptance tests against the real services (see below) |
 | `pnpm test:models` | Opt-in real-model browser tests. They download about 0.9 GB into the browser. |
-| `pnpm build` | Static web builds (`apps/web/dist`, `apps/simple/dist`) and bundled operator programs (`apps/*/dist`) |
+| `pnpm build` | Static web builds (`apps/web/dist`, `apps/simple/dist`) and bundled programs (`apps/*/dist`, including `apps/local/dist/main.js`, the `modelxare` command) |
 | `pnpm demo:reset --force` | Delete the demo data under `.data/`. `--volumes` also deletes relay and IPFS data, and `--downloads` the fixture models. Without `--force` it only lists what it would delete. |
 | `pnpm cli <args>` | The publisher/builder CLI (`wexare --help`) |
-| `pnpm modelxare <args>` | The local runtime: `list`, `pull`, `run`, `serve` (the OpenAI-compatible API), `rm`. See [docs/local.md](docs/local.md) |
+| `pnpm modelxare <args>` | The local runtime: `list`, `pull`, `run`, `serve` (the OpenAI-compatible API) and `rm`. See [Run models on your own machine](#run-models-on-your-own-machine) |
 
 ### Tests
 
@@ -168,6 +228,9 @@ where.
 - `WEXARE_TEST_LAYA=1` turns on the checks that load the real router:
   `tests/integration/router-laya.test.ts` (routing decisions, Node) and `tests/models/router.spec.ts`
   (the Ask box end to end). They need about 4 to 5 GB of free memory, so they are off by default.
+  `WEXARE_TEST_LAYA=native` runs the routing decisions on the local runtime's native router instead:
+  about 2.5 GB, and no running services, only the router release and files `pnpm demo:prepare` put
+  in `.data/`.
 
 ## Repository layout
 
@@ -188,7 +251,7 @@ where.
 | `infra/` | Docker Compose for strfry ×2, Kubo ×2 and the WebSocket tracker, with images pinned by digest |
 | `fixtures/` | Pinned upstream model fixtures, release definitions, sample messages, the Arweave fixture |
 | `tests/` | Playwright acceptance (`e2e/`, `models/`), integration tests, the runtime compatibility spike |
-| `docs/` | Protocol, demo script, acceptance checklist, runtime compatibility report |
+| `docs/` | Protocol, deployment guide, local runtime and API guide, demo script, acceptance checklist, runtime compatibility report |
 
 ## Running components separately
 
@@ -216,6 +279,10 @@ none of them is required by the protocol.
   `--events <file>` builds from preserved signed event files, with no indexer.
 - **Mirror and seeder only:** `node apps/artifacts/dist/main.js --roots-dir /srv/wexare/artifacts --port
   8790` (add `--no-seed` for HTTP only).
+- **Local runtime only:** after `pnpm --filter @wexare/local build`, run `node apps/local/dist/main.js
+  --env <settings file> serve` (the same commands as `pnpm modelxare`). It reads the same `WEXARE_*`
+  settings as a deployed app, plus its own `WEXARE_LOCAL_*` ones (`HOME`, `HOST`, `PORT`, `API_KEY`
+  and more; see [docs/local.md](docs/local.md)).
 
 ## Ports (local demo)
 
@@ -238,6 +305,10 @@ models, published releases, artifact roots, indexer databases, archives and synt
 binaries, private keys, archives and databases never belong in the repository. The demo keys are
 disposable. Private keys stay in the CLI and never reach the browser.
 
+The local runtime keeps its own data outside the repository, in the folder given in
+[Run models on your own machine](#run-models-on-your-own-machine): `releases.json` (signed release
+events, verified again whenever they are read) and `files/sha256/<hash>`. It holds no keys.
+
 ## Known limitations
 
 - Only one tab at a time uses the local catalog, because the OPFS SQLite VFS holds exclusive
@@ -259,6 +330,11 @@ disposable. Private keys stay in the CLI and never reach the browser.
   safely. Run the `WEXARE_TEST_LAYA=1` checks on a larger machine.
 - The simple app's offline cache includes the router's 28 MB WebAssembly runtime, even if routing is
   never used.
+- The local runtime runs one request at a time; the others wait their turn. It doesn't load models
+  split into several GGUF files yet, and downloads over https, IPFS and Arweave but not torrents. It
+  was checked on Linux x64 without a GPU (the 8 GB build VM); macOS, Windows and GPUs are untested.
+  The agent settings in [docs/local.md](docs/local.md) follow each project's documentation, but only
+  raw HTTP and the official OpenAI SDK were run against the server.
 - P1 items that are not implemented: Arweave uploads (only `ar://` resolution is implemented),
   incremental or sharded catalogs, and browser publishing with a Nostr signer.
 

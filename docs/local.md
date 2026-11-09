@@ -24,8 +24,8 @@ You need Node.js 22 and pnpm (see the [README prerequisites](../README.md#prereq
 pnpm install
 ```
 
-`pnpm install` brings prebuilt llama.cpp binaries for macOS, Linux and Windows. On Linux x64 that
-includes the CUDA and Vulkan builds, about 1 GB in total.
+`pnpm install` brings prebuilt llama.cpp and ONNX Runtime binaries for macOS, Linux and Windows:
+about 1 GB on Linux x64, where the CUDA and Vulkan builds are included, and less elsewhere.
 
 ### Point it at a catalog
 
