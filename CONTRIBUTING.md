@@ -72,4 +72,5 @@ to one change that builds and passes its tests.
 
 modelXare is licensed under [Apache-2.0](LICENSE). By contributing, you agree that your contribution
 is licensed under the same terms (section 5 of the license). Model fixtures keep their own licenses,
-listed in `fixtures/models.json`.
+listed in `fixtures/models.json`. The weXare and modelXare names and logos aren't covered by the
+license; see [NOTICE](NOTICE).

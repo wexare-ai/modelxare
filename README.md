@@ -345,4 +345,8 @@ privately as described in [SECURITY.md](SECURITY.md). Contact: hello@wexare.com.
 
 ## License
 
-Apache-2.0. Model fixtures keep their upstream licenses; see `fixtures/models.json`.
+Copyright 2026 weXare. Licensed under [Apache-2.0](LICENSE); see [NOTICE](NOTICE).
+
+The license doesn't cover the weXare and modelXare names or logos: a fork or product built from
+this code may say it is based on modelXare, but uses its own name and logo. Model fixtures keep
+their upstream licenses; see `fixtures/models.json`.

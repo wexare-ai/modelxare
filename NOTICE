@@ -1,0 +1,20 @@
+modelXare
+Copyright 2026 weXare
+
+This product is licensed under the Apache License, Version 2.0. See the LICENSE file.
+
+Names and logos
+
+"weXare" and "modelXare", and the weXare and modelXare logos, are trademarks of weXare.
+As section 6 of the Apache License says, the license does not grant permission to use
+them, except as reasonable and customary to describe where the work comes from.
+
+The logo artwork in this repository, including apps/simple/src/WexareLogo.tsx and
+apps/simple/public/favicon.svg, is here to build weXare's own apps. A fork, deployment
+or product built from this code may say that it is based on modelXare, but must use
+its own name and logo.
+
+Models
+
+No model files are part of this repository. The sample models it downloads keep their
+own licenses and attributions, listed in fixtures/models.json.
