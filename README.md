@@ -4,12 +4,16 @@
 idea you work through goes to their data centers, runs on their terms and at their prices, and may
 train their next model. What people know is being poured into AI that a handful of companies own.
 
-**It doesn't have to work that way.** Many everyday jobs, like sorting a message, summarizing a page
-or drafting a reply, don't need a giant model in a data center. Small models, each good at one
-thing, run on an ordinary laptop or in a browser tab. modelXare, by weXare, turns them into a
-commons: anyone can publish a model, or teach one what they know, and anyone can find it, check
-where it came from and run it on their own device. No lab, no account, no central registry, and
-what you type stays with you.
+**It doesn't have to work that way.** Picture thousands of small models instead of one giant one,
+each the best at one job and published by the people who know that job: a nurse, a translator, a
+teacher, an engineer. A fast System 1 router sends every request to the right ones, and they run on
+your own laptop or in a browser tab. Every new model widens what the whole catalog can do. The goal
+is a global community of contributors covering every scenario, until together they match what
+frontier models do: built by everyone, owned by no one.
+
+**modelXare, by weXare, is where that starts.** Anyone can publish a model, or teach one what they
+know, and anyone can find it, check where it came from and run it on their own device. No lab, no
+account, no central registry, and what you type stays with you.
 
 **Under the hood**, models are published as signed Nostr releases, stored on IPFS, torrents and
 HTTP mirrors, collected by independent indexers into signed catalog snapshots, then searched,
