@@ -45,7 +45,7 @@ test('the front page tells the story by scrolling and leads to the app', async (
     await backers.scrollIntoViewIfNeeded();
     await expect(backers.getByRole('link', { name: 'Mozilla Ventures' })).toHaveAttribute('href', 'https://mozilla.vc/');
     const logos = backers.getByRole('img');
-    expect(await logos.evaluateAll((imgs: HTMLImageElement[]) => imgs.map((i) => i.alt))).toEqual(['Mozilla Ventures', 'Betaworks', 'White Star Capital', 'Offline Ventures']);
+    expect(await logos.evaluateAll((imgs: HTMLImageElement[]) => imgs.map((i) => i.alt))).toEqual(['Betaworks', 'Mozilla Ventures', 'White Star Capital', 'Offline Ventures']);
     for (const logo of await logos.all()) {
       await expect(logo).toBeVisible();
       expect(await logo.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0), (await logo.getAttribute('alt')) ?? 'logo').toBe(true);

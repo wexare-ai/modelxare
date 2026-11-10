@@ -20,8 +20,8 @@ export interface Backer {
 }
 
 export const BACKERS: readonly Backer[] = [
-  { name: 'Mozilla Ventures', href: 'https://mozilla.vc/', logo: mozillaVentures },
   { name: 'Betaworks', href: 'https://www.betaworks.com/', logo: betaworks },
+  { name: 'Mozilla Ventures', href: 'https://mozilla.vc/', logo: mozillaVentures },
   { name: 'White Star Capital', href: 'https://whitestarcapital.com/', logo: whiteStarCapital },
   { name: 'Offline Ventures', href: 'https://offline.vc/', logo: offlineVentures },
 ];
