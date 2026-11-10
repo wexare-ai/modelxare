@@ -609,11 +609,12 @@
   transform: translateY(-2px);
 }
 
-/* every logo at the same height, at its own width */
+/* one box per logo, so a long wordmark and a compact one weigh about the same */
 .l-backers-list img {
   display: block;
-  width: auto;
+  width: clamp(140px, 15vw, 180px);
   height: clamp(28px, 3vw, 36px);
+  object-fit: contain;
 }
 
 /* ───────────── System 1 + System 2 ───────────── */

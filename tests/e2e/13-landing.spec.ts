@@ -44,9 +44,12 @@ test('the front page tells the story by scrolling and leads to the app', async (
     const backers = page.getByRole('region', { name: 'Backed by' });
     await backers.scrollIntoViewIfNeeded();
     await expect(backers.getByRole('link', { name: 'Mozilla Ventures' })).toHaveAttribute('href', 'https://mozilla.vc/');
-    const logo = backers.getByRole('img', { name: 'Mozilla Ventures' });
-    await expect(logo).toBeVisible();
-    expect(await logo.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+    const logos = backers.getByRole('img');
+    expect(await logos.evaluateAll((imgs: HTMLImageElement[]) => imgs.map((i) => i.alt))).toEqual(['Mozilla Ventures', 'Betaworks', 'White Star Capital', 'Offline Ventures']);
+    for (const logo of await logos.all()) {
+      await expect(logo).toBeVisible();
+      expect(await logo.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0), (await logo.getAttribute('alt')) ?? 'logo').toBe(true);
+    }
 
     // Try it: the working app, then back to the front page from the logo.
     await page.getByRole('link', { name: 'Try modelXare' }).last().click();
