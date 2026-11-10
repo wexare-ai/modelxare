@@ -14,6 +14,10 @@ apps/simple/public/favicon.svg, is here to build weXare's own apps. A fork, depl
 or product built from this code may say that it is based on modelXare, but must use
 its own name and logo.
 
+Investor logos in apps/simple/src/backers/, such as the Mozilla Ventures logo, belong to
+their owners. They are shown only to name weXare's investors and are not covered by the
+license.
+
 Models
 
 No model files are part of this repository. The sample models it downloads keep their

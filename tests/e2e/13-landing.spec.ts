@@ -40,6 +40,14 @@ test('the front page tells the story by scrolling and leads to the app', async (
     await page.locator('.l-final').scrollIntoViewIfNeeded();
     await expect(page.locator('.l-final .l-h2')).toHaveClass(/\bin\b/);
 
+    // Who backs weXare, at the foot of the page, each logo loaded and linked.
+    const backers = page.getByRole('region', { name: 'Backed by' });
+    await backers.scrollIntoViewIfNeeded();
+    await expect(backers.getByRole('link', { name: 'Mozilla Ventures' })).toHaveAttribute('href', 'https://mozilla.vc/');
+    const logo = backers.getByRole('img', { name: 'Mozilla Ventures' });
+    await expect(logo).toBeVisible();
+    expect(await logo.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+
     // Try it: the working app, then back to the front page from the logo.
     await page.getByRole('link', { name: 'Try modelXare' }).last().click();
     await expect(page).toHaveURL(/#\/try$/);

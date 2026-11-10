@@ -4,6 +4,7 @@
  * working app is one click away at #/try.
  */
 import { useEffect, useRef, type CSSProperties, type ReactNode, type RefObject } from 'react';
+import { BACKERS } from './backers.ts';
 import { Minds } from './Minds.tsx';
 import { Story } from './Story.tsx';
 import { WexareLogo } from './WexareLogo.tsx';
@@ -328,6 +329,26 @@ function Finale() {
   );
 }
 
+function Backers() {
+  if (!BACKERS.length) return null;
+  return (
+    <section className="l-backers" aria-labelledby="backers-title">
+      <h2 id="backers-title" className="l-backers-title" data-reveal>
+        Backed by
+      </h2>
+      <ul className="l-backers-list">
+        {BACKERS.map((b, i) => (
+          <li key={b.name} data-reveal style={{ '--i': i + 1 } as CSSProperties}>
+            <a href={b.href} target="_blank" rel="noopener noreferrer">
+              <img src={b.logo} alt={b.name} />
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export function Landing() {
   const root = useRef<HTMLElement>(null);
   useReveal(root);
@@ -341,6 +362,7 @@ export function Landing() {
       <Yours />
       <Together />
       <Finale />
+      <Backers />
     </main>
   );
 }

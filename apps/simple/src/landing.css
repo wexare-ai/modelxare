@@ -568,6 +568,54 @@
   justify-content: center;
 }
 
+/* ───────────── Backed by ───────────── */
+.l-backers {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--gutter) clamp(64px, 8vw, 104px);
+  text-align: center;
+}
+
+.l-backers-title {
+  margin: 0;
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--muted);
+}
+
+.l-backers-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 16px clamp(32px, 5vw, 64px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.l-backers-list a {
+  display: block;
+  padding: 8px;
+  border-radius: 6px;
+  transition: transform 0.25s var(--snap);
+}
+
+.l-backers-list a:hover {
+  transform: translateY(-2px);
+}
+
+/* every logo at the same height, at its own width */
+.l-backers-list img {
+  display: block;
+  width: auto;
+  height: clamp(28px, 3vw, 36px);
+}
+
 /* ───────────── System 1 + System 2 ───────────── */
 .l-minds .l-h2 {
   margin-top: 18px;
