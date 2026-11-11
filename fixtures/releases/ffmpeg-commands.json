@@ -6,7 +6,7 @@
     "model_id": "ffmpeg-commands",
     "name": "FFmpeg commands (LoRA for Qwen2.5 0.5B Q4_K_M)",
     "description": "Turns a plain-language request about a video, audio or image file into one ffmpeg command, such as \"extract the audio from talk.mp4 as an mp3\". Answers UNSUPPORTED when ffmpeg can't do it.",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "kind": "lora",
     "capabilities": [
       "command-generation"
@@ -36,7 +36,8 @@
         "generation": {
           "max_tokens": 128,
           "temperature": 0
-        }
+        },
+        "routing": "ffmpeg commands: video and audio files such as mp4, mov, mkv, mp3 and wav"
       }
     ],
     "requirements": {

@@ -3,10 +3,10 @@
 // first, and online only when the person turned that on with their own key.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { LayaWorkerClient } from '@wexare/laya-web';
-import type { CandidateRelease } from '@wexare/orchestrator';
+import { baseResolver, type CandidateRelease } from '@wexare/orchestrator';
 import { REMOTE_OFF, layaBundle, pickRouter, remoteHelp, route, routerFiles, type RemoteSettings, type RunResult, type Step, type System1 } from '@wexare/router';
 import { capabilities } from '@wexare/web/src/lib/runtime.ts';
-import { approvedReleases, artifacts, fetchFiles, live, noSpaceText, runTask, touch, useEvent, type Fetched } from './engine.ts';
+import { allReleases, approvedReleases, artifacts, fetchFiles, live, noSpaceText, runTask, touch, useEvent, type Fetched } from './engine.ts';
 
 /** How each kind of step reads to a person. */
 export const STEP_WORDS: Record<string, { name: string; result: string; doing: string }> = {
@@ -16,6 +16,7 @@ export const STEP_WORDS: Record<string, { name: string; result: string; doing: s
   reply: { name: 'Draft a reply', result: 'Draft reply', doing: 'Drafting a reply' },
   translate: { name: 'Translate', result: 'Translation', doing: 'Translating' },
   answer: { name: 'Answer a question', result: 'Answer', doing: 'Answering' },
+  command: { name: 'Give the command', result: 'Command', doing: 'Writing the command' },
 };
 
 /** "Tiny summarizer (SmolLM2 360M Q8_0)" → "Tiny summarizer". */
@@ -201,12 +202,13 @@ export function useAsk() {
     const candidates = await approvedReleases('models');
     const result = await route(request, system1, {
       candidates,
+      baseOf: baseResolver(await allReleases()),
       isCached: artifacts.isCached,
       remote: remoteHelp(loadOnlineHelp()),
       signal: ac.signal,
-      async runLocal(release, capability, input) {
+      async runLocal(release, capability, input, _language, _signal, base) {
         setState((s) => ({ ...s, activity: 'Getting the model ready', partial: '' }));
-        const out = await runTask(release, undefined, capability, input, {
+        const out = await runTask(release, base, capability, input, {
           signal: ac.signal,
           partial: (text) => setState((s) => ({ ...s, partial: text })),
         });
@@ -214,8 +216,8 @@ export function useAsk() {
         return out;
       },
       // Models download as needed; the router's files stay while it is in use.
-      async download(release) {
-        const files = release.manifest.files;
+      async download(release, base) {
+        const files = [...(base?.manifest.files ?? []), ...release.manifest.files];
         const bytes = files.filter((f) => !artifacts.isCached(f.sha256)).reduce((n, f) => n + f.size, 0);
         const fetched = await download(files, `Downloading ${plainName(release.name)}`, routerModel.files.map((f) => f.sha256));
         if (fetched.status === 'no-space') throw new Error(noSpaceText('this model', bytes, fetched.room));

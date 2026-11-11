@@ -6,7 +6,7 @@
     "model_id": "git-commands",
     "name": "Git commands (LoRA for Qwen2.5 0.5B Q4_K_M)",
     "description": "Turns a plain-language request into the git command that does it, such as \"undo my last commit but keep the changes\". Short sequences come one command per line.",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "kind": "lora",
     "capabilities": [
       "command-generation"
@@ -36,7 +36,8 @@
         "generation": {
           "max_tokens": 160,
           "temperature": 0
-        }
+        },
+        "routing": "git commands: commits, branches, merges, stashes and history of a code repository"
       }
     ],
     "requirements": {

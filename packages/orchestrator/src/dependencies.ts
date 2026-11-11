@@ -57,3 +57,12 @@ export function resolveLoraDependency(
     missingBytes: unique.filter((f) => !f.cached).reduce((n, f) => n + f.size, 0),
   };
 }
+
+/** The verified base of an adapter among `all` releases, or null when it doesn't resolve (wrong base, missing base). */
+export function baseResolver(all: CandidateRelease[]): (lora: CandidateRelease) => CandidateRelease | null {
+  const byId = new Map(all.map((c) => [c.eventId, c]));
+  return (lora) => {
+    const d = resolveLoraDependency(lora, (id) => byId.get(id) ?? null, () => false);
+    return d.ok ? d.base : null;
+  };
+}

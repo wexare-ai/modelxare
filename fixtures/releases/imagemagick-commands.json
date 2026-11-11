@@ -6,7 +6,7 @@
     "model_id": "imagemagick-commands",
     "name": "ImageMagick commands (LoRA for Qwen2.5 0.5B Q4_K_M)",
     "description": "Turns a plain-language image editing request into one ImageMagick command, such as \"resize photo.jpg to 500px wide\". Answers UNSUPPORTED when ImageMagick can't do it.",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "kind": "lora",
     "capabilities": [
       "command-generation"
@@ -36,7 +36,8 @@
         "generation": {
           "max_tokens": 128,
           "temperature": 0
-        }
+        },
+        "routing": "ImageMagick commands: image files such as jpg, png, gif and webp"
       }
     ],
     "requirements": {

@@ -37,6 +37,8 @@ export interface OperationConfig {
   id: string;
   prompt: { mode: 'chat' | 'completion'; system?: string; template: string };
   generation?: { max_tokens?: number; temperature?: number; top_k?: number; top_p?: number; stop?: string[] };
+  /** What requests this model is the one for, in a few words, for the System 1 router (e.g. "git commands: commits, branches and history"). */
+  routing?: string;
   input_schema: Record<string, unknown>;
   output_schema: Record<string, unknown>;
 }

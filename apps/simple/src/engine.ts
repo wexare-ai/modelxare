@@ -31,6 +31,12 @@ export const opened: Promise<InitResult> = session.open().then(async (r) => {
   return r;
 });
 
+/** Every verified release in the local catalog (an approved add-on may run on anyone's base). */
+export async function allReleases(): Promise<CandidateRelease[]> {
+  await opened;
+  return (await catalog.candidates()).map(toCandidate);
+}
+
 /** Verified releases from publishers approved for `role`. */
 export async function approvedReleases(role: PublisherRole): Promise<CandidateRelease[]> {
   await opened;

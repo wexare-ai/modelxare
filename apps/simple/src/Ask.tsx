@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { UNSUPPORTED_COMMAND } from '@wexare/protocol';
 import type { Step } from '@wexare/router';
 import { size } from './models.ts';
 import { noSpaceText } from './engine.ts';
@@ -122,7 +123,11 @@ export function Ask({ lede }: { lede: string }) {
                     : s.decision.by === 'instruction'
                       ? `“${s.decision.text}”: ${words(s.intent.id).name} (${pct(s.decision.probability)} sure).`
                       : `You asked to “${words(s.intent.id).name}” (${pct(s.decision.probability)} sure).`}{' '}
-                  {s.route.kind === 'local' ? 'A model on this device can do that.' : s.route.kind === 'remote' ? 'No model on this device can do that, so online help was used.' : 'No model on this device can do that.'}
+                  {s.route.kind === 'local'
+                    ? s.route.pick && s.route.pick.considered.length > 1
+                      ? `Of ${new Set(s.route.pick.considered.map((c) => c.modelId)).size} models on this device that can, ${plainName(s.route.release.name)} fits best (${pct(s.route.pick.probability)} sure).`
+                      : 'A model on this device can do that.'
+                    : s.route.kind === 'remote' ? 'No model on this device can do that, so online help was used.' : 'No model on this device can do that.'}
                 </li>
               ))}
               <li>
@@ -190,7 +195,21 @@ function StepCard({ step, partial }: { step: Step; partial: string }) {
       <h2 className="tag">{w.result}</h2>
       {step.status === 'waiting' && <p className="muted">Next.</p>}
       {step.status === 'running' && <p className="pending-text">{partial || `${w.doing}…`}</p>}
-      {step.status === 'done' && (step.output?.topic ? <p className="topic">{step.output.topic}</p> : <p>{step.output?.text}</p>)}
+      {step.status === 'done' &&
+        (step.output?.topic ? (
+          <p className="topic">{step.output.topic}</p>
+        ) : step.intent.id === 'command' && step.output?.text && step.output.text !== UNSUPPORTED_COMMAND ? (
+          <pre className="step-command">
+            <code>{step.output.text}</code>
+          </pre>
+        ) : step.intent.id === 'command' ? (
+          <p>This model can’t do that. Try asking another way.</p>
+        ) : (
+          <p>{step.output?.text}</p>
+        ))}
+      {step.status === 'done' && step.intent.id === 'command' && step.output?.text !== UNSUPPORTED_COMMAND && (
+        <p className="hint">Small models get commands wrong sometimes. Read it before you run it.</p>
+      )}
       {step.status === 'failed' && <p className="failed">{step.error}</p>}
       {/* Which model does a step is settled when it starts. */}
       {step.status !== 'waiting' && <p className="byline">{by}</p>}

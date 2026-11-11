@@ -227,7 +227,12 @@ export class Engine {
 
   /** Releases `auto` may hand a step to: models (not adapters) that are here, or may be fetched. */
   specialists(): CandidateRelease[] {
-    return this.catalog.models.filter((m) => !m.base && (this.options.pullOnDemand || this.isReady(m.files))).map((m) => m.release);
+    return this.catalog.models.filter((m) => this.options.pullOnDemand || this.isReady(m.files)).map((m) => m.release);
+  }
+
+  /** The base an adapter in the catalog runs on. */
+  baseOf(release: CandidateRelease): CandidateRelease | null {
+    return this.catalog.models.find((m) => m.release.eventId === release.eventId)?.base ?? null;
   }
 
   /** System 1 work takes turns too. */

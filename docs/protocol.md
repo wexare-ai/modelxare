@@ -77,7 +77,11 @@ Key fields. The schema has the full definition.
     `torrent` (magnet with `xt=urn:btih:`; `path` names the file inside the torrent), and `arweave`
     (`ar://<tx>`);
   - unknown transports are ignored, and every source is checked against `sha256` and `size`.
-- `operations[]`: `{id, prompt: {mode, system?, template}, generation?, input_schema, output_schema}`.
+- `operations[]`: `{id, prompt: {mode, system?, template}, generation?, routing?, input_schema, output_schema}`.
+  `routing` (≤ 120 characters) says in a few words which requests the model is the one for, such as
+  `git commands: commits, branches, merges, stashes and history of a code repository`. The System 1
+  router reads it to choose between models whose operation isn't interchangeable (commands); a
+  short `<what>: <which inputs>` phrase picks best. Without it, the model's name is used.
   Templates are plain text with `{{input}}`, `{{categories}}` and `{{language}}` placeholders, and are never
   evaluated as code. `{{categories}}` lists each topic with what it covers: `family (parents, children,
   partners and relatives), friends (…), …`. Bundled contracts: `text-classification` (one topic of

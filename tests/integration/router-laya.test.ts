@@ -18,11 +18,16 @@
 // correctly, and missed one more request that is kept out of the list:
 // "Classify this complaint and draft a reply" reads "Classify this complaint"
 // as summarize (0.78), not sort. Rewording the sort option did not fix it.
+//
+// On 2026-11-10, with the command option added, all of these passed. Two more
+// requests are kept out: "merge the feature branch into main" reads as sort
+// (0.76), and "Explain what git rebase does" is unsure (command 0.44), so the
+// person is asked.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Laya } from '@wexare/laya-web';
-import { layaBundle, route, routerFiles, type Hooks, type System1 } from '@wexare/router';
+import { layaBundle, pickModel, route, routerFiles, type Hooks, type System1 } from '@wexare/router';
 import type { CandidateRelease } from '@wexare/orchestrator';
 import { DATA, endpoints, evidence } from '../support/env.ts';
 
@@ -102,6 +107,25 @@ describe.skipIf(!RUN)(`System 1 router (real Laya${NATIVE ? ', native' : ''})`, 
     [['summarize', 'reply'], 'Give me a summary and draft a reply: Hi, the parcel room has been locked all weekend, where can I pick up my package?'],
     [['answer'], 'Why do pipes freeze in winter and how can I prevent it?'],
     [['sort', 'summarize'], 'categorize + summarize: Loud drilling from flat 12 every morning at 7.'],
+    // Commands, with or without the tool's name; questions about a tool are not.
+    [['command'], 'How do I undo my last git commit but keep the changes?'],
+    [['command'], 'git command to create a branch called fix-login and switch to it'],
+    [['command'], 'Stash my changes in git'],
+    [['command'], 'show the last 5 commits'],
+    [['command'], 'Extract the audio from talk.mp4 as an mp3'],
+    [['command'], 'Give me the ffmpeg command to remove the sound from intro.mp4'],
+    [['command'], 'Resize video.mp4 to 1280 wide'],
+    [['command'], 'cut the first 30 seconds of intro.mp4'],
+    [['command'], 'turn clip.mov into a gif'],
+    [['command'], 'compress this video so I can email it'],
+    [['command'], 'Make a 200px thumbnail of photo.jpg'],
+    [['command'], 'Convert logo.png to webp'],
+    [['command'], 'rotate photo.jpg 90 degrees'],
+    [['command'], 'Which command converts holiday.mov to mp4 without re-encoding?'],
+    [['answer'], 'What is ffmpeg?'],
+    [['summarize'], 'Summarize: the ffmpeg build failed on the server last night, so the video pipeline is paused until Monday.'],
+    [['sort'], 'Sort this message: Hi team, the git server will be down for maintenance on Sunday.'],
+    [['translate'], 'Translate into Spanish: please resize the photos before sending them.'],
   ];
 
   it.each(cases)('plans %j for: %s', async (expected, request) => {
@@ -111,5 +135,38 @@ describe.skipIf(!RUN)(`System 1 router (real Laya${NATIVE ? ', native' : ''})`, 
     log.push({ request, expected, planned, readings: j.readings, latency_ms: j.latencyMs, device: j.device });
     // The message shows what each text looked like, so a miss says how far off it was.
     expect(planned, JSON.stringify(j.readings.map((x) => [x.text, x.choice, x.probability]))).toEqual(expected);
+  }, 120_000);
+
+  // Which command model, from each release's routing hint (fixtures/releases).
+  const commandModels = ['git-commands', 'ffmpeg-commands', 'imagemagick-commands'].map((n) => {
+    const m = JSON.parse(readFileSync(join(__dirname, '../../fixtures/releases', `${n}.json`), 'utf8')).manifest;
+    return { release: { eventId: n, pubkey: 'a'.repeat(64), modelId: m.model_id, name: m.name, version: m.version, manifestSha256: '', manifest: m, support: { supported: true, reasons: [], executableOperations: ['command-generation'] } } as CandidateRelease };
+  });
+  const picks: [string, string][] = [
+    ['git-commands', 'How do I undo my last git commit but keep the changes?'],
+    ['git-commands', 'git command to create a branch called fix-login and switch to it'],
+    ['git-commands', 'Stash my changes in git'],
+    ['git-commands', 'show the last 5 commits'],
+    ['git-commands', 'merge the feature branch into main'],
+    ['git-commands', 'unstage README.md'],
+    ['ffmpeg-commands', 'Extract the audio from talk.mp4 as an mp3'],
+    ['ffmpeg-commands', 'Give me the ffmpeg command to remove the sound from intro.mp4'],
+    ['ffmpeg-commands', 'Resize video.mp4 to 1280 wide'],
+    ['ffmpeg-commands', 'cut the first 30 seconds of intro.mp4'],
+    ['ffmpeg-commands', 'turn clip.mov into a gif'],
+    ['ffmpeg-commands', 'compress this video so I can email it'],
+    ['ffmpeg-commands', 'convert song.wav to mp3'],
+    ['imagemagick-commands', 'Make a 200px thumbnail of photo.jpg'],
+    ['imagemagick-commands', 'Convert logo.png to webp'],
+    ['imagemagick-commands', 'Make picture.jpg black and white with imagemagick'],
+    ['imagemagick-commands', 'rotate photo.jpg 90 degrees'],
+    ['imagemagick-commands', 'add a 10px white border around avatar.png'],
+    ['imagemagick-commands', 'crop photo.jpg to 300x300 from the center'],
+  ];
+
+  it.each(picks)('picks %s for: %s', async (expected, request) => {
+    const { choice, pick } = await pickModel(commandModels, 'command-generation', request, system1);
+    log.push({ request, expected_model: expected, picked: choice.release.modelId, pick });
+    expect(choice.release.modelId, JSON.stringify(pick.considered)).toBe(expected);
   }, 120_000);
 });

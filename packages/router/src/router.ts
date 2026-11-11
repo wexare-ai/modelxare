@@ -5,9 +5,15 @@
 // is read whole. Each step goes to a local mini-model when one can do it, to an
 // online model only when the person allowed that, and otherwise is reported as
 // unavailable. When nothing is clear, the person picks.
+//
+// Some tasks have models that are not interchangeable (a git model and an
+// ffmpeg model both write commands). For those, System 1 answers a second
+// question built from the catalog at request time: which of these models is
+// the one, as each release describes itself in its `routing` hint. New models
+// join that question as they are published; nothing is retrained.
 import { detectLanguage, selectRelease, type CandidateRelease } from '@wexare/orchestrator';
 import { INTENTS, type Intent } from './intents.ts';
-import type { ChoiceAnswer, Question, System1 } from './system-one.ts';
+import type { ChoiceAnswer, ChoiceQuestion, Question, System1 } from './system-one.ts';
 
 export interface RouterOptions {
   /** Most steps one request may take. */
@@ -26,8 +32,16 @@ export interface StepOutput {
   topic?: string;
 }
 
+/** How System 1 chose between models that do the same task. */
+export interface ModelPick {
+  /** How sure System 1 is of the chosen model, in the last round it was asked. */
+  probability: number;
+  /** Every model it read, with its probability in the round it was read. */
+  considered: { modelId: string; probability: number }[];
+}
+
 export type Route =
-  | { kind: 'local'; release: CandidateRelease; downloadBytes: number }
+  | { kind: 'local'; release: CandidateRelease; base?: CandidateRelease; downloadBytes: number; pick?: ModelPick }
   | { kind: 'remote'; provider: string; model: string }
   | { kind: 'none'; reason: string };
 
@@ -92,23 +106,109 @@ export interface Hooks {
   /** Local mini-models from the verified catalog. */
   candidates: CandidateRelease[];
   isCached(sha256: string): boolean;
-  runLocal(release: CandidateRelease, capability: string, input: string, language: string, signal?: AbortSignal): Promise<StepOutput>;
+  /** The base release an adapter runs on, when the catalog has it. Without this, adapters are left out. */
+  baseOf?(release: CandidateRelease): CandidateRelease | null;
+  /** `base` is set when `release` is an adapter. */
+  runLocal(release: CandidateRelease, capability: string, input: string, language: string, signal?: AbortSignal, base?: CandidateRelease): Promise<StepOutput>;
   /** Present only when the person allowed online help. */
   remote?: RemoteHelp | null;
   /** Ask before downloading a model; false skips the step. Without it, models download as needed. */
   confirmDownload?(release: CandidateRelease, bytes: number): Promise<boolean>;
-  /** Download and verify a model's files; false when that failed. */
-  download(release: CandidateRelease): Promise<boolean>;
+  /** Download and verify a model's files (and its base's, for an adapter); false when that failed. */
+  download(release: CandidateRelease, base?: CandidateRelease): Promise<boolean>;
   /** System 1 found nothing clear: offer the likeliest; null stops. */
   clarify(options: { intent: Intent; probability: number }[]): Promise<string | null>;
   onUpdate?(steps: Step[]): void;
   signal?: AbortSignal;
 }
 
-const missingBytes = (r: CandidateRelease, isCached: (s: string) => boolean) => r.manifest.files.filter((f) => !isCached(f.sha256)).reduce((n, f) => n + f.size, 0);
+const missingBytes = (r: CandidateRelease, isCached: (s: string) => boolean, base?: CandidateRelease) =>
+  [...(base?.manifest.files ?? []), ...r.manifest.files].filter((f) => !isCached(f.sha256)).reduce((n, f) => n + f.size, 0);
+
+/** Most models System 1 compares in one question; more are compared in rounds. */
+export const PICK_GROUP = 8;
+
+const newer = (a: CandidateRelease, b: CandidateRelease) => a.version.localeCompare(b.version, undefined, { numeric: true }) > 0;
+
+/**
+ * The models on this device's catalog that can do `capability` in `language`:
+ * the newest version of each, adapters with their base.
+ */
+export function localChoices(capability: string, language: string, hooks: Pick<Hooks, 'candidates' | 'baseOf'>): { release: CandidateRelease; base?: CandidateRelease }[] {
+  const latest = new Map<string, { release: CandidateRelease; base?: CandidateRelease }>();
+  for (const c of hooks.candidates) {
+    const m = c.manifest;
+    if (!c.support.supported || !m.capabilities.includes(capability) || !c.support.executableOperations.includes(capability)) continue;
+    if (language !== 'und' && !m.languages.includes(language) && !m.languages.includes('und')) continue;
+    let base: CandidateRelease | undefined;
+    if (m.kind === 'lora') {
+      base = hooks.baseOf?.(c) ?? undefined;
+      if (!base?.support.supported) continue;
+    } else if (m.kind !== 'model') continue;
+    const key = `${c.pubkey}:${c.modelId}`;
+    const seen = latest.get(key);
+    if (!seen || newer(c, seen.release)) latest.set(key, { release: c, ...(base ? { base } : {}) });
+  }
+  return [...latest.values()].sort((a, b) => (a.release.eventId < b.release.eventId ? -1 : 1));
+}
+
+/** How a model presents itself to System 1: its routing hint, or else its name. */
+export function routingHint(c: CandidateRelease, capability: string): string {
+  const hint = c.manifest.operations.find((op) => op.id === capability)?.routing?.trim();
+  return hint || c.name.replace(/\s*\([^)]*\)\s*$/, '').trim() || c.modelId;
+}
+
+/** The question that picks a model: one option per model, keyed by model_id. */
+export function modelQuestion(choices: CandidateRelease[], capability: string): ChoiceQuestion {
+  const count = new Map<string, number>();
+  for (const c of choices) count.set(c.modelId, (count.get(c.modelId) ?? 0) + 1);
+  return {
+    type: 'choice',
+    instructions: 'Which model is the right one to do `request`?',
+    criteria: Object.fromEntries(choices.map((c) => [optionKey(c, count), routingHint(c, capability)])),
+  };
+}
+
+const optionKey = (c: CandidateRelease, count: Map<string, number>) => ((count.get(c.modelId) ?? 0) > 1 ? `${c.modelId}@${c.pubkey.slice(0, 8)}` : c.modelId);
+
+/**
+ * System 1 picks the model for a request, among any number: groups of
+ * PICK_GROUP, then the winners, until one is left.
+ */
+export async function pickModel<T extends { release: CandidateRelease }>(
+  choices: T[],
+  capability: string,
+  request: string,
+  system1: System1,
+): Promise<{ choice: T; pick: ModelPick; latencyMs: number }> {
+  const considered: ModelPick['considered'] = [];
+  let latencyMs = 0;
+  let round = choices;
+  let probability = 1;
+  while (round.length > 1) {
+    const winners: T[] = [];
+    for (let i = 0; i < round.length; i += PICK_GROUP) {
+      const group = round.slice(i, i + PICK_GROUP);
+      if (group.length === 1) {
+        winners.push(group[0]!);
+        continue;
+      }
+      const count = new Map<string, number>();
+      for (const g of group) count.set(g.release.modelId, (count.get(g.release.modelId) ?? 0) + 1);
+      const r = await system1.predict({ request }, { pick: modelQuestion(group.map((g) => g.release), capability) });
+      latencyMs += r.latency_ms;
+      const a = r.answers.pick as ChoiceAnswer;
+      for (const g of group) considered.push({ modelId: g.release.modelId, probability: a.probabilities[optionKey(g.release, count)] ?? 0 });
+      winners.push(group.find((g) => optionKey(g.release, count) === a.choice) ?? group[0]!);
+      probability = a.probabilities[a.choice] ?? 0;
+    }
+    round = winners;
+  }
+  return { choice: round[0]!, pick: { probability, considered }, latencyMs };
+}
 
 /** Local first; online only when allowed; otherwise say why not. */
-export function routeFor(intent: Intent, language: string, hooks: Pick<Hooks, 'candidates' | 'isCached' | 'remote'>): Route {
+export function routeFor(intent: Intent, language: string, hooks: Pick<Hooks, 'candidates' | 'isCached' | 'remote' | 'baseOf'>): Route {
   if (intent.capability) {
     const sel = selectRelease(intent.capability, hooks.candidates, language, {}, hooks.isCached);
     if (sel.release) return { kind: 'local', release: sel.release, downloadBytes: missingBytes(sel.release, hooks.isCached) };
@@ -127,6 +227,13 @@ export function describe(step: Step): string {
 const INSTRUCTION_MAX = 120;
 /** Most parts of an instruction read; each is one short System 1 pass. */
 const MAX_PARTS = 6;
+/**
+ * A part of one or two words ("Categorize", "summarize it") is a task only
+ * when System 1 is this sure. Splitting on "and" also cuts phrases apart:
+ * "the pros and cons" leaves "cons", which some option always half-matches
+ * (0.71 for `command`), while real one-word tasks read 0.93 or more.
+ */
+const SHORT_PART_SURE = 0.9;
 
 /**
  * Splits "Categorize and summarize this message: There is a leak." into its
@@ -189,7 +296,8 @@ export async function route(request: string, system1: System1, hooks: Hooks, opt
   for (const part of instruction ? partsOf(instruction) : []) {
     if (hooks.signal?.aborted) return finish([], 'canceled');
     const r = await read(part);
-    if (r.probability >= opts.sureAbove && !planned.has(r.choice)) planned.set(r.choice, { probability: r.probability, by: 'instruction', text: part });
+    const sure = part.split(/\s+/).length <= 2 ? Math.max(opts.sureAbove, SHORT_PART_SURE) : opts.sureAbove;
+    if (r.probability >= sure && !planned.has(r.choice)) planned.set(r.choice, { probability: r.probability, by: 'instruction', text: part });
   }
   // No instruction, or none of its parts was clear: the whole request.
   if (!planned.size) {
@@ -210,19 +318,28 @@ export async function route(request: string, system1: System1, hooks: Hooks, opt
   }
 
   // The first steps asked for, when there are more than one request may take.
-  const steps: Step[] = [...planned]
-    .slice(0, opts.maxSteps)
-    .map(([id, decision]) => {
-      const intent = intents.find((x) => x.id === id)!;
-      return { intent, decision, route: routeFor(intent, language, hooks), status: 'waiting' };
-    });
+  const steps: Step[] = [];
+  for (const [id, decision] of [...planned].slice(0, opts.maxSteps)) {
+    if (hooks.signal?.aborted) return finish([], 'canceled');
+    const intent = intents.find((x) => x.id === id)!;
+    const choices = intent.pickModel && intent.capability ? localChoices(intent.capability, language, hooks) : [];
+    let route = routeFor(intent, language, hooks);
+    if (choices.length) {
+      const { choice, pick, latencyMs: ms } = await pickModel(choices, intent.capability!, request, system1);
+      latencyMs += ms;
+      route = { kind: 'local', release: choice.release, ...(choice.base ? { base: choice.base } : {}), downloadBytes: missingBytes(choice.release, hooks.isCached, choice.base), pick };
+    }
+    steps.push({ intent, decision, route, status: 'waiting' });
+  }
   const update = () => hooks.onUpdate?.(steps.map((s) => ({ ...s })));
   update();
 
   for (const step of steps) {
     if (hooks.signal?.aborted) return finish(steps, 'canceled');
     // Chosen again now: a model an earlier step downloaded may do this one too.
-    step.route = routeFor(step.intent, language, hooks);
+    // A model System 1 picked stays picked; only what is left to download changes.
+    const r = step.route;
+    step.route = step.intent.pickModel && r.kind === 'local' ? { ...r, downloadBytes: missingBytes(r.release, hooks.isCached, r.base) } : routeFor(step.intent, language, hooks);
     step.status = 'running';
     update();
     const t0 = Date.now();
@@ -253,7 +370,7 @@ async function execute(step: Step, request: string, message: string, context: st
       step.status = 'declined';
       return undefined;
     }
-    if (!(await hooks.download(r.release))) throw new Error('the model could not be downloaded');
+    if (!(await hooks.download(r.release, r.base))) throw new Error('the model could not be downloaded');
   }
-  return hooks.runLocal(r.release, step.intent.capability!, message, language, hooks.signal);
+  return hooks.runLocal(r.release, step.intent.capability!, message, language, hooks.signal, r.base);
 }

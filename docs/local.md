@@ -154,8 +154,9 @@ offered tool and its arguments always parse. A few things to know:
    names (as in the app; see the [README](../README.md#routing-with-system-1)).
 2. Each task with a specialist on this machine goes to that model. Sort goes to Qwen2.5 0.5B
    (`community-assistant`), summarize to SmolLM2 360M (`tiny-summarizer`), and write to
-   `story-base`. Each runs its catalog operation (prompt, grammar, output check), exactly as in the
-   browser.
+   `story-base`. A command goes to whichever command model System 1 picks from the releases'
+   `routing` hints (`git-commands`, `ffmpeg-commands` or `imagemagick-commands`), run on its base.
+   Each runs its catalog operation (prompt, grammar, output check), exactly as in the browser.
 3. In these cases the general model (`--general`) answers the whole conversation instead, with its
    tools:
    - a task has no specialist (reply, translate, answer);

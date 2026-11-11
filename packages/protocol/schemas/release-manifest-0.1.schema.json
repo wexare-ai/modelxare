@@ -215,6 +215,12 @@
             "stop": { "type": "array", "maxItems": 8, "items": { "type": "string", "minLength": 1, "maxLength": 64 } }
           }
         },
+        "routing": {
+          "description": "What requests this model is the one for, in a few words (\"git commands: commits, branches and history\"). The System 1 router reads it to choose between models that do the same operation.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
         "input_schema": { "type": "object" },
         "output_schema": { "type": "object" }
       }

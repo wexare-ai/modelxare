@@ -6,8 +6,13 @@ import {
   LAYA_WEB_VERSION,
   REMOTE_OFF,
   layaBundle,
+  PICK_GROUP,
+  localChoices,
   mainQuestion,
+  modelQuestion,
   partsOf,
+  pickModel,
+  routingHint,
   pickRouter,
   remoteHelp,
   remoteProblem,
@@ -22,23 +27,24 @@ import {
 } from '../src/index.ts';
 
 let n = 0;
-function model(p: { caps: string[]; langs?: string[]; size?: number }): CandidateRelease {
+function model(p: { caps: string[]; langs?: string[]; size?: number; id?: string; version?: string; routing?: string; kind?: 'model' | 'lora'; base?: CandidateRelease }): CandidateRelease {
   n++;
   const manifest: ReleaseManifest = {
     schema: 'wexare.micromodel.release/0.1',
-    model_id: `m${n}`,
-    name: `Model ${n}`,
+    model_id: p.id ?? `m${n}`,
+    name: `Model ${n} (test)`,
     description: '',
-    version: '1.0.0',
-    kind: 'model',
+    version: p.version ?? '1.0.0',
+    kind: p.kind ?? 'model',
     capabilities: p.caps,
     languages: p.langs ?? ['en'],
     license: { id: 'MIT' },
     runtime: { format: 'gguf', family: 'wllama', requirement: '*', browser_features: [] },
-    files: [{ role: 'weights', path: `m${n}.gguf`, size: p.size ?? 100, sha256: sha256Hex(`file ${n}`), locations: [{ transport: 'http', uri: `http://127.0.0.1/${n}` }] }],
+    files: [{ role: p.kind === 'lora' ? 'adapter' : 'weights', path: `m${n}.gguf`, size: p.size ?? 100, sha256: sha256Hex(`file ${n}`), locations: [{ transport: 'http', uri: `http://127.0.0.1/${n}` }] }],
     operations: p.caps.map((id) => ({
       id,
       prompt: { mode: 'chat' as const, template: '{{input}}' },
+      ...(p.routing ? { routing: p.routing } : {}),
       input_schema: OPERATION_CONTRACTS[id]!.input_schema,
       output_schema: OPERATION_CONTRACTS[id]!.output_schema,
     })),
@@ -49,7 +55,7 @@ function model(p: { caps: string[]; langs?: string[]; size?: number }): Candidat
     pubkey: 'a'.repeat(64),
     modelId: manifest.model_id,
     name: manifest.name,
-    version: '1.0.0',
+    version: manifest.version,
     manifestSha256: sha256Hex(`manifest ${n}`),
     manifest,
     support: { supported: true, reasons: [], executableOperations: p.caps },
@@ -235,7 +241,7 @@ describe('routing plan', () => {
 
   it('without online help, reports an uncovered step as unavailable and does the rest', async () => {
     const { h } = hooks({ candidates: [summarizer], cached: ready(summarizer) });
-    const r = await route('Translate and summarize: the pool is closed today.', reads({ Translate: ['translate', 0.9], summarize: ['summarize', 0.8] }).system1, h);
+    const r = await route('Translate and summarize: the pool is closed today.', reads({ Translate: ['translate', 0.95], summarize: ['summarize', 0.95] }).system1, h);
     expect(r.steps.map((s) => [s.intent.id, s.status])).toEqual([
       ['translate', 'unavailable'],
       ['summarize', 'done'],
@@ -297,7 +303,8 @@ describe('routing plan', () => {
 
   it('keeps the first steps asked for when there are more than one request may take', async () => {
     const { h } = hooks({ candidates: [assistant], cached: ready(assistant), runLocal: async () => Promise.reject(new Error('out of memory')) });
-    const table = { Summarize: ['summarize', 0.9], sort: ['sort', 0.8], translate: ['translate', 0.6] } as Record<string, [string, number]>;
+    // One-word parts read 0.93 or more with the real router.
+    const table = { Summarize: ['summarize', 0.95], sort: ['sort', 0.95], translate: ['translate', 0.95] } as Record<string, [string, number]>;
     const r = await route('Summarize, sort and translate: the lift is broken.', reads(table).system1, h, { maxSteps: 2 });
     expect(r.ended).toBe('step-limit');
     expect(r.steps.map((s) => [s.intent.id, s.status, s.error])).toEqual([
@@ -414,3 +421,106 @@ describe('System 1 release', () => {
     expect(b).toMatchObject({ url: by('laya_fp16.onnx'), bytes: 900, tokenizerUrl: by('tokenizer.json'), tokenizerConfigUrl: by('tokenizer_config.json'), configUrl: by('rl_agent_config.json'), devices: ['webgpu', 'wasm'], maxOptions: null });
   });
 });
+
+describe('choosing between models that are not interchangeable', () => {
+  const base = model({ caps: ['summarization'], size: 491 });
+  const git = model({ caps: ['command-generation'], id: 'git-commands', routing: 'git commands: commits and branches', kind: 'lora', size: 6 });
+  const ffmpeg = model({ caps: ['command-generation'], id: 'ffmpeg-commands', routing: 'ffmpeg commands: video and audio files', kind: 'lora', size: 6 });
+  const baseOf = (c: CandidateRelease) => (c.manifest.kind === 'lora' ? base : null);
+
+  /** System 1 for both questions: `main` from `plan`, `pick` from `prefer` (request text -> model_id). */
+  function twoQuestions(plan: Record<string, [string, number]>, prefer: Record<string, string>) {
+    const asked: { request: string; options: string[] }[] = [];
+    const system1: System1 = {
+      async predict(state, questions) {
+        const request = (state as { request: string }).request;
+        const [qid, q] = Object.entries(questions)[0]!;
+        const keys = Object.keys((q as ChoiceQuestion).criteria);
+        if (qid === 'pick') asked.push({ request, options: keys });
+        const [choice, p] = qid === 'main' ? (plan[request] ?? ['answer', 0.3]) : [keys.find((k) => k.startsWith(prefer[request] ?? '')) ?? keys[0]!, 0.8];
+        const rest = keys.filter((k) => k !== choice);
+        return { answers: { [qid]: { type: 'choice', choice, probabilities: Object.fromEntries([[choice, p], ...rest.map((k) => [k, (1 - p) / rest.length])]), confidence: 0.5 } }, latency_ms: 10 };
+      },
+    };
+    return { system1, asked };
+  }
+
+  it('lists the newest version of each model that can do it, adapters only with their base', () => {
+    const newer = model({ caps: ['command-generation'], id: 'git-commands', version: '1.0.10', routing: 'git, newer', kind: 'lora' });
+    const spanish = model({ caps: ['command-generation'], id: 'es-only', langs: ['es'] });
+    const orphan = model({ caps: ['command-generation'], id: 'orphan', kind: 'lora' });
+    const choices = localChoices('command-generation', 'en', { candidates: [git, newer, ffmpeg, spanish, orphan, base], baseOf: (c) => (c === orphan ? null : baseOf(c)) });
+    expect(choices.map((c) => c.release.modelId).sort()).toEqual(['ffmpeg-commands', 'git-commands']);
+    expect(choices.find((c) => c.release.modelId === 'git-commands')!.release).toBe(newer);
+    expect(choices.every((c) => c.base === base)).toBe(true);
+    // Without a way to find bases, adapters are left out.
+    expect(localChoices('command-generation', 'en', { candidates: [git, ffmpeg] })).toEqual([]);
+  });
+
+  it('describes each model by its routing hint, or else its name', () => {
+    expect(routingHint(git, 'command-generation')).toBe('git commands: commits and branches');
+    expect(routingHint(base, 'summarization')).toBe(`Model ${base.name.match(/\d+/)![0]}`);
+    const twin = { ...git, pubkey: 'b'.repeat(64), eventId: 'x'.repeat(64) };
+    expect(Object.keys(modelQuestion([git, twin, ffmpeg], 'command-generation').criteria)).toEqual([`git-commands@${'a'.repeat(8)}`, `git-commands@${'b'.repeat(8)}`, 'ffmpeg-commands']);
+  });
+
+  it('compares any number of models in rounds of at most PICK_GROUP', async () => {
+    const many = Array.from({ length: 20 }, (_, i) => ({ release: model({ caps: ['command-generation'], id: `tool-${i}` }) }));
+    const { system1, asked } = twoQuestions({}, { 'use tool 13': 'tool-13' });
+    const { choice, pick } = await pickModel(many, 'command-generation', 'use tool 13', system1);
+    expect(choice.release.modelId).toBe('tool-13');
+    expect(asked.every((a) => a.options.length <= PICK_GROUP)).toBe(true);
+    expect(asked.map((a) => a.options.length)).toEqual([8, 8, 4, 3]);
+    expect(pick.probability).toBe(0.8);
+    expect(new Set(pick.considered.map((c) => c.modelId)).size).toBe(20);
+  });
+
+  it('routes a command to the model System 1 picks, and runs the adapter on its base', async () => {
+    const { system1, asked } = twoQuestions({ 'Extract the audio from talk.mp4': ['command', 0.9] }, { 'Extract the audio from talk.mp4': 'ffmpeg-commands' });
+    const runs: { name: string; base?: string; input: string }[] = [];
+    const downloads: (string | undefined)[] = [];
+    const { h } = hooks({
+      candidates: [base, git, ffmpeg],
+      baseOf,
+      async runLocal(release, capability, input, _language, _signal, b) {
+        runs.push({ name: release.modelId, ...(b ? { base: b.modelId } : {}), input });
+        return { text: 'ffmpeg -i talk.mp4 -vn talk.mp3' };
+      },
+      async download(_release, b) {
+        downloads.push(b?.modelId);
+        return true;
+      },
+    });
+    const r = await route('Extract the audio from talk.mp4', system1, h);
+    expect(r.steps.map((s) => s.intent.id)).toEqual(['command']);
+    expect(asked).toHaveLength(1);
+    expect(asked[0]!.request).toBe('Extract the audio from talk.mp4');
+    expect([...asked[0]!.options].sort()).toEqual(['ffmpeg-commands', 'git-commands']);
+    const step = r.steps[0]!;
+    expect(step.route).toMatchObject({ kind: 'local', release: { modelId: 'ffmpeg-commands' }, base: { modelId: base.modelId }, downloadBytes: 491 + 6 });
+    expect(step.status).toBe('done');
+    expect(downloads).toEqual([base.modelId]);
+    expect(runs).toEqual([{ name: 'ffmpeg-commands', base: base.modelId, input: 'Extract the audio from talk.mp4' }]);
+  });
+
+  it('asks nothing more when one model can do it, and goes online or reports when none can', async () => {
+    const { system1, asked } = twoQuestions({ 'stash my changes': ['command', 0.9] }, {});
+    const one = await route('stash my changes', system1, hooks({ candidates: [base, git], baseOf, cached: ready(base, git) }).h);
+    expect(asked).toEqual([]);
+    expect(one.steps[0]!.route).toMatchObject({ kind: 'local', release: { modelId: 'git-commands' }, pick: { probability: 1, considered: [] } });
+    const none = await route('stash my changes', system1, hooks({ candidates: [base] }).h);
+    expect(none.steps[0]!.route).toMatchObject({ kind: 'none' });
+    expect(none.steps[0]!.status).toBe('unavailable');
+  });
+});
+
+describe('short parts of an instruction', () => {
+  it('count only when System 1 is very sure, so a phrase cut in two is not a task', async () => {
+    const { system1 } = reads({ 'Summarize the pros': ['summarize', 0.96], cons: ['answer', 0.71], Categorize: ['sort', 0.98] });
+    const r = await route('Summarize the pros and cons: bins outside save space but attract foxes.', system1, hooks().h);
+    expect(r.steps.map((s) => s.intent.id)).toEqual(['summarize']);
+    const r2 = await route('Categorize and summarize the pros: x', reads({ Categorize: ['sort', 0.98], 'summarize the pros': ['summarize', 0.96] }).system1, hooks().h);
+    expect(r2.steps.map((s) => s.intent.id)).toEqual(['sort', 'summarize']);
+  });
+});
+

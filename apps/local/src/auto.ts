@@ -18,6 +18,7 @@ export const STEP_LABELS: Record<string, string> = {
   reply: 'Draft reply',
   translate: 'Translation',
   answer: 'Answer',
+  command: 'Command',
 };
 
 /** Topic names for the bundled message categories: "travel" → "Travel". */
@@ -70,14 +71,16 @@ export async function runAuto(engine: Engine, run: ChatRun): Promise<AutoOutput>
   const sizes = new Map(engine.catalog.models.flatMap((m) => m.files.map((f) => [f.sha256, f.size] as const)));
   const hooks: Hooks = {
     candidates: engine.specialists(),
+    baseOf: (r) => engine.baseOf(r),
     isCached: (sha) => engine.files.has(sha, sizes.get(sha) ?? -1),
     remote: null,
     download: async (r: CandidateRelease) => {
-      await engine.pull(r.manifest.files, undefined, run.signal);
+      // A catalog model's files include its base's, for an adapter.
+      await engine.pull(byRelease.get(r.eventId)?.files ?? r.manifest.files, undefined, run.signal);
       return true;
     },
     clarify: async () => null,
-    runLocal: (r, capability, input, language, signal) =>
+    runLocal: (r, capability, input, language, signal, base) =>
       engine.exclusive(async () => {
         const m = byRelease.get(r.eventId);
         if (m) await engine.pull(m.files, undefined, signal);
@@ -85,7 +88,7 @@ export async function runAuto(engine: Engine, run: ChatRun): Promise<AutoOutput>
           runtime: engine.llama,
           getVerifiedFile: (sha, size) => engine.files.verifiedBlob(sha, size),
           choiceGrammar,
-        }, { ...(signal ? { signal } : {}), language });
+        }, { ...(signal ? { signal } : {}), language, ...(base ? { base, adapters: [{ candidate: r, scale: 1 }] } : {}) });
         completionTokens += trace.attempts.reduce((n, a) => n + (a.tokens ?? 0), 0);
         if (trace.state === 'canceled') throw new Error('canceled');
         if (trace.state !== 'completed') throw new Error(trace.error ?? 'the model did not answer');

@@ -8,6 +8,12 @@ export interface Intent {
   criterion: string;
   /** Bundled operation (catalog capability) a local model must offer to do this. */
   capability?: string;
+  /**
+   * The models that offer `capability` are not interchangeable (one does git,
+   * another ffmpeg): System 1 picks one by what each release says it is for.
+   * Otherwise any of them will do, and the smallest or a downloaded one runs.
+   */
+  pickModel?: boolean;
   /** System instruction for an online model. */
   instruction: string;
 }
@@ -45,5 +51,12 @@ export const INTENTS: Intent[] = [
     id: 'answer',
     criterion: 'answer a question or explain something',
     instruction: 'Answer the question clearly and briefly.',
+  },
+  {
+    id: 'command',
+    criterion: 'give the command line that does a task with a tool such as git, ffmpeg or ImageMagick',
+    capability: 'command-generation',
+    pickModel: true,
+    instruction: 'Give the shell command that does what is asked. Reply with the command only, one command per line.',
   },
 ];

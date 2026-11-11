@@ -183,9 +183,10 @@ such as "Categorize and summarize this message: …" is handled like this:
    says "and", "then" or "also", or lists tasks with commas: "Categorize" and "summarize this
    message".
 2. The router reads each part on its own and picks what it asks for: sort, summarize, write, reply,
-   translate or answer. It returns probabilities rather than text, and a part it is at least 50 %
-   sure of becomes a step. Only the instruction is read, so a message that mentions other tasks
-   ("Can you translate the notice?") doesn't add them.
+   translate, answer, or a command for a tool. It returns probabilities rather than text, and a part
+   it is at least 50 % sure of becomes a step (90 % for a part of one or two words, so "the pros and
+   cons" doesn't leave a task called "cons"). Only the instruction is read, so a message that
+   mentions other tasks ("Can you translate the notice?") doesn't add them.
 3. A request without an instruction, or with no clear part, is read whole. If no task reaches 50 %,
    the person picks from the likeliest three. At most three steps run, the first ones asked for.
 4. All planned steps show at once, then run in the order asked. A step goes to a model on the
@@ -196,6 +197,15 @@ such as "Categorize and summarize this message: …" is handled like this:
    reported as unavailable, in plain words.
 5. **How this was decided** lists each part of the instruction, what the router took it for, and
    how sure it was.
+
+Most tasks have interchangeable models: any summarizer will do, so the smallest or a downloaded one
+runs. Commands are different: a git model can't write an ffmpeg command. For those, the router asks
+a second question, built from the catalog at request time: which of the models that can do this is
+the one, as each release describes itself in its operation's `routing` hint ("ffmpeg commands: video
+and audio files such as mp4, mov, mkv, mp3 and wav"). Laya reads options as text, so a new model is
+in that question as soon as it is published, with nothing retrained or changed in the app. Laya
+fits a question and its options in 192 tokens, so more than eight models are compared in rounds of
+eight, then the winners. A release without a hint is described by its name, which picks less well.
 
 The router is a catalog release like any model: `fixtures/releases/laya-router.json` publishes the
 ONNX export of Laya (`wexare/laya-onnx`, pinned revision) with `runtime.family: "laya"` and the
