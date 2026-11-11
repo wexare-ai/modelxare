@@ -106,10 +106,10 @@ From the repository root, on the machine with the key, all in one terminal (the 
 ```sh
 cp infra/deploy/publisher.env.example infra/deploy/publisher.env   # the same relays as the app
 set -a; . infra/deploy/publisher.env; set +a
-pnpm cli demo export --out deploy-releases     # 5 definitions: router, story model, its style add-on, 2 text models
+pnpm cli demo export --out deploy-releases     # 8 definitions: router, story model, its style add-on, 2 text models, 3 command add-ons
 ```
 
-Then prepare each release, in this order (the style add-on needs its base first):
+Then prepare each release, in this order (each add-on needs its base first):
 
 ```sh
 for n in laya-router story-base tiny-summarizer community-assistant; do
@@ -117,13 +117,17 @@ for n in laya-router story-base tiny-summarizer community-assistant; do
 done
 pnpm cli release prepare --definition deploy-releases/shakespeare-lora.json --key wexare.key.json \
   --out deploy-releases/out/shakespeare-lora --base-event deploy-releases/out/story-base/event.json
+for n in git-commands ffmpeg-commands imagemagick-commands; do
+  pnpm cli release prepare --definition deploy-releases/$n.json --key wexare.key.json --out deploy-releases/out/$n \
+    --base-event deploy-releases/out/community-assistant/event.json || break
+done
 ```
 
 `prepare` downloads each Hugging Face link and checks it serves the exact bytes and lets browsers read
 it (1.8 GB in all; `--no-check-urls` skips that), then signs. Publish:
 
 ```sh
-for n in laya-router story-base shakespeare-lora tiny-summarizer community-assistant; do
+for n in laya-router story-base shakespeare-lora tiny-summarizer community-assistant git-commands ffmpeg-commands imagemagick-commands; do
   pnpm cli release publish --event deploy-releases/out/$n/event.json || break
 done
 ```

@@ -39,7 +39,19 @@ interface FixtureDefinition {
 }
 
 /** Publication order: bases before adapters. */
-export const DEMO_RELEASES = ['story-base', 'community-assistant', 'tiny-summarizer', 'shakespeare-lora', 'shakespeare-lora-wrong-base', 'future-runtime-model', 'wrong-file-hash', 'laya-router'];
+export const DEMO_RELEASES = [
+  'story-base',
+  'community-assistant',
+  'tiny-summarizer',
+  'shakespeare-lora',
+  'shakespeare-lora-wrong-base',
+  'future-runtime-model',
+  'wrong-file-hash',
+  'laya-router',
+  'git-commands',
+  'ffmpeg-commands',
+  'imagemagick-commands',
+];
 export const DEMO_KEYS = ['publisher-a', 'publisher-b', 'builder-a', 'builder-b', 'synthetic-builder'];
 const step = (s: string) => console.log(`\n▶ ${s}`);
 
@@ -110,14 +122,14 @@ async function toDefinition(name: string, d: FixtureDefinition): Promise<Release
 }
 
 /** The demo releases that are real models, not failure fixtures: what a deployment's own catalog starts with. */
-export const DEPLOYABLE_RELEASES = ['laya-router', 'story-base', 'shakespeare-lora', 'tiny-summarizer', 'community-assistant'];
+export const DEPLOYABLE_RELEASES = ['laya-router', 'story-base', 'shakespeare-lora', 'tiny-summarizer', 'community-assistant', 'git-commands', 'ffmpeg-commands', 'imagemagick-commands'];
 
 /**
  * Write a full release definition for each deployable demo model: its manifest,
  * the verified local copy, and the exact Hugging Face commit link it came from
  * (browsers download from Hugging Face first). `locations` adds your own copies
- * (mirror, ipfs) as fallbacks; none is needed. The style add-on still needs its
- * base at prepare time: `--base-event`.
+ * (mirror, ipfs) as fallbacks; none is needed. Add-ons (the style add-on and the
+ * command add-ons) still need their base at prepare time: `--base-event`.
  */
 export async function exportDefinitions(outDir: string, locations: NonNullable<ReleaseDefinition['locations']>): Promise<string[]> {
   const models = await fixtureModels();

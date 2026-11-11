@@ -4,7 +4,7 @@
 import { resolveLoraDependency, type CandidateRelease } from '@wexare/orchestrator';
 import { MESSAGE_CATEGORIES, type FileLocation } from '@wexare/protocol';
 
-export type TaskId = 'summarization' | 'text-classification' | 'text-generation';
+export type TaskId = 'summarization' | 'text-classification' | 'text-generation' | 'command-generation';
 
 export interface Task {
   id: TaskId;
@@ -16,6 +16,8 @@ export interface Task {
   result: string;
   placeholder: string;
   examples: string[];
+  /** Examples for models of one tool, found by a word in the model's name. */
+  examplesByTool?: { name: RegExp; examples: string[] }[];
 }
 
 export const TASKS: Task[] = [
@@ -51,7 +53,50 @@ export const TASKS: Task[] = [
     placeholder: 'Start a sentence and the model will continue it',
     examples: ['Once upon a time, a little fox', 'Look in thy glass', 'The old lighthouse keeper'],
   },
+  {
+    id: 'command-generation',
+    verb: 'Command',
+    action: 'Get the command',
+    result: 'Command',
+    placeholder: 'Say in plain words what you want the tool to do',
+    examples: ['Make a 200px thumbnail of photo.jpg', 'Stash my changes', 'Extract the audio from talk.mp4 as an mp3'],
+    examplesByTool: [
+      {
+        name: /ffmpeg/i,
+        examples: [
+          'Extract the audio from talk.mp4 as an mp3',
+          'Remove the sound from intro.mp4',
+          'Resize video.mp4 to 1280 wide',
+          'Convert holiday.mov to mp4 without re-encoding',
+          'Rotate video.mp4 90 degrees',
+        ],
+      },
+      {
+        name: /\bgit\b/i,
+        examples: [
+          'Undo my last commit but keep the changes',
+          'Create a branch called fix-login and switch to it',
+          'Stash my changes',
+          'Unstage README.md',
+          'List remote branches',
+        ],
+      },
+      {
+        name: /magick/i,
+        examples: [
+          'Make a 200px thumbnail of photo.jpg',
+          'Convert logo.png to a jpg with 80 quality',
+          'Make picture.jpg black and white',
+          'Convert logo.png to webp',
+        ],
+      },
+    ],
+  },
 ];
+
+/** The examples to offer for a task on a given model. */
+export const examplesFor = (task: Task, modelName: string): string[] =>
+  task.examplesByTool?.find((t) => t.name.test(modelName))?.examples ?? task.examples;
 
 export const taskById = (id: string) => TASKS.find((t) => t.id === id);
 
@@ -119,10 +164,11 @@ export function buildModels(candidates: CandidateRelease[], isCached: (sha256: s
     let runnable: string[];
     if (m.kind === 'lora') {
       const dep = resolveLoraDependency(c, (id) => byId.get(id) ?? null, isCached);
-      if (!dep.ok || !dep.base?.support.supported) continue;
+      if (!c.support.supported || !dep.ok || !dep.base?.support.supported) continue;
       base = dep.base;
       files = dep.files.map((f) => fileOf(f.sha256)).filter((f): f is ModelFile => !!f);
-      runnable = base.support.executableOperations;
+      // An add-on runs its own operations (its prompt, trained with it) on the base's weights.
+      runnable = c.support.executableOperations;
     } else {
       if (!c.support.supported) continue;
       files = m.files.map((f) => ({ sha256: f.sha256, size: f.size, path: f.path, locations: f.locations }));

@@ -11,7 +11,7 @@ const MODES: { id: Mode; label: string; sourceTypes: CatalogQuery['sourceTypes']
   { id: 'archives', label: 'Archives', sourceTypes: ['catalog', 'manual'], note: 'Records from imported catalog snapshots, searched locally. Works offline.' },
   { id: 'combined', label: 'Combined', sourceTypes: undefined, note: 'All enabled sources merged; identical events are deduplicated, publishers kept distinct.' },
 ];
-const CAPS = ['text-classification', 'summarization', 'text-generation', 'translation', 'sentiment-analysis', 'question-answering'];
+const CAPS = ['text-classification', 'summarization', 'text-generation', 'command-generation', 'translation', 'sentiment-analysis', 'question-answering'];
 const LANGS = ['en', 'es', 'fr', 'de', 'pt', 'it', 'nl', 'ja', 'und'];
 const PAGE = 25;
 

@@ -4,6 +4,7 @@
 import {
   MESSAGE_CATEGORIES,
   OPERATION_CONTRACTS,
+  UNSUPPORTED_COMMAND,
   categoryList,
   renderPromptTemplate,
   validateOperationOutput,
@@ -84,11 +85,28 @@ export function parseStageOutput(stage: string, raw: string): { value?: Record<s
     let s = raw.trim().replace(/^(summary|resumen)\s*:\s*/i, '').replace(/\s+/g, ' ');
     s = s.replace(/^["'“”]+|["'“”]+$/g, '').trim();
     value = { summary: s };
+  } else if (stage === 'command-generation') {
+    value = { command: commandText(raw) };
   } else {
     value = { text: raw };
   }
   const issues = validateOperationOutput(contract, value);
   return issues.length ? { error: issues.map((i) => i.message).join('; '), value } : { value };
+}
+
+/**
+ * The command lines in a model's answer: code fences, shell prompts and
+ * wrapping backticks removed, one command per line. Any "unsupported" answer
+ * becomes UNSUPPORTED.
+ */
+export function commandText(raw: string): string {
+  const lines = raw
+    .replace(/```[a-z]*\n?/gi, '\n')
+    .split('\n')
+    .map((l) => l.trim().replace(/^\$\s+/, '').replace(/^`+|`+$/g, '').trim())
+    .filter(Boolean);
+  if (lines.length === 1 && /^unsupported(_request)?\.?$/i.test(lines[0]!)) return UNSUPPORTED_COMMAND;
+  return lines.join('\n');
 }
 
 function stageInputs(m: ReleaseManifest, stage: string, input: string, language: string) {
@@ -165,7 +183,13 @@ async function runStage(
     for (let attempt = 0; attempt < 2; attempt++) {
       signal?.throwIfAborted();
       const retryHint =
-        attempt === 0 ? '' : t.stage === 'text-classification' ? `\n\nAnswer with exactly one word from: ${MESSAGE_CATEGORIES.join(', ')}.` : '\n\nAnswer with one short sentence only.';
+        attempt === 0
+          ? ''
+          : t.stage === 'text-classification'
+            ? `\n\nAnswer with exactly one word from: ${MESSAGE_CATEGORIES.join(', ')}.`
+            : t.stage === 'command-generation'
+              ? '\n\nAnswer with the command only.'
+              : '\n\nAnswer with one short sentence only.';
       const r = await deps.runtime.generate({
         mode: op.prompt.mode,
         ...(system ? { system } : {}),

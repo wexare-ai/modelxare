@@ -91,7 +91,7 @@ export async function runAuto(engine: Engine, run: ChatRun): Promise<AutoOutput>
         if (trace.state !== 'completed') throw new Error(trace.error ?? 'the model did not answer');
         const out = trace.output ?? {};
         if (typeof out.category === 'string') return { topic: TOPICS[out.category] ?? out.category };
-        return { text: String(out.summary ?? out.text ?? '').trim() };
+        return { text: String(out.summary ?? out.command ?? out.text ?? '').trim() };
       }),
     ...(run.signal ? { signal: run.signal } : {}),
   };

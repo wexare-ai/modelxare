@@ -82,14 +82,16 @@ Key fields. The schema has the full definition.
   evaluated as code. `{{categories}}` lists each topic with what it covers: `family (parents, children,
   partners and relatives), friends (…), …`. Bundled contracts: `text-classification` (one topic of
   family, friends, work, money, shopping, travel, health, home, other), `summarization` (≤ 400
-  characters), and `text-generation`. A `text-classification` operation may still declare the first
+  characters), `text-generation`, and `command-generation` (a plain-language request in, the command
+  line for one tool out, one command per line, ≤ 1000 characters, or `UNSUPPORTED`). A `text-classification` operation may still declare the first
   version's output (one of maintenance, safety, security, noise, cleanliness, other): it runs under the
   current contract, since the client builds the grammar and checks each answer from the bundled one.
 - `requirements`: `{context_length, memory_mb?: {value, basis: measured|estimated, context_length},
   hardware_profiles?}`. A missing `memory_mb` means unknown, never "fits".
 - `base` (LoRA only): `{release_id, manifest_sha256, files: [{sha256, size}]}`. Clients execute an
   adapter only over that exact base: release ID, manifest hash, and every weight hash must match. A
-  GGUF header check additionally compares architectures.
+  GGUF header check additionally compares architectures. An adapter runs its own `operations` (its
+  prompt is the one it was trained with) on the base's weights and chat template.
 
 ### Router releases (System 1)
 

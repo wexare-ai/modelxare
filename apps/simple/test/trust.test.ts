@@ -95,4 +95,11 @@ describe('the catalog shows approved publishers only', () => {
     expect(models.map((m) => m.id)).toEqual([addOn.eventId]);
     expect(models[0]!.base?.eventId).toBe(base.eventId);
   });
+
+  it('lists an add-on under its own tasks, not its base’s', () => {
+    const base = release(WEXARE, { caps: ['summarization', 'text-classification'] });
+    const addOn = release(WEXARE, { kind: 'lora', base, caps: ['command-generation'] });
+    const models = buildModels([base, addOn], () => false, shown);
+    expect(models.find((m) => m.id === addOn.eventId)?.tasks).toEqual(['command-generation']);
+  });
 });

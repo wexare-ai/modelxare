@@ -315,7 +315,7 @@ function SingleModel({ candidates, preset, onUsed }: { candidates: CandidateRele
     const deps = { runtime, getVerifiedFile: (s: string, n: number) => artifacts.getVerifiedFile(s, n), choiceGrammar, onToken: (_: StageId, t: string) => setStream(t) };
     const t =
       c.manifest.kind === 'lora' && dep?.base
-        ? await runSingle(dep.base, opId, input, deps, { adapters: [{ candidate: c, scale }], base: dep.base })
+        ? await runSingle(c, opId, input, deps, { adapters: [{ candidate: c, scale }], base: dep.base })
         : await runSingle(c, opId, input, deps);
     setOut({ ...t, adapters: c.manifest.kind === 'lora' ? [{ sha256: c.manifest.files[0]!.sha256, scale }] : [] });
     setBusy(false);

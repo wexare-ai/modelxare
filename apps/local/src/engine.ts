@@ -181,7 +181,7 @@ export class Engine {
   chat(m: LocalModel, run: ChatRun): Promise<Output> {
     return this.exclusive(async () => {
       await this.load(m, run.signal);
-      if (m.chat) return this.llama.chat(run);
+      if (m.chat) return this.llama.chat(withAddOnPrompt(m, run));
       const last = [...run.messages].reverse().find((x) => x.role === 'user')?.content ?? '';
       return this.llama.complete({ ...run, prompt: last });
     });
@@ -274,4 +274,23 @@ export class Engine {
     await (await laya?.catch(() => null))?.close();
     await this.llama.close();
   }
+}
+
+/**
+ * An add-on is trained with its operation's system prompt and works best with
+ * it. When the caller sends no system message, the add-on's own goes first,
+ * at the operation's temperature unless the caller set one.
+ */
+export function withAddOnPrompt(m: LocalModel, run: ChatRun): ChatRun {
+  if (!m.base || run.messages.some((x) => x.role === 'system')) return run;
+  const chatOps = m.release.manifest.operations.filter((op) => op.prompt.mode === 'chat');
+  const op = chatOps.length === 1 ? chatOps[0]! : undefined;
+  const system = op?.prompt.system;
+  if (!op || !system || system.includes('{{')) return run;
+  const temperature = op.generation?.temperature;
+  return {
+    ...run,
+    ...(run.temperature === undefined && temperature !== undefined ? { temperature } : {}),
+    messages: [{ role: 'system', content: system }, ...run.messages],
+  };
 }

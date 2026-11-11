@@ -1,0 +1,60 @@
+{
+  "fixture": "imagemagick-commands-lora",
+  "publisher": "publisher-a",
+  "base": "community-assistant",
+  "manifest": {
+    "model_id": "imagemagick-commands",
+    "name": "ImageMagick commands (LoRA for Qwen2.5 0.5B Q4_K_M)",
+    "description": "Turns a plain-language image editing request into one ImageMagick command, such as \"resize photo.jpg to 500px wide\". Answers UNSUPPORTED when ImageMagick can't do it.",
+    "version": "1.0.0",
+    "kind": "lora",
+    "capabilities": [
+      "command-generation"
+    ],
+    "languages": [
+      "en"
+    ],
+    "runtime": {
+      "format": "gguf",
+      "family": "wllama",
+      "requirement": ">=3.8.1 <3.9.0",
+      "browser_features": [
+        "wasm-simd"
+      ],
+      "chat_template": {
+        "source": "embedded"
+      }
+    },
+    "operations": [
+      {
+        "id": "command-generation",
+        "prompt": {
+          "mode": "chat",
+          "system": "Convert the user's natural language image editing request into a single ImageMagick command-line invocation. Use 'magick input.EXT ... output.EXT' syntax (assume input.jpg and output.jpg unless filenames/extensions are given in the request, then use those exact names). Output ONLY the command on a single line, no explanation, no markdown, no code fences. Use standard ImageMagick options: -resize, -crop, -rotate, -flip, -flop, -gravity, -quality, -format, -colorspace, -blur, -sharpen, -brightness-contrast, -modulate, -grayscale, -negate, -strip, -trim, -background, -flatten, -composite, -border, -bordercolor, -density, -thumbnail, -auto-orient, -fuzz, -fill, -draw, -pointsize, -font, -annotate. If the request involves multiple images or batch operations, use 'magick mogrify' or 'magick montage' as appropriate. If the request cannot be reasonably expressed as an ImageMagick command, output: unsupported_request",
+          "template": "{{input}}"
+        },
+        "generation": {
+          "max_tokens": 128,
+          "temperature": 0
+        }
+      }
+    ],
+    "requirements": {
+      "context_length": 1024,
+      "memory_mb": {
+        "value": 710,
+        "basis": "estimated",
+        "context_length": 1024,
+        "notes": "base file size + adapter + KV cache + compute buffers, CPU/WASM"
+      },
+      "hardware_profiles": [
+        "cpu-wasm"
+      ]
+    }
+  },
+  "locations": [
+    "mirror",
+    "ipfs",
+    "torrent"
+  ]
+}

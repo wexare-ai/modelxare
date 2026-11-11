@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MESSAGE_CATEGORIES, OPERATION_CONTRACTS, sha256Hex, type ReleaseManifest } from '@wexare/protocol';
+import { MESSAGE_CATEGORIES, OPERATION_CONTRACTS, UNSUPPORTED_COMMAND, sha256Hex, type ReleaseManifest } from '@wexare/protocol';
 import type { GenerateRequest, LoadRequest } from '@wexare/runtime';
 import { detectLanguage, executeWorkflow, parseStageOutput, planWorkflow, resolveLoraDependency, runSingle, type CandidateRelease } from '../src/index.ts';
 
@@ -134,10 +134,12 @@ describe('LoRA dependencies (A13)', () => {
 function fakeRuntime(script: Record<string, string[]>) {
   const loads: string[] = [];
   const prompts: string[] = [];
+  const systems: (string | undefined)[] = [];
   let loaded: { key: string } | null = null;
   return {
     loads,
     prompts,
+    systems,
     get loaded() {
       return loaded as never;
     },
@@ -149,6 +151,7 @@ function fakeRuntime(script: Record<string, string[]>) {
     async generate(r: GenerateRequest) {
       const stage = r.grammar ? 'text-classification' : 'summarization';
       prompts.push(r.prompt);
+      systems.push(r.system);
       const text = script[stage]!.shift() ?? '';
       r.onToken?.(text);
       return { text, promptTokens: 10, completionTokens: 3, ms: 2, finishReason: 'stop' };
@@ -216,6 +219,34 @@ describe('execution', () => {
     expect(parseStageOutput('summarization', 'x'.repeat(500)).error).toBeDefined();
     expect(MESSAGE_CATEGORIES).toHaveLength(9);
     expect(parseStageOutput('text-classification', 'maintenance').error).toBeDefined();
+  });
+
+  it('parses command answers: fences, prompts and backticks removed, one command per line', () => {
+    expect(parseStageOutput('command-generation', '```bash\n$ ffmpeg -i in.mp4 out.mp3\n```').value).toEqual({ command: 'ffmpeg -i in.mp4 out.mp3' });
+    expect(parseStageOutput('command-generation', 'git add .\n\ngit commit -m "x"\n').value).toEqual({ command: 'git add .\ngit commit -m "x"' });
+    expect(parseStageOutput('command-generation', '`magick a.jpg -negate b.jpg`').value).toEqual({ command: 'magick a.jpg -negate b.jpg' });
+    expect(parseStageOutput('command-generation', 'unsupported_request').value).toEqual({ command: UNSUPPORTED_COMMAND });
+    expect(parseStageOutput('command-generation', '  \n').error).toBeDefined();
+    expect(parseStageOutput('command-generation', 'x'.repeat(1001)).error).toBeDefined();
+  });
+
+  it('runs an add-on with its own prompt on its base weights', async () => {
+    const base = cand({ caps: ['summarization'], size: 491 });
+    const addOn = cand({
+      caps: ['command-generation'],
+      size: 6,
+      kind: 'lora',
+      base: { release_id: base.eventId, manifest_sha256: base.manifestSha256, files: [{ sha256: base.manifest.files[0]!.sha256, size: 491 }] },
+    });
+    addOn.manifest.operations[0]!.prompt = { mode: 'chat', system: 'You write one git command.', template: '{{input}}' };
+    const rt = fakeRuntime({ summarization: ['git branch -a'] });
+    const t = await runSingle(addOn, 'command-generation', 'show all branches', deps(rt), { adapters: [{ candidate: addOn, scale: 1 }], base });
+    expect(t.state).toBe('completed');
+    expect(t.output).toEqual({ command: 'git branch -a' });
+    expect(rt.systems).toEqual(['You write one git command.']);
+    expect(rt.prompts).toEqual(['show all branches']);
+    expect(rt.loads[0]).toBe(`${base.manifest.files[0]!.sha256}+lora:${addOn.manifest.files[0]!.sha256}`);
+    expect(t.files.map((f) => f.sha256)).toEqual([base.manifest.files[0]!.sha256]);
   });
 
   it('runs a single release in one-model mode', async () => {

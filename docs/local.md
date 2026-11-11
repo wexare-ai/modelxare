@@ -109,9 +109,21 @@ Not supported:
 - `/v1/embeddings`
 
 Model ids are the releases' `model_id`s: `community-assistant`, `tiny-summarizer`, `story-base`,
-`shakespeare-lora`, and `auto`. If two publishers use the same `model_id`, each gets `@` and the
-start of its key. The text-only models (`story-base`, and `shakespeare-lora` on top of it) have no
-chat format. A chat request to them continues the last user message.
+`shakespeare-lora`, `git-commands`, `ffmpeg-commands`, `imagemagick-commands`, and `auto`. If two
+publishers use the same `model_id`, each gets `@` and the start of its key. The text-only models
+(`story-base`, and `shakespeare-lora` on top of it) have no chat format. A chat request to them
+continues the last user message.
+
+The command models are add-ons on the `community-assistant` weights, each trained with one system
+prompt. When a request to one has no system message, it gets that prompt, so the user message alone
+is enough:
+
+```sh
+curl http://127.0.0.1:8796/v1/chat/completions -H 'content-type: application/json' -d '{
+  "model": "git-commands",
+  "messages": [{"role": "user", "content": "undo my last commit but keep the changes"}]
+}'
+```
 
 ```sh
 curl http://127.0.0.1:8796/v1/chat/completions -H 'content-type: application/json' -d '{

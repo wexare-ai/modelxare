@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { noSpaceText, removeFromDevice, trust, useModels, useRun } from './engine.ts';
-import { TASKS, languageList, size, taskById, type TaskId } from './models.ts';
+import { UNSUPPORTED_COMMAND } from '@wexare/protocol';
+import { Command } from './Command.tsx';
+import { TASKS, examplesFor, languageList, size, taskById, type TaskId } from './models.ts';
 
 const DOING: Record<TaskId, string> = {
   summarization: 'Summarizing',
   'text-classification': 'Sorting',
   'text-generation': 'Writing',
+  'command-generation': 'Writing the command',
 };
 
 export function ModelPage(p: { id: string; preferredTask: TaskId | null; back: () => void }) {
@@ -38,7 +41,8 @@ export function ModelPage(p: { id: string; preferredTask: TaskId | null; back: (
   const answer = run.answer?.task === taskId ? run.answer : null;
 
   const tryExample = () => {
-    setText(task.examples[example % task.examples.length]!);
+    const examples = examplesFor(task, model.name);
+    setText(examples[example % examples.length]!);
     setExample((n) => n + 1);
   };
   const copy = async (value: string) => {
@@ -106,7 +110,21 @@ export function ModelPage(p: { id: string; preferredTask: TaskId | null; back: (
         </section>
       )}
 
-      {answer && (
+      {answer && taskId === 'command-generation' && (
+        <section className="answer" data-testid="answer">
+          <h2 className="tag">{task.result}</h2>
+          {answer.text === UNSUPPORTED_COMMAND ? (
+            <p>This tool can’t do that. Try asking another way.</p>
+          ) : (
+            <>
+              <Command text={answer.text!} />
+              <p className="hint">Small models get commands wrong sometimes. Read it before you run it.</p>
+            </>
+          )}
+        </section>
+      )}
+
+      {answer && taskId !== 'command-generation' && (
         <section className="answer" data-testid="answer">
           <h2 className="tag">{task.result}</h2>
           {answer.topic ? (

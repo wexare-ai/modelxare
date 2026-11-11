@@ -271,7 +271,7 @@ export async function fetchFiles(files: DownloadFile[], keep: string[] = []): Pr
   return { status: 'ok' };
 }
 
-/** Run one task with a local model (a style add-on runs on its base). */
+/** Run one task with a local model. An add-on runs its own prompt on its base's weights. */
 export async function runTask(
   release: CandidateRelease,
   base: CandidateRelease | undefined,
@@ -289,13 +289,13 @@ export async function runTask(
   touch([...(base?.manifest.files ?? []), ...release.manifest.files].map((f) => f.sha256));
   const opts = { ...(on.signal ? { signal: on.signal } : {}), language: detectLanguage(input) };
   const trace = base
-    ? await runSingle(base, task, input, deps, { ...opts, adapters: [{ candidate: release, scale: 1 }], base })
+    ? await runSingle(release, task, input, deps, { ...opts, adapters: [{ candidate: release, scale: 1 }], base })
     : await runSingle(release, task, input, deps, opts);
   if (trace.state === 'canceled') throw new DOMException('canceled', 'AbortError');
   if (trace.state !== 'completed') return null;
   const out = trace.output ?? {};
   if (typeof out.category === 'string') return { topic: TOPICS[out.category] ?? out.category };
-  return { text: String(out.summary ?? out.text ?? trace.attempts.at(-1)?.raw ?? '').trim() };
+  return { text: String(out.summary ?? out.command ?? out.text ?? trace.attempts.at(-1)?.raw ?? '').trim() };
 }
 
 /** One button: download what is missing (verified), load the model, answer. */

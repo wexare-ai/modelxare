@@ -41,6 +41,10 @@ const categoryOutput = (categories: readonly string[]) => ({
 });
 
 export const SUMMARY_MAX_CHARS = 400;
+export const COMMAND_MAX_CHARS = 1000;
+
+/** What a command model answers when its tool can't do what was asked. */
+export const UNSUPPORTED_COMMAND = 'UNSUPPORTED';
 
 const textInput = {
   type: 'object',
@@ -83,6 +87,17 @@ export const OPERATION_CONTRACTS: Record<string, OperationContract> = {
       additionalProperties: false,
       required: ['text'],
       properties: { text: { type: 'string' } },
+    },
+  },
+  'command-generation': {
+    id: 'command-generation',
+    description: `Turn a plain-language request into the command line that does it with one command-line tool, such as ffmpeg, git or ImageMagick (one command per line, at most ${COMMAND_MAX_CHARS} characters), or ${UNSUPPORTED_COMMAND} when that tool can't do it.`,
+    input_schema: textInput,
+    output_schema: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['command'],
+      properties: { command: { type: 'string', minLength: 1, maxLength: COMMAND_MAX_CHARS } },
     },
   },
 };

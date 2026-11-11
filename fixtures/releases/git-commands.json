@@ -1,0 +1,60 @@
+{
+  "fixture": "git-commands-lora",
+  "publisher": "publisher-a",
+  "base": "community-assistant",
+  "manifest": {
+    "model_id": "git-commands",
+    "name": "Git commands (LoRA for Qwen2.5 0.5B Q4_K_M)",
+    "description": "Turns a plain-language request into the git command that does it, such as \"undo my last commit but keep the changes\". Short sequences come one command per line.",
+    "version": "1.0.0",
+    "kind": "lora",
+    "capabilities": [
+      "command-generation"
+    ],
+    "languages": [
+      "en"
+    ],
+    "runtime": {
+      "format": "gguf",
+      "family": "wllama",
+      "requirement": ">=3.8.1 <3.9.0",
+      "browser_features": [
+        "wasm-simd"
+      ],
+      "chat_template": {
+        "source": "embedded"
+      }
+    },
+    "operations": [
+      {
+        "id": "command-generation",
+        "prompt": {
+          "mode": "chat",
+          "system": "You are a Git command translator. Read the user's natural-language request and reply with ONLY the exact git CLI command(s) that fulfill it. Use a single line when one command is enough; use newlines for a short sequence. Do not wrap commands in markdown, quotes, or explanation.",
+          "template": "{{input}}"
+        },
+        "generation": {
+          "max_tokens": 160,
+          "temperature": 0
+        }
+      }
+    ],
+    "requirements": {
+      "context_length": 1024,
+      "memory_mb": {
+        "value": 710,
+        "basis": "estimated",
+        "context_length": 1024,
+        "notes": "base file size + adapter + KV cache + compute buffers, CPU/WASM"
+      },
+      "hardware_profiles": [
+        "cpu-wasm"
+      ]
+    }
+  },
+  "locations": [
+    "mirror",
+    "ipfs",
+    "torrent"
+  ]
+}

@@ -154,7 +154,7 @@ export function Xare({ back }: { back: () => void }) {
   );
 }
 
-/** The starter file's fields, as a label to fill in, and the three things this app can run. */
+/** The starter file's fields, as a label to fill in, and the things this app can run. */
 function Describe() {
   return (
     <>
@@ -171,6 +171,9 @@ function Describe() {
           </span>
           <span>
             Write <code>text-generation</code>
+          </span>
+          <span>
+            Command <code>command-generation</code>
           </span>
         </dd>
         <dt>languages</dt>

@@ -85,7 +85,7 @@ that shows what modelXare is for: a before and after played by scrolling, from a
 centers to small models on everyone's own laptop, then one request played through System 1 (the
 router decides) and System 2 (language models do the work) in the browser. **Try modelXare**
 (`#/try`) lists models by what they
-do (Summarize, Sort, Write). Opening a model gives you a text box and one button. The first
+do (Summarize, Sort, Write, Command). Opening a model gives you a text box and one button. The first
 press downloads and checks the model, then it runs on the device. It uses the same engine as the
 developer app but hides keys, hashes, relays and storage. It is a separate site, so it keeps its own
 downloads. Its **What do you need?** box sends a request through the System 1 router; see
@@ -149,7 +149,7 @@ pnpm modelxare --env infra/deploy/app.env.example serve       # http://127.0.0.1
   - `POST /v1/completions`.
 
   Model ids are the releases' `model_id`s (`community-assistant`, `tiny-summarizer`, `story-base`,
-  `shakespeare-lora`), plus `auto`.
+  `shakespeare-lora`, `git-commands`, `ffmpeg-commands`, `imagemagick-commands`), plus `auto`.
 - **`auto`: System 1 + System 2 behind one model id.**
   - The router reads each task in the last message, as in [Routing with System 1](#routing-with-system-1),
     and hands each to the catalog model that specializes in it.

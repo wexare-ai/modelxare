@@ -178,10 +178,10 @@ runtimeOptions(
     .argument('[text...]')
     .option('--system <text>', 'a system message')
     .option('--max-tokens <n>', 'longest answer', int('--max-tokens'), 512)
-    .option('--temperature <t>', 'sampling temperature', Number, 0.7)
+    .option('--temperature <t>', "sampling temperature (default 0.7, or a command add-on's own)", Number)
     .option('--pull', 'download the models it needs first')
     .option('--offline', "don't read the relays first"),
-).action(async (id: string, words: string[], o: RuntimeFlags & { system?: string; maxTokens: number; temperature: number; offline?: boolean }) => {
+).action(async (id: string, words: string[], o: RuntimeFlags & { system?: string; maxTokens: number; temperature?: number; offline?: boolean }) => {
   let text = words.join(' ');
   if (!text && !process.stdin.isTTY) {
     const chunks: Buffer[] = [];
@@ -195,7 +195,7 @@ runtimeOptions(
     const run = {
       messages: [...(o.system ? [{ role: 'system' as const, content: o.system }] : []), { role: 'user' as const, content: text }],
       maxTokens: o.maxTokens,
-      temperature: o.temperature,
+      ...(o.temperature !== undefined ? { temperature: o.temperature } : {}),
       onText: (t: string) => process.stdout.write(t),
     };
     if (id === 'auto') {

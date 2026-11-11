@@ -1,0 +1,60 @@
+{
+  "fixture": "ffmpeg-commands-lora",
+  "publisher": "publisher-a",
+  "base": "community-assistant",
+  "manifest": {
+    "model_id": "ffmpeg-commands",
+    "name": "FFmpeg commands (LoRA for Qwen2.5 0.5B Q4_K_M)",
+    "description": "Turns a plain-language request about a video, audio or image file into one ffmpeg command, such as \"extract the audio from talk.mp4 as an mp3\". Answers UNSUPPORTED when ffmpeg can't do it.",
+    "version": "1.0.0",
+    "kind": "lora",
+    "capabilities": [
+      "command-generation"
+    ],
+    "languages": [
+      "en"
+    ],
+    "runtime": {
+      "format": "gguf",
+      "family": "wllama",
+      "requirement": ">=3.8.1 <3.9.0",
+      "browser_features": [
+        "wasm-simd"
+      ],
+      "chat_template": {
+        "source": "embedded"
+      }
+    },
+    "operations": [
+      {
+        "id": "command-generation",
+        "prompt": {
+          "mode": "chat",
+          "system": "You convert a natural-language media task into ONE ffmpeg command line.\n\nRules:\n- Output EXACTLY one line of plain text, starting with `ffmpeg`. No markdown, no code fences, no backticks, no explanation, no trailing period.\n- Always include `-i` with an input file. If the user names a file, use that exact name. Otherwise use a generic placeholder based on the media type: input.mp4 (video), input.jpg (image), input.mp3 (audio).\n- Always end with an output file name. If the user names one, use it; otherwise use output.<ext> with a sensible extension (e.g. output.mp4, output.jpg, output.mp3, output.gif, output.wav, output.png).\n- Use standard flags only: -vf, -af, -c:v, -c:a, -b:v, -b:a, -crf, -preset, -ss, -to, -t, -r, -s, -an, -vn, -map, -y, -f, -q:v, -pix_fmt, -vcodec copy / -c copy.\n- Prefer scale filters that preserve aspect ratio, e.g. -vf scale=500:-1 for \"500px wide\".\n- If a value is unspecified, choose a common sensible default rather than asking a question.\n- If the request cannot be done with ffmpeg or is unrelated to media processing, output exactly: UNSUPPORTED",
+          "template": "{{input}}"
+        },
+        "generation": {
+          "max_tokens": 128,
+          "temperature": 0
+        }
+      }
+    ],
+    "requirements": {
+      "context_length": 1024,
+      "memory_mb": {
+        "value": 710,
+        "basis": "estimated",
+        "context_length": 1024,
+        "notes": "base file size + adapter + KV cache + compute buffers, CPU/WASM"
+      },
+      "hardware_profiles": [
+        "cpu-wasm"
+      ]
+    }
+  },
+  "locations": [
+    "mirror",
+    "ipfs",
+    "torrent"
+  ]
+}

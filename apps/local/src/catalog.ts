@@ -125,7 +125,7 @@ export function buildCatalog(releases: VerifiedRelease[], trust: Trust, isCached
       release: c,
       ...(base ? { base } : {}),
       files,
-      tasks: (base ? base.support.executableOperations : c.support.executableOperations).filter((t) => c.manifest.capabilities.includes(t)),
+      tasks: c.support.executableOperations.filter((t) => c.manifest.capabilities.includes(t)),
       chat: (runs.manifest.runtime.chat_template?.source ?? 'embedded') !== 'none',
       license: c.manifest.license.id,
       createdAt: created.get(c.eventId) ?? 0,

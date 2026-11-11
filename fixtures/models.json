@@ -114,6 +114,51 @@
         "url": "https://huggingface.co/wexare/laya-onnx/blob/2ac71766852466d7c50cd7d36171bd47c776b00a/LICENSE",
         "attribution": "Laya by Convai Innovations (convaiinnovations/laya); ONNX export and tokenizer mirror by weXare (wexare/laya-onnx)"
       }
+    },
+    {
+      "id": "git-commands-lora",
+      "role": "LoRA adapter for qwen2.5-0.5b-instruct-q4_k_m (git commands)",
+      "repository": "https://huggingface.co/wexare/command-loras",
+      "revision": "ebb9de2280560ced8bf51097bd1561147e90c5e1",
+      "file": "git.gguf",
+      "size": 5881024,
+      "sha256": "e39e473423881387babe324d16bc64d7bbf89cac0fc97d3d60222f79e220c096",
+      "license": {
+        "id": "Apache-2.0",
+        "url": "https://huggingface.co/wexare/command-loras/blob/ebb9de2280560ced8bf51097bd1561147e90c5e1/README.md",
+        "attribution": "LoRA adapter by weXare, trained on Qwen2.5-0.5B-Instruct by the Qwen Team, Alibaba Cloud"
+      },
+      "lora_base": "qwen2.5-0.5b-instruct-q4_k_m"
+    },
+    {
+      "id": "ffmpeg-commands-lora",
+      "role": "LoRA adapter for qwen2.5-0.5b-instruct-q4_k_m (ffmpeg commands)",
+      "repository": "https://huggingface.co/wexare/command-loras",
+      "revision": "ebb9de2280560ced8bf51097bd1561147e90c5e1",
+      "file": "ffmpeg.gguf",
+      "size": 5881024,
+      "sha256": "c0c7228a774056eb3a1f271c2c638dac1e0097aeeb3eb3571cb88a58adfea6f3",
+      "license": {
+        "id": "Apache-2.0",
+        "url": "https://huggingface.co/wexare/command-loras/blob/ebb9de2280560ced8bf51097bd1561147e90c5e1/README.md",
+        "attribution": "LoRA adapter by weXare, trained on Qwen2.5-0.5B-Instruct by the Qwen Team, Alibaba Cloud"
+      },
+      "lora_base": "qwen2.5-0.5b-instruct-q4_k_m"
+    },
+    {
+      "id": "imagemagick-commands-lora",
+      "role": "LoRA adapter for qwen2.5-0.5b-instruct-q4_k_m (ImageMagick commands)",
+      "repository": "https://huggingface.co/wexare/command-loras",
+      "revision": "ebb9de2280560ced8bf51097bd1561147e90c5e1",
+      "file": "imagemagick.gguf",
+      "size": 5881024,
+      "sha256": "dd5c1aee93705e6be426e3a708457a5bb09c4ca719aac117a0d9a512e8d092a4",
+      "license": {
+        "id": "Apache-2.0",
+        "url": "https://huggingface.co/wexare/command-loras/blob/ebb9de2280560ced8bf51097bd1561147e90c5e1/README.md",
+        "attribution": "LoRA adapter by weXare, trained on Qwen2.5-0.5B-Instruct by the Qwen Team, Alibaba Cloud"
+      },
+      "lora_base": "qwen2.5-0.5b-instruct-q4_k_m"
     }
   ]
 }
