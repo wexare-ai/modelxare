@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { expect, test } from '@playwright/test';
 import { DATA, WEB, demoState, evidence } from '../support/env.ts';
 import { catalogStats, downloadRelease, gotoPage, importArchive, openApp, search, type AppHandle } from '../support/app.ts';
+import { RELEASE_SCHEMA } from '@wexare/protocol';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -13,7 +14,8 @@ let app: AppHandle;
 test.afterAll(async () => app?.close());
 
 test('A08: 10,000 synthetic records import, survive reload, and search locally with networking disabled', async () => {
-  const synth = JSON.parse(readFileSync(join(DATA, 'synthetic/count-10000.json'), 'utf8')) as { zip: string; announcement: string };
+  // Named after the release format: `pnpm demo:prepare` rebuilds it when the format changes.
+  const synth = JSON.parse(readFileSync(join(DATA, `synthetic/count-10000-${RELEASE_SCHEMA.split('/').pop()}.json`), 'utf8')) as { zip: string; announcement: string };
   app = await openApp();
   const { page, context } = app;
   const t0 = Date.now();

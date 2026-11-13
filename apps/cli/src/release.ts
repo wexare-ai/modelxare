@@ -3,7 +3,6 @@ import { mkdir, open, readFile, stat, writeFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import { finalizeEvent } from 'nostr-tools/pure';
 import {
-  OPERATION_CONTRACTS,
   RELEASE_SCHEMA,
   buildReleaseEventTemplate,
   checkManifestSemantics,
@@ -27,7 +26,7 @@ export type LocationKind = 'mirror' | 'corrupt-mirror' | 'missing-mirror' | 'ipf
 export interface ReleaseDefinition {
   manifest: Omit<ReleaseManifest, 'schema' | 'files' | 'base' | 'operations' | 'license'> & {
     license: ReleaseManifest['license'];
-    operations: (Omit<ReleaseManifest['operations'][number], 'input_schema' | 'output_schema'> & Partial<ReleaseManifest['operations'][number]>)[];
+    operations: ReleaseManifest['operations'];
   };
   files: {
     role: FileRole;
@@ -199,11 +198,7 @@ export async function prepareRelease(def: ReleaseDefinition, storage: StorageTar
     license: m.license,
     runtime: m.runtime,
     files,
-    operations: m.operations.map((op) => ({
-      ...op,
-      input_schema: op.input_schema ?? OPERATION_CONTRACTS[op.id]?.input_schema ?? {},
-      output_schema: op.output_schema ?? OPERATION_CONTRACTS[op.id]?.output_schema ?? {},
-    })),
+    operations: m.operations,
     requirements: m.requirements,
     ...(m.labels ? { labels: m.labels } : {}),
   };

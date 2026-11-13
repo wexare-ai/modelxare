@@ -2,7 +2,7 @@
 // here; signatures are checked elsewhere (packages/protocol), so these are
 // handed in as already verified.
 import { describe, expect, it } from 'vitest';
-import { OPERATION_CONTRACTS, type ReleaseManifest, type VerifiedRelease } from '@wexare/protocol';
+import type { ReleaseManifest, VerifiedRelease } from '@wexare/protocol';
 import { buildCatalog, nativeSupport } from '../src/catalog.ts';
 import { Trust } from '../src/config.ts';
 import { withAddOnPrompt } from '../src/engine.ts';
@@ -14,7 +14,7 @@ const file = (sha: string, role = 'weights', path = 'model.gguf', locations: Rel
 
 function manifest(model_id: string, over: Partial<ReleaseManifest> = {}): ReleaseManifest {
   return {
-    schema: 'wexare.micromodel.release/0.1',
+    schema: 'wexare.micromodel.release/0.2',
     model_id,
     name: `${model_id} (test)`,
     version: '1.0.0',
@@ -94,18 +94,17 @@ describe('the catalog', () => {
   it('gives a chat add-on its own tasks, and its trained system prompt when the caller sends none', () => {
     const baseM = manifest('assistant');
     const base = release(baseM);
-    const contract = OPERATION_CONTRACTS['command-generation']!;
     const lora = release(
       manifest('git-commands', {
         kind: 'lora',
-        capabilities: ['command-generation'],
+        capabilities: ['git-command'],
         files: [file('5', 'adapter', 'git.gguf')],
         base: { release_id: base.event.id, manifest_sha256: base.manifestSha256, files: [{ sha256: baseM.files[0]!.sha256, size: 100 }] },
-        operations: [{ id: 'command-generation', prompt: { mode: 'chat', system: 'You write git commands.', template: '{{input}}' }, generation: { max_tokens: 128, temperature: 0 }, input_schema: contract.input_schema, output_schema: contract.output_schema }],
-      } as Partial<ReleaseManifest>),
+        operations: [{ id: 'git-command', title: 'Write a git command', category: 'command-line', when: 'write a git command', prompt: { mode: 'chat', system: 'You write git commands.', template: '{{input}}' }, generation: { max_tokens: 128, temperature: 0 }, output: { type: 'text', code: true } }],
+      }),
     );
     const git = buildCatalog([base, lora], open, none).models.find((m) => m.id === 'git-commands')!;
-    expect(git.tasks).toEqual(['command-generation']);
+    expect(git.tasks).toEqual(['git-command']);
     expect(git.chat).toBe(true);
     const ask = { maxTokens: 256, messages: [{ role: 'user' as const, content: 'show all branches' }] };
     expect(withAddOnPrompt(git, ask).messages.map((m) => m.content)).toEqual(['You write git commands.', 'show all branches']);

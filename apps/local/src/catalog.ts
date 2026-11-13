@@ -4,7 +4,7 @@
 // OpenAI client asks for: the release's model_id.
 import { resolveLoraDependency, type CandidateRelease } from '@wexare/orchestrator';
 import { pickRouter, routerSupport, ROUTING_CAPABILITY } from '@wexare/router';
-import { OPERATION_CONTRACTS, operationMatchesContract, type ManifestFile, type ReleaseManifest, type VerifiedRelease } from '@wexare/protocol';
+import { operationExecutable, type ManifestFile, type ReleaseManifest, type VerifiedRelease } from '@wexare/protocol';
 import type { SupportResult } from '@wexare/runtime/support';
 import type { Trust } from './config.ts';
 
@@ -32,7 +32,7 @@ export function nativeSupport(m: ReleaseManifest): SupportResult {
   if (m.files.some((f) => !downloadable(f))) reasons.push('a file has no location this runtime downloads from (https, ipfs, ar)');
   if (m.kind === 'model' && !m.files.some((f) => f.role === 'weights')) reasons.push('no weights file');
   if (m.kind === 'lora' && !m.files.some((f) => f.role === 'adapter')) reasons.push('no adapter file');
-  const executableOperations = m.operations.filter((op) => OPERATION_CONTRACTS[op.id] && operationMatchesContract(op)).map((op) => op.id);
+  const executableOperations = m.operations.filter(operationExecutable).map((op) => op.id);
   return { supported: reasons.length === 0, reasons, executableOperations };
 }
 
@@ -51,7 +51,7 @@ export interface LocalModel {
   base?: CandidateRelease;
   /** Every file it needs, base weights included. */
   files: ManifestFile[];
-  /** Tasks it does by itself in `auto` (bundled operations). */
+  /** Tasks it does by itself in `auto` (operations whose answer shape this client knows). */
   tasks: string[];
   /** False: no chat format, so chat requests continue the text instead. */
   chat: boolean;

@@ -1,19 +1,21 @@
 // Sequential local execution of a WorkflowPlan. One resident model at a time;
-// files are re-verified before each load; outputs are validated against the
-// bundled contracts and never invented.
+// files are re-verified before each load; every answer is checked against the
+// operation's output shape and never invented.
 import {
-  MESSAGE_CATEGORIES,
-  OPERATION_CONTRACTS,
-  UNSUPPORTED_COMMAND,
-  categoryList,
+  knownOutput,
+  labelChoices,
+  parseOperationOutput,
+  promptVars,
   renderPromptTemplate,
-  validateOperationOutput,
+  retryHint,
+  type OperationOutput,
   type ReleaseManifest,
 } from '@wexare/protocol';
 import type { GenerateRequest, GenerateResult, LoadInfo, LoadRequest } from '@wexare/runtime';
 import { LANGUAGE_NAMES, type CandidateRelease, type StageId, type WorkflowPlan } from './plan.ts';
 
-export type StageState = 'pending' | 'verifying' | 'loading' | 'generating' | 'completed' | 'canceled' | 'failed';
+/** `declined`: the model answered that the request is outside what it does. */
+export type StageState = 'pending' | 'verifying' | 'loading' | 'generating' | 'completed' | 'declined' | 'canceled' | 'failed';
 
 export interface RuntimeLike {
   readonly loaded: LoadInfo | null;
@@ -26,7 +28,7 @@ export interface ExecutionDeps {
   runtime: RuntimeLike;
   /** Returns bytes only after re-hashing them against the expected SHA-256 and size. */
   getVerifiedFile(sha256: string, size: number): Promise<Blob>;
-  /** GBNF grammar for a fixed label set (client-side, from bundled contracts). */
+  /** GBNF grammar for a fixed label set (built by the client from the operation's labels). */
   choiceGrammar(labels: readonly string[]): string;
   onUpdate?: (trace: StageTrace[]) => void;
   onToken?: (stage: StageId, text: string) => void;
@@ -34,7 +36,7 @@ export interface ExecutionDeps {
 
 export interface Attempt {
   raw: string;
-  parsed?: Record<string, unknown>;
+  parsed?: OperationOutput;
   error?: string;
   ms: number;
   tokens: number | null;
@@ -42,6 +44,8 @@ export interface Attempt {
 
 export interface StageTrace {
   stage: StageId | string;
+  /** The operation's title, e.g. "Summarize". */
+  title: string;
   releaseId: string;
   modelId: string;
   name: string;
@@ -51,7 +55,7 @@ export interface StageTrace {
   adapters: { sha256: string; scale: number }[];
   state: StageState;
   attempts: Attempt[];
-  output?: Record<string, unknown>;
+  output?: OperationOutput;
   loadMs?: number;
   reusedLoadedModel?: boolean;
   verifyMs?: number;
@@ -65,6 +69,8 @@ export interface WorkflowResult {
   language: string;
   category?: string;
   summary?: string;
+  /** Each completed stage's answer, by stage. */
+  outputs: Record<string, OperationOutput>;
   /** Composed by a local typed template; no third model. */
   composed?: { category: string | null; summary: string | null; text: string };
   trace: StageTrace[];
@@ -74,45 +80,14 @@ export interface WorkflowResult {
 
 const MAX_TOKENS_CAP = 256;
 
-export function parseStageOutput(stage: string, raw: string): { value?: Record<string, unknown>; error?: string } {
-  const contract = OPERATION_CONTRACTS[stage];
-  if (!contract) return { error: `no bundled contract for ${stage}` };
-  let value: Record<string, unknown>;
-  if (stage === 'text-classification') {
-    const label = raw.trim().toLowerCase().replace(/^["'`\s]+|["'`.,;:!\s]+$/g, '');
-    value = { category: label };
-  } else if (stage === 'summarization') {
-    let s = raw.trim().replace(/^(summary|resumen)\s*:\s*/i, '').replace(/\s+/g, ' ');
-    s = s.replace(/^["'“”]+|["'“”]+$/g, '').trim();
-    value = { summary: s };
-  } else if (stage === 'command-generation') {
-    value = { command: commandText(raw) };
-  } else {
-    value = { text: raw };
-  }
-  const issues = validateOperationOutput(contract, value);
-  return issues.length ? { error: issues.map((i) => i.message).join('; '), value } : { value };
-}
+/** What an answer reads as: the label, or the text. */
+export const outputText = (o: OperationOutput | undefined): string => (!o ? '' : 'label' in o ? o.label : o.text);
 
-/**
- * The command lines in a model's answer: code fences, shell prompts and
- * wrapping backticks removed, one command per line. Any "unsupported" answer
- * becomes UNSUPPORTED.
- */
-export function commandText(raw: string): string {
-  const lines = raw
-    .replace(/```[a-z]*\n?/gi, '\n')
-    .split('\n')
-    .map((l) => l.trim().replace(/^\$\s+/, '').replace(/^`+|`+$/g, '').trim())
-    .filter(Boolean);
-  if (lines.length === 1 && /^unsupported(_request)?\.?$/i.test(lines[0]!)) return UNSUPPORTED_COMMAND;
-  return lines.join('\n');
-}
-
-function stageInputs(m: ReleaseManifest, stage: string, input: string, language: string) {
+function stageInputs(m: ReleaseManifest, stage: string, request: string, language: string) {
   const op = m.operations.find((o) => o.id === stage);
   if (!op) throw new Error(`release has no ${stage} operation`);
-  const vars = { input, categories: categoryList(), language: LANGUAGE_NAMES[language] ?? language };
+  if (!knownOutput(op)) throw new Error(`the ${stage} operation answers in a shape this client doesn't know`);
+  const vars = promptVars(op, request, LANGUAGE_NAMES[language] ?? language);
   return {
     op,
     system: op.prompt.system ? renderPromptTemplate(op.prompt.system, vars) : undefined,
@@ -123,6 +98,7 @@ function stageInputs(m: ReleaseManifest, stage: string, input: string, language:
 function newTrace(stage: string, c: CandidateRelease, adapters: StageTrace['adapters'] = []): StageTrace {
   return {
     stage,
+    title: c.manifest.operations.find((o) => o.id === stage)?.title ?? stage,
     releaseId: c.eventId,
     modelId: c.manifest.model_id,
     name: c.name,
@@ -178,44 +154,42 @@ async function runStage(
     }
     const { op, system, prompt } = stageInputs(c.manifest, t.stage, input, language);
     const gen = op.generation ?? {};
+    const out = knownOutput(op)!;
     t.state = 'generating';
     emit();
     for (let attempt = 0; attempt < 2; attempt++) {
       signal?.throwIfAborted();
-      const retryHint =
-        attempt === 0
-          ? ''
-          : t.stage === 'text-classification'
-            ? `\n\nAnswer with exactly one word from: ${MESSAGE_CATEGORIES.join(', ')}.`
-            : t.stage === 'command-generation'
-              ? '\n\nAnswer with the command only.'
-              : '\n\nAnswer with one short sentence only.';
       const r = await deps.runtime.generate({
         mode: op.prompt.mode,
         ...(system ? { system } : {}),
-        prompt: prompt + retryHint,
+        prompt: prompt + (attempt === 0 ? '' : retryHint(op)),
         maxTokens: Math.min(gen.max_tokens ?? 64, MAX_TOKENS_CAP),
         temperature: gen.temperature ?? 0,
         ...(gen.top_k !== undefined ? { topK: gen.top_k } : {}),
         ...(gen.top_p !== undefined ? { topP: gen.top_p } : {}),
         ...(gen.stop ? { stop: gen.stop } : {}),
-        ...(t.stage === 'text-classification' ? { grammar: deps.choiceGrammar(MESSAGE_CATEGORIES) } : {}),
+        ...(out.type === 'label' ? { grammar: deps.choiceGrammar(labelChoices(out)) } : {}),
         ...(extra.adapters?.length ? { adapterScales: extra.adapters.map((a) => a.scale) } : {}),
         ...(signal ? { signal } : {}),
         onToken: (s) => deps.onToken?.(t.stage as StageId, s),
       });
-      const parsed = parseStageOutput(t.stage, r.text);
+      const parsed = parseOperationOutput(op, r.text);
       t.attempts.push({ raw: r.text, ms: r.ms, tokens: r.completionTokens, ...(parsed.value ? { parsed: parsed.value } : {}), ...(parsed.error ? { error: parsed.error } : {}) });
       emit();
+      if (parsed.declined) {
+        t.state = 'declined';
+        t.error = 'the model answered that this request is outside what it does';
+        break;
+      }
       if (!parsed.error) {
         t.output = parsed.value!;
         t.state = 'completed';
         break;
       }
     }
-    if (t.state !== 'completed') {
+    if (t.state !== 'completed' && t.state !== 'declined') {
       t.state = 'failed';
-      t.error = `output did not satisfy the ${t.stage} contract after ${t.attempts.length} attempts`;
+      t.error = `the answer did not have the shape ${t.stage} promises after ${t.attempts.length} attempts`;
     }
   } catch (e) {
     const aborted = signal?.aborted || (e as { code?: string }).code === 'canceled';
@@ -233,7 +207,7 @@ export async function executeWorkflow(plan: WorkflowPlan, deps: ExecutionDeps, s
   const trace: StageTrace[] = [];
   const emit = () => deps.onUpdate?.(trace.map((t) => ({ ...t, attempts: [...t.attempts] })));
   if (!plan.ok) {
-    return { status: 'failed', language: plan.language, trace, startedAt, finishedAt: Date.now() };
+    return { status: 'failed', language: plan.language, outputs: {}, trace, startedAt, finishedAt: Date.now() };
   }
   for (const s of plan.stages) trace.push(newTrace(s.stage, s.release!));
   emit();
@@ -244,10 +218,9 @@ export async function executeWorkflow(plan: WorkflowPlan, deps: ExecutionDeps, s
     }
     await runStage(trace[i]!, plan.stages[i]!.release!, plan.input, plan.language, deps, signal, emit);
   }
-  const cls = trace.find((t) => t.stage === 'text-classification');
-  const sum = trace.find((t) => t.stage === 'summarization');
-  const category = cls?.state === 'completed' ? (cls.output!.category as string) : undefined;
-  const summary = sum?.state === 'completed' ? (sum.output!.summary as string) : undefined;
+  const outputs = Object.fromEntries(trace.filter((t) => t.state === 'completed').map((t) => [t.stage, t.output!]));
+  const category = outputs['text-classification'] ? outputText(outputs['text-classification']) : undefined;
+  const summary = outputs.summarization ? outputText(outputs.summarization) : undefined;
   const status: WorkflowResult['status'] = trace.some((t) => t.state === 'canceled')
     ? 'canceled'
     : trace.every((t) => t.state === 'completed')
@@ -258,6 +231,7 @@ export async function executeWorkflow(plan: WorkflowPlan, deps: ExecutionDeps, s
   return {
     status,
     language: plan.language,
+    outputs,
     ...(category ? { category } : {}),
     ...(summary ? { summary } : {}),
     composed: {

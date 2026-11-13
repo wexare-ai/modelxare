@@ -89,5 +89,5 @@ from the verified OPFS cache and are re-hashed before every load.
 
 The runtime loaded with 3 threads (multithreaded, cross-origin isolated) on 4 logical cores. It
 reports `webgpu ✓` as a browser feature, but runs CPU/WASM only (`n_gpu_layers: 0`). Classification
-uses the bundled contract's choice grammar, so the output is always a valid category; whether that
+uses a choice grammar the client builds from the operation's labels, so the output is always a valid category; whether that
 category is right is a model-quality question, outside the acceptance checks.

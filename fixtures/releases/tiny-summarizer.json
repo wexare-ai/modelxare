@@ -5,7 +5,7 @@
     "model_id": "tiny-summarizer",
     "name": "Tiny summarizer (SmolLM2 360M Q8_0)",
     "description": "Writes a one-sentence English summary of a short message.",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "kind": "model",
     "capabilities": [
       "summarization"
@@ -27,10 +27,17 @@
     "operations": [
       {
         "id": "summarization",
+        "title": "Summarize",
+        "category": "messages",
+        "when": "shorten the text into a brief summary",
+        "examples": [
+          "Hi Sam, because of a storm your flight to Lisbon on Friday will leave two hours late, at 16:40. Your seat and bags stay the same.",
+          "Your electricity bill of $84.20 is due on March 3. Pay online before then to avoid a late fee."
+        ],
         "prompt": {
           "mode": "chat",
           "system": "You summarize messages in one short sentence. Keep the key facts. Do not add anything.",
-          "template": "Summarize this message in one short sentence:\n\n{{input}}"
+          "template": "Summarize this message in one short sentence:\n\n{{text}}"
         },
         "generation": {
           "max_tokens": 60,
@@ -38,6 +45,10 @@
           "stop": [
             "\n"
           ]
+        },
+        "output": {
+          "type": "text",
+          "max_chars": 400
         }
       }
     ],

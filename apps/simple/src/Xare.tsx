@@ -38,7 +38,7 @@ const STEPS: { icon: ReactNode; title: string; line: string; body: ReactNode }[]
   {
     icon: <TagIcon />,
     title: 'Describe your model',
-    line: 'Fill in the starter file: what it does, and your file’s link.',
+    line: 'Fill in the starter file: what it does, in words the router reads, and your file’s link.',
     body: <Describe />,
   },
   {
@@ -154,27 +154,32 @@ export function Xare({ back }: { back: () => void }) {
   );
 }
 
-/** The starter file's fields, as a label to fill in, and the things this app can run. */
+/**
+ * The starter file's fields, as a label to fill in. What a model does is
+ * entirely its own description: the router reads `when` to send requests to
+ * it, so a new task or category needs nothing from this app.
+ */
 function Describe() {
   return (
     <>
       <dl className="label-card">
         <dt>name</dt>
         <dd>My summarizer</dd>
-        <dt>capabilities</dt>
+        <dt>task</dt>
         <dd className="does">
           <span>
             Summarize <code>summarization</code>
           </span>
-          <span>
-            Sort <code>text-classification</code>
-          </span>
-          <span>
-            Write <code>text-generation</code>
-          </span>
-          <span>
-            Command <code>command-generation</code>
-          </span>
+        </dd>
+        <dt>category</dt>
+        <dd>
+          <code>messages</code>, <code>writing</code>, <code>command-line</code>, or a new one
+        </dd>
+        <dt>when</dt>
+        <dd>“shorten the text into a brief summary”: the router reads this to send requests your way</dd>
+        <dt>answer</dt>
+        <dd>
+          <code>text</code>, or one <code>label</code> from your list
         </dd>
         <dt>languages</dt>
         <dd>

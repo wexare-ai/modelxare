@@ -1,28 +1,16 @@
 // The `auto` model: System 1 + System 2 behind one model id. The Laya router
-// (System 1) reads the request, task by task, and picks a specialist
-// language model from the catalog for each (System 2); each runs its bundled
-// operation, exactly as in the browser app. When a task has no specialist on
+// (System 1) reads the request and picks, among the tasks the catalog's models
+// offer, what it asks for, and a specialist language model for each (System
+// 2); each runs that release's operation, exactly as in the browser app. When a task has no specialist on
 // this machine, or System 1 isn't sure, a general chat model answers the whole
 // conversation instead, tools included. The response says which path it took.
 import { runSingle, type CandidateRelease } from '@wexare/orchestrator';
-import { MESSAGE_CATEGORIES } from '@wexare/protocol';
 import { route, type Hooks, type RunResult, type Step, type StepOutput } from '@wexare/router';
 import type { Engine } from './engine.ts';
 import type { ChatRun, Output } from './llama.ts';
 
-/** How each kind of step is labeled when several answer one request. */
-export const STEP_LABELS: Record<string, string> = {
-  sort: 'Topic',
-  summarize: 'Summary',
-  write: 'Continued text',
-  reply: 'Draft reply',
-  translate: 'Translation',
-  answer: 'Answer',
-  command: 'Command',
-};
-
-/** Topic names for the bundled message categories: "travel" → "Travel". */
-const TOPICS: Record<string, string> = Object.fromEntries(MESSAGE_CATEGORIES.map((c) => [c, c[0]!.toUpperCase() + c.slice(1)]));
+/** A label as a person reads it: "travel" → "Travel". */
+const labelText = (l: string) => (l ? l[0]!.toUpperCase() + l.slice(1) : l);
 
 export interface RouteReport {
   /** 'specialists': System 1 planned steps and catalog models did each; 'general': one chat model answered. */
@@ -41,13 +29,13 @@ export interface AutoOutput extends Output {
 /** GBNF that only admits one of the labels (the browser runtime's choiceGrammar). */
 const choiceGrammar = (labels: readonly string[]) => `root ::= ${labels.map((l) => JSON.stringify(l)).join(' | ')}`;
 
-const stepText = (o: StepOutput | undefined) => (o?.topic ? o.topic : (o?.text ?? '').trim());
+const stepText = (o: StepOutput | undefined) => (o?.label ? labelText(o.label) : (o?.text ?? '').trim());
 
-/** One step's answer, or several labeled ones. */
+/** One step's answer, or several, each under its task's title. */
 export function compose(steps: Step[]): string {
   const done = steps.filter((s) => s.status === 'done');
   if (done.length === 1) return stepText(done[0]!.output);
-  return done.map((s) => `${STEP_LABELS[s.intent.id] ?? s.intent.id}: ${stepText(s.output)}`).join('\n');
+  return done.map((s) => `${s.task.title}: ${stepText(s.output)}`).join('\n');
 }
 
 export async function runAuto(engine: Engine, run: ChatRun): Promise<AutoOutput> {
@@ -91,10 +79,9 @@ export async function runAuto(engine: Engine, run: ChatRun): Promise<AutoOutput>
         }, { ...(signal ? { signal } : {}), language, ...(base ? { base, adapters: [{ candidate: r, scale: 1 }] } : {}) });
         completionTokens += trace.attempts.reduce((n, a) => n + (a.tokens ?? 0), 0);
         if (trace.state === 'canceled') throw new Error('canceled');
-        if (trace.state !== 'completed') throw new Error(trace.error ?? 'the model did not answer');
-        const out = trace.output ?? {};
-        if (typeof out.category === 'string') return { topic: TOPICS[out.category] ?? out.category };
-        return { text: String(out.summary ?? out.command ?? out.text ?? '').trim() };
+        if (trace.state === 'declined') return { declined: true };
+        if (trace.state !== 'completed' || !trace.output) throw new Error(trace.error ?? 'the model did not answer');
+        return 'label' in trace.output ? { label: trace.output.label } : { text: trace.output.text.trim() };
       }),
     ...(run.signal ? { signal: run.signal } : {}),
   };
@@ -104,7 +91,7 @@ export async function runAuto(engine: Engine, run: ChatRun): Promise<AutoOutput>
   if (result.ended === 'unsure') return general('System 1 was not sure what the request asks for', result, release.name);
   const missing = result.steps.filter((s) => s.status !== 'done');
   if (!result.steps.length || missing.length) {
-    const why = missing.map((s) => `${s.intent.id}: ${s.status === 'unavailable' ? 'no specialist model here' : (s.error ?? s.status)}`).join('; ');
+    const why = missing.map((s) => `${s.task.id}: ${s.status === 'unavailable' ? (s.error ?? 'no specialist model here') : (s.error ?? s.status)}`).join('; ');
     return general(`not every task had a specialist (${why})`, result, release.name);
   }
   const text = compose(result.steps);
@@ -121,7 +108,7 @@ function report(result: RunResult | null, router: string | null, engine: Engine)
         ? { router, readings: result.judgement.readings.map((r) => ({ text: r.text, choice: r.choice, probability: r.probability })), latency_ms: Math.round(result.judgement.latencyMs) }
         : null,
     steps: (result?.steps ?? []).map((s) => ({
-      task: s.intent.id,
+      task: s.task.id,
       model: idOf(s),
       probability: s.decision.probability,
       decided_by: s.decision.by,

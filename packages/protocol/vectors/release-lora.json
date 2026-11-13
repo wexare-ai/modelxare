@@ -14,6 +14,10 @@
       ],
       [
         "t",
+        "category:messages"
+      ],
+      [
+        "t",
         "lang:en"
       ],
       [
@@ -30,11 +34,11 @@
       ],
       [
         "x",
-        "84144d4ffee5a56edf9a8dc5767e62a596646acfcf787fa1ae9293e68972fa7e"
+        "2ecbb95974d60061c315d7cc9f42f5947b9c5524292760bd2ef65c8e1f8492fa"
       ],
       [
         "size",
-        "1353"
+        "1194"
       ],
       [
         "alt",
@@ -42,12 +46,12 @@
       ],
       [
         "wexare-manifest",
-        "{\"base\":{\"files\":[{\"sha256\":\"bb8924986ab7f176cbd102a3ea02b6593e006ebc135437b62e98901a6cd3f995\",\"size\":25}],\"manifest_sha256\":\"cf671d9ee90f9a32b629b7030654a1349e335e5dffd479bade9879806d82159a\",\"release_id\":\"1d1f805da227bc9299dae0a833d672685e0315a3c20f48f16ad370b4cfedad23\"},\"capabilities\":[\"summarization\"],\"description\":\"Test-vector release. Not a runnable model.\",\"files\":[{\"locations\":[],\"path\":\"adapter.gguf\",\"role\":\"adapter\",\"sha256\":\"ae1eae1d76e5b7c865c4122ce366a08025842566d2d96c75cc13e6353a73db0d\",\"size\":7}],\"kind\":\"lora\",\"labels\":[\"test-vector\"],\"languages\":[\"en\"],\"license\":{\"id\":\"Apache-2.0\"},\"model_id\":\"vector-adapter\",\"name\":\"Vector adapter\",\"operations\":[{\"generation\":{\"max_tokens\":32,\"temperature\":0},\"id\":\"summarization\",\"input_schema\":{\"additionalProperties\":false,\"properties\":{\"text\":{\"maxLength\":4000,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"text\"],\"type\":\"object\"},\"output_schema\":{\"additionalProperties\":false,\"properties\":{\"summary\":{\"maxLength\":400,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"summary\"],\"type\":\"object\"},\"prompt\":{\"mode\":\"chat\",\"template\":\"Summarize: {{input}}\"}}],\"requirements\":{\"context_length\":1024},\"runtime\":{\"browser_features\":[\"wasm\"],\"chat_template\":{\"source\":\"embedded\"},\"family\":\"wllama\",\"format\":\"gguf\",\"requirement\":\">=3.8.1 <3.9.0\"},\"schema\":\"wexare.micromodel.release/0.1\",\"version\":\"1.0.0\"}"
+        "{\"base\":{\"files\":[{\"sha256\":\"bb8924986ab7f176cbd102a3ea02b6593e006ebc135437b62e98901a6cd3f995\",\"size\":25}],\"manifest_sha256\":\"dc82375881864caab967bd4920ede77326be2eb3b0bb47c618c80d6361e96423\",\"release_id\":\"1e9078f0a99d3a1bb8931d6f5eaf1cd16b32d945e4623bbd977a14996a285511\"},\"capabilities\":[\"summarization\"],\"description\":\"Test-vector release. Not a runnable model.\",\"files\":[{\"locations\":[],\"path\":\"adapter.gguf\",\"role\":\"adapter\",\"sha256\":\"ae1eae1d76e5b7c865c4122ce366a08025842566d2d96c75cc13e6353a73db0d\",\"size\":7}],\"kind\":\"lora\",\"labels\":[\"test-vector\"],\"languages\":[\"en\"],\"license\":{\"id\":\"Apache-2.0\"},\"model_id\":\"vector-adapter\",\"name\":\"Vector adapter\",\"operations\":[{\"category\":\"messages\",\"generation\":{\"max_tokens\":32,\"temperature\":0},\"id\":\"summarization\",\"output\":{\"max_chars\":400,\"single_line\":true,\"type\":\"text\"},\"prompt\":{\"mode\":\"chat\",\"template\":\"Summarize: {{input}}\"},\"title\":\"Summarize\",\"when\":\"shorten a message into one short sentence\"}],\"requirements\":{\"context_length\":1024},\"runtime\":{\"browser_features\":[\"wasm\"],\"chat_template\":{\"source\":\"embedded\"},\"family\":\"wllama\",\"format\":\"gguf\",\"requirement\":\">=3.8.1 <3.9.0\"},\"schema\":\"wexare.micromodel.release/0.2\",\"version\":\"1.0.0\"}"
       ]
     ],
     "content": "Test-vector release. Not a runnable model.",
     "pubkey": "1cc30377c92ae0e34d39a78c1f54e5ca6517e5081660051725d35c9ed2f20075",
-    "id": "d907e1d29dd1fa5f4124a252a9fd1a7b29fd3365b6368b2483ee012a735908a0",
-    "sig": "8321f7a5420e345f3966c40e6f5c91c8c63ba08352c84312cbb4b87ab7bc2e5bc6cbca4d57e623a0f8f3c9f08a2f1f8c6f44e6296875812253a8c7a2e220a17c"
+    "id": "bd84d425a4ec8b5f0f6bc3b312a6d7adee31a3ba13d40e1f2f7fba2f44301b01",
+    "sig": "8ec1e0375db7b9a2c1fbf70491cf7a7633d3ecaded10a50079df94f552ffcfbbfb4f0bcdd6b801ef3618e77d923125f0e1898c1272139c3eacacda188ba3bd0c"
   }
 }

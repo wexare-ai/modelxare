@@ -3,13 +3,13 @@ import { Ask } from './Ask.tsx';
 import { HeroDecorations } from './Brand.tsx';
 import { useConnection, useModels } from './engine.ts';
 import { useOnlineHelp } from './routing.ts';
-import { TASKS, languageList, size, type TaskId } from './models.ts';
+import { languageList, size, tasksOf, type TaskId } from './models.ts';
 
 export function Home(p: { task: TaskId | null; setTask: (t: TaskId | null) => void; query: string; setQuery: (q: string) => void; open: (id: string) => void }) {
   const { models, loaded } = useModels();
   const connection = useConnection();
   const online = !!remoteHelp(useOnlineHelp());
-  const verbs = TASKS.map((t) => ({ t, count: models.filter((m) => m.tasks.includes(t.id)).length })).filter((v) => v.count > 0);
+  const verbs = tasksOf(models).map((t) => ({ t, count: models.filter((m) => m.tasks.includes(t.id)).length }));
   const q = p.query.trim().toLowerCase();
   const shown = models.filter((m) => (!p.task || m.tasks.includes(p.task)) && (!q || `${m.name} ${m.description}`.toLowerCase().includes(q)));
 

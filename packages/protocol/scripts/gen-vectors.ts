@@ -6,7 +6,6 @@ import { join } from 'node:path';
 import { finalizeEvent, getPublicKey } from 'nostr-tools/pure';
 import { hexToBytes } from '@noble/hashes/utils.js';
 import {
-  OPERATION_CONTRACTS,
   buildCatalogAnnouncementTemplate,
   buildReleaseEventTemplate,
   canonicalJson,
@@ -27,17 +26,25 @@ const sign = (t: Parameters<typeof finalizeEvent>[0], k: { secret_key_hex: strin
   finalizeEvent(t, hexToBytes(k.secret_key_hex)) as unknown as NostrEvent;
 const write = (name: string, v: unknown) => writeFileSync(join(out, name), JSON.stringify(v, null, 2) + '\n');
 
+const TASKS: Record<string, Pick<ReleaseManifest['operations'][number], 'title' | 'category' | 'when' | 'output'>> = {
+  'text-classification': {
+    title: 'Sort by topic',
+    category: 'messages',
+    when: 'put a message into one topic, such as family, work or travel',
+    output: { type: 'label', labels: [{ id: 'family' }, { id: 'work' }, { id: 'other' }] },
+  },
+  summarization: { title: 'Summarize', category: 'messages', when: 'shorten a message into one short sentence', output: { type: 'text', max_chars: 400, single_line: true } },
+};
 const op = (id: string, template: string) => ({
   id,
+  ...TASKS[id]!,
   prompt: { mode: 'chat' as const, template },
   generation: { max_tokens: 32, temperature: 0 },
-  input_schema: OPERATION_CONTRACTS[id]!.input_schema,
-  output_schema: OPERATION_CONTRACTS[id]!.output_schema,
 });
 const fileHash = sha256Hex('test-vector weights bytes');
 
 const model: ReleaseManifest = {
-  schema: 'wexare.micromodel.release/0.1',
+  schema: 'wexare.micromodel.release/0.2',
   model_id: 'vector-classifier',
   name: 'Vector classifier',
   description: 'Test-vector release. Not a runnable model.',

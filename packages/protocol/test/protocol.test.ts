@@ -3,12 +3,14 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { finalizeEvent, generateSecretKey } from 'nostr-tools/pure';
 import {
-  MESSAGE_CATEGORIES,
-  OPERATION_CONTRACTS,
   buildReleaseEventTemplate,
-  categoryList,
-  operationMatchesContract,
   canonicalJson,
+  categoryName,
+  labelList,
+  operationExecutable,
+  parseOperationOutput,
+  promptVars,
+  splitInstruction,
   matchesTagQuery,
   narrowingRelayFilters,
   releaseRelayFilter,
@@ -99,6 +101,14 @@ describe('release events', () => {
     expect(codes(r)).toContain('manifest_inconsistent');
   });
 
+  it('tells an authentic release in another format version apart from a broken one', () => {
+    const base = manifestOf(modelVector.event);
+    const older = verifyReleaseEvent(sign(buildReleaseEventTemplate({ manifestJson: serializeManifest({ ...base, schema: 'wexare.micromodel.release/0.1' } as never) })));
+    expect(older.ok ? [] : older.errors.map((e) => [e.code, e.message])).toEqual([['other_release_version', 'release format 0.1; this client reads 0.2']]);
+    const odd = verifyReleaseEvent(sign(buildReleaseEventTemplate({ manifestJson: serializeManifest({ ...base, schema: 'something-else' } as never) })));
+    expect(codes(odd)).toContain('schema_invalid');
+  });
+
   it('accepts an unknown runtime family as metadata', () => {
     const base = manifestOf(modelVector.event);
     const m = { ...base, runtime: { ...base.runtime, family: 'future-runtime' } };
@@ -117,11 +127,27 @@ describe('release events', () => {
     }
   });
 
-  it('warns when an operation widens the bundled contract', () => {
+  it('accepts an output type this client does not know, and warns it will not run', () => {
     const base = manifestOf(modelVector.event);
-    const ops = base.operations.map((o) => ({ ...o, output_schema: { type: 'object' } }));
+    const ops = base.operations.map((o) => ({ ...o, output: { type: 'audio', sample_rate: 16000 } }));
     const r = verifyReleaseEvent(sign(buildReleaseEventTemplate({ manifestJson: serializeManifest({ ...base, operations: ops }) })));
-    expect(r.ok && r.value.warnings.map((w) => w.code)).toContain('operation_contract_mismatch');
+    expect(r.ok && r.value.warnings.map((w) => w.code)).toContain('unknown_output_type');
+  });
+
+  it('rejects malformed known outputs and repeated labels', () => {
+    const base = manifestOf(modelVector.event);
+    const bad = (output: unknown) =>
+      codes(verifyReleaseEvent(sign(buildReleaseEventTemplate({ manifestJson: serializeManifest({ ...base, operations: [{ ...base.operations[0]!, output } as never, base.operations[1]!] }) }))));
+    expect(bad({ type: 'text', single_line: 'yes' })).toContain('schema_invalid');
+    expect(bad({ type: 'label', labels: [{ id: 'a' }] })).toContain('schema_invalid');
+    expect(bad({ type: 'label', labels: [{ id: 'a' }, { id: 'a' }] })).toContain('manifest_inconsistent');
+    expect(bad({ type: 'label', labels: [{ id: 'a' }, { id: 'b' }], decline: 'a' })).toContain('manifest_inconsistent');
+  });
+
+  it('derives a category tag from the operations', () => {
+    expect(modelVector.event.tags).toContainEqual(['t', 'category:messages']);
+    const e: NostrEvent = modelVector.event;
+    expect(codes(verifyReleaseEvent(resign(e, [...e.tags, ['t', 'category:command-line']])))).toContain('tag_inconsistent');
   });
 });
 
@@ -161,7 +187,7 @@ describe('schemas and helpers', () => {
       builder_pubkey: 'a'.repeat(64),
       build_time: 1,
       collection_policy: 'wexare.policy.all-valid-releases/0.1',
-      release_schema_versions: ['wexare.micromodel.release/0.1'],
+      release_schema_versions: ['wexare.micromodel.release/0.2'],
       record_count: 0,
       coverage: { statement: 'x', relays: [{ url: 'ws://127.0.0.1:7777', state: 'caught-up' }] },
       files: [{ path: 'releases.jsonl', size: 0, sha256: 'b'.repeat(64) }],
@@ -169,26 +195,38 @@ describe('schemas and helpers', () => {
     expect(validateInventorySchema(inv)).toEqual([]);
     expect(validateInventorySchema({ ...inv, files: [{ path: '../x', size: 0, sha256: 'b'.repeat(64) }] })).not.toEqual([]);
   });
-  it('bundled contracts are valid manifest operation schemas', () => {
-    expect(Object.keys(OPERATION_CONTRACTS)).toContain('text-classification');
-    expect(MESSAGE_CATEGORIES).toContain('travel');
+  it('runs operations whose answer shape it knows', () => {
     expect(validateManifestSchema({})).not.toEqual([]);
+    expect(operationExecutable({ output: { type: 'text' } })).toBe(true);
+    expect(operationExecutable({ output: { type: 'label', labels: [{ id: 'a' }, { id: 'b' }] } })).toBe(true);
+    expect(operationExecutable({ output: { type: 'audio' } })).toBe(false);
   });
-  it('accepts releases signed with the first topic list, and nothing wider', () => {
-    const op = (categories: string[]) => ({
-      id: 'text-classification',
-      prompt: { mode: 'chat' as const, template: '{{input}}' },
-      input_schema: OPERATION_CONTRACTS['text-classification']!.input_schema,
-      output_schema: { type: 'object', additionalProperties: false, required: ['category'], properties: { category: { enum: categories } } },
-    });
-    expect(operationMatchesContract(op([...MESSAGE_CATEGORIES]))).toBe(true);
-    expect(operationMatchesContract(op(['maintenance', 'safety', 'security', 'noise', 'cleanliness', 'other']))).toBe(true);
-    expect(operationMatchesContract(op([...MESSAGE_CATEGORIES, 'secrets']))).toBe(false);
-    expect(operationMatchesContract({ ...op(['maintenance', 'safety', 'security', 'noise', 'cleanliness', 'other']), id: 'summarization' })).toBe(false);
+  it('checks answers against the output shape, never inventing one', () => {
+    const label = { output: { type: 'label' as const, labels: [{ id: 'work' }, { id: 'travel' }], decline: 'NONE' } };
+    expect(parseOperationOutput(label, ' "Travel." ')).toEqual({ value: { label: 'travel' } });
+    expect(parseOperationOutput(label, 'pets').error).toMatch(/not one of work, travel/);
+    expect(parseOperationOutput(label, 'none')).toEqual({ declined: true });
+    const line = { output: { type: 'text' as const, single_line: true, max_chars: 40, decline: 'UNSUPPORTED' } };
+    expect(parseOperationOutput(line, '```sh\nffmpeg -i a.mp4 b.gif\n```')).toEqual({ value: { text: 'ffmpeg -i a.mp4 b.gif' } });
+    expect(parseOperationOutput(line, '`git status`')).toEqual({ value: { text: 'git status' } });
+    expect(parseOperationOutput({ output: { type: 'text' } }, '```bash\n$ git add .\n$ git commit -m "x"\n```')).toEqual({ value: { text: 'git add .\ngit commit -m "x"' } });
+    expect(parseOperationOutput(line, 'UNSUPPORTED')).toEqual({ declined: true });
+    expect(parseOperationOutput(line, 'git add .\ngit commit').error).toMatch(/one line/);
+    expect(parseOperationOutput(line, 'x'.repeat(41)).error).toMatch(/longer than 40/);
+    expect(parseOperationOutput(line, '  ').error).toMatch(/empty/);
+    expect(parseOperationOutput({ output: { type: 'audio' } }, 'x').error).toMatch(/unknown output type/);
   });
-  it('lists each topic with what it covers', () => {
-    expect(categoryList()).toMatch(/^family \(parents, children, partners and relatives\), friends \(/);
-    expect(categoryList().split('), ')).toHaveLength(MESSAGE_CATEGORIES.length);
+  it('lists each label with what it covers, and names categories', () => {
+    expect(labelList({ type: 'label', labels: [{ id: 'family', description: 'parents and children' }, { id: 'other' }] })).toBe('family (parents and children), other');
+    expect(categoryName('command-line')).toBe('Command line');
+    expect(categoryName('messages')).toBe('Messages');
+  });
+  it('gives prompts the whole request, and the text after a leading instruction', () => {
+    expect(splitInstruction('Summarize this message: The lift is broken.')).toEqual({ instruction: 'Summarize this message', text: 'The lift is broken.' });
+    expect(splitInstruction('Can you sort this? The lift is broken.')).toEqual({ instruction: 'Can you sort this?', text: 'The lift is broken.' });
+    expect(splitInstruction('make a gif from movie.mkv')).toEqual({ instruction: null, text: 'make a gif from movie.mkv' });
+    const vars = promptVars({ output: { type: 'label', labels: [{ id: 'a' }, { id: 'b' }] } }, 'Sort: hello', 'English');
+    expect(vars).toEqual({ input: 'Sort: hello', text: 'hello', language: 'English', labels: 'a, b' });
   });
   it('renders prompt placeholders as text', () => {
     expect(renderPromptTemplate('A {{input}} B {{ categories }} {{unknown}}', { input: '<b>x</b>', categories: 'a, b' })).toBe('A <b>x</b> B a, b {{unknown}}');

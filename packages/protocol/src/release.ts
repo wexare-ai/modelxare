@@ -5,22 +5,27 @@ import {
   FILE_METADATA_KIND,
   MANIFEST_MIME,
   MANIFEST_TAG,
+  RELEASE_SCHEMA,
   RELEASE_TAG,
   TAG_PREFIX,
 } from './constants.ts';
 import { checkSignature, eventByteLength, parseEventShape, tagEntries, tagValues } from './events.ts';
 import { sha256Hex, utf8Length } from './hash.ts';
 import { inferTransport } from './locations.ts';
-import { operationMatchesContract } from './operations.ts';
+import { knownOutput } from './operations.ts';
 import { validateManifestSchema } from './schemas.ts';
 import type { Issue, ReleaseManifest, Result, UnsignedEventTemplate, VerifiedRelease } from './types.ts';
 
 const issue = (code: string, message: string): Issue => ({ code, message });
 
+/** Rejection code for an authentic release in another version of the release format. */
+export const OTHER_RELEASE_VERSION = 'other_release_version';
+
 /** Discovery `t` values derived from a manifest (excluding the common ecosystem tag). */
-export function deriveDiscoveryTags(m: Pick<ReleaseManifest, 'capabilities' | 'languages' | 'runtime' | 'kind'>): string[] {
+export function deriveDiscoveryTags(m: Pick<ReleaseManifest, 'capabilities' | 'languages' | 'runtime' | 'kind' | 'operations'>): string[] {
   return [
     ...m.capabilities.map((c) => TAG_PREFIX.task + c),
+    ...[...new Set(m.operations.map((o) => o.category))].map((c) => TAG_PREFIX.category + c),
     ...m.languages.map((l) => TAG_PREFIX.lang + l),
     TAG_PREFIX.runtime + m.runtime.family,
     TAG_PREFIX.artifact + m.kind,
@@ -73,6 +78,12 @@ export function checkManifestSemantics(m: ReleaseManifest): Issue[] {
     if (opIds.has(op.id)) errors.push(issue('manifest_inconsistent', `duplicate operation ${op.id}`));
     opIds.add(op.id);
     if (!caps.has(op.id)) errors.push(issue('manifest_inconsistent', `operation ${op.id} is not listed in capabilities`));
+    const out = knownOutput(op);
+    if (out?.type === 'label') {
+      const ids = out.labels.map((l) => l.id);
+      if (new Set(ids).size !== ids.length) errors.push(issue('manifest_inconsistent', `operation ${op.id} repeats a label`));
+      if (out.decline && ids.includes(out.decline)) errors.push(issue('manifest_inconsistent', `operation ${op.id}: decline must not be one of its labels`));
+    }
   }
   const paths = new Set<string>();
   for (const f of m.files) {
@@ -140,6 +151,12 @@ export function verifyReleaseEvent(input: unknown, opts: VerifyOptions = {}): Re
   } catch (e) {
     return fail(issue('manifest_parse_error', `inline manifest is not valid JSON: ${(e as Error).message}`));
   }
+  // A signed, intact release in another version of the format (an older one after an upgrade): not
+  // something wrong, just not readable here. Collectors count it apart from rejections.
+  const declared = (manifest as { schema?: unknown })?.schema;
+  if (typeof declared === 'string' && declared !== RELEASE_SCHEMA && /^wexare\.micromodel\.release\/\d+\.\d+$/.test(declared)) {
+    return fail(issue(OTHER_RELEASE_VERSION, `release format ${declared.split('/')[1]}; this client reads ${RELEASE_SCHEMA.split('/')[1]}`));
+  }
   const schemaErrors = validateManifestSchema(manifest);
   if (schemaErrors.length) return fail(...schemaErrors);
   const semantic = checkManifestSemantics(manifest);
@@ -165,7 +182,7 @@ export function verifyReleaseEvent(input: unknown, opts: VerifyOptions = {}): Re
     warnings.push(issue('manifest_not_canonical', 'manifest cannot be canonicalized'));
   }
   for (const op of manifest.operations) {
-    if (!operationMatchesContract(op)) warnings.push(issue('operation_contract_mismatch', `operation ${op.id} does not match a bundled contract; it will not execute`));
+    if (!knownOutput(op)) warnings.push(issue('unknown_output_type', `operation ${op.id} answers in a shape this client doesn't know (${String((op.output as { type?: unknown }).type)}); it will not execute`));
   }
   for (const f of manifest.files) {
     for (const l of f.locations) {

@@ -1,20 +1,22 @@
 /**
  * The front page's System 1 + System 2 section: one request, played in a
  * browser tab. The System 1 model (Laya) splits it and decides what each part
- * asks for; System 2 language models from the catalog do the work.
+ * asks for, among the tasks the catalog's models offer; System 2 language
+ * models from the catalog do the work.
  *
- * Everything shown is what the real models did with this request
- * (docs/acceptance.md, "Everyday examples"): the router read "Categorize" as
- * sort 0.99 and "summarize this message" as summarize 0.99; Qwen2.5 0.5B
- * sorted the message as Travel and SmolLM2 360M wrote the summary.
+ * Everything shown is what the real models did with this request: the router
+ * read "Categorize this message" as sort 1.00 and "summarize this message" as
+ * summarize 1.00 (tests/integration/router-laya.test.ts, 2026-11-13); Qwen2.5
+ * 0.5B sorted the message as Travel and SmolLM2 360M wrote the summary
+ * (docs/acceptance.md, "Everyday examples").
  */
 import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
 
 const REQUEST = 'Categorize and summarize this message: Hi Sam, because of a storm your flight to Lisbon on Friday will leave two hours late, at 16:40. Your seat and bags stay the same.';
 
 const PARTS = [
-  { text: 'Categorize', intent: 'Sort', score: '0.99', width: 99, model: 0 },
-  { text: 'summarize this message', intent: 'Summarize', score: '0.99', width: 99, model: 1 },
+  { text: 'Categorize this message', intent: 'Sort', score: '1.00', width: 100, model: 0 },
+  { text: 'summarize this message', intent: 'Summarize', score: '1.00', width: 100, model: 1 },
 ];
 
 const MODELS = [

@@ -1,6 +1,6 @@
 // Runtime capability detection and per-release support checks. Kept free of
 // wllama imports so the catalog UI and orchestrator can use it cheaply.
-import { OPERATION_CONTRACTS, operationMatchesContract, type ReleaseManifest } from '@wexare/protocol';
+import { operationExecutable, type ReleaseManifest } from '@wexare/protocol';
 
 export const RUNTIME_FAMILY = 'wllama';
 export const RUNTIME_FORMAT = 'gguf';
@@ -96,8 +96,8 @@ export function checkReleaseSupport(m: ReleaseManifest, caps: RuntimeCapabilitie
   for (const f of m.runtime.browser_features) if (!caps.features[f]) reasons.push(`browser feature ${f} unavailable`);
   if (m.files.some((f) => f.locations.length === 0)) reasons.push('a required file has no retrieval location');
   if (m.kind === 'lora' && !caps.adapterExecution.supported) reasons.push(caps.adapterExecution.reason);
-  const executableOperations = m.operations.filter((op) => OPERATION_CONTRACTS[op.id] && operationMatchesContract(op)).map((op) => op.id);
-  if (m.operations.length && executableOperations.length === 0) reasons.push('no operation matches a bundled contract');
+  const executableOperations = m.operations.filter(operationExecutable).map((op) => op.id);
+  if (m.operations.length && executableOperations.length === 0) reasons.push('no operation answers in a shape this client knows');
   if (m.operations.length === 0) reasons.push('no executable operations declared');
   return { supported: reasons.length === 0, reasons, executableOperations };
 }

@@ -1,61 +1,65 @@
-// The routing plan. A request usually starts with an instruction
-// ("Categorize and summarize this message: …"). System 1 reads each task the
-// instruction names on its own, so "sort and summarize" gets both steps and
-// the message itself can't sway the choice. A request without an instruction
-// is read whole. Each step goes to a local mini-model when one can do it, to an
-// online model only when the person allowed that, and otherwise is reported as
-// unavailable. When nothing is clear, the person picks.
-//
-// Some tasks have models that are not interchangeable (a git model and an
-// ffmpeg model both write commands). For those, System 1 answers a second
-// question built from the catalog at request time: which of these models is
-// the one, as each release describes itself in its `routing` hint. New models
-// join that question as they are published; nothing is retrained.
-import { detectLanguage, selectRelease, type CandidateRelease } from '@wexare/orchestrator';
-import { INTENTS, type Intent } from './intents.ts';
+// The routing plan. What a request can ask for comes from the catalog: every
+// task a release offers, in its own words (see tasks.ts). System 1 picks among
+// them with one choice question. When a request starts with an instruction
+// naming several tasks ("Categorize and summarize this message: …"), each part
+// is read on its own, because one System 1 choice finds one task. With many
+// tasks, they compete in groups and the winners in a final round, so every
+// question stays within the options System 1 is calibrated for. When several
+// models offer the chosen task, System 1 also picks the one whose description
+// fits the request best. Each step then runs on a model on this device, online
+// only when the person allowed that, and is otherwise reported as unavailable.
+// When nothing is clear, the person picks.
+import { detectLanguage, type CandidateRelease } from '@wexare/orchestrator';
+import { splitInstruction } from '@wexare/protocol';
+import { GENERAL_TASKS, tasksFor, type Task } from './tasks.ts';
 import type { ChoiceAnswer, ChoiceQuestion, Question, System1 } from './system-one.ts';
 
 export interface RouterOptions {
   /** Most steps one request may take. */
   maxSteps?: number;
-  /** System 1 is sure of a step at or above this probability; when it is sure of none, the person picks. */
+  /** System 1 is sure of a choice at or above this probability; when it is sure of none, the person picks. */
   sureAbove?: number;
-  intents?: Intent[];
+  /** Most options in one System 1 question (it is calibrated for up to 10). */
+  maxOptions?: number;
+  /** Requests offered next to the catalog's tasks; defaults to GENERAL_TASKS. */
+  general?: Task[];
 }
 
-const DEFAULTS = { maxSteps: 3, sureAbove: 0.5 };
+const DEFAULTS = { maxSteps: 3, sureAbove: 0.5, maxOptions: 10 };
+/** A runner-up worth trying when the chosen model declines. */
+const ALTERNATIVE_ABOVE = 0.15;
 
 export interface StepOutput {
-  /** Summary, continued text, translation, answer. */
+  /** Summary, command, continued text, translation, answer. */
   text?: string;
-  /** Topic, for sorting. */
-  topic?: string;
-}
-
-/** How System 1 chose between models that do the same task. */
-export interface ModelPick {
-  /** How sure System 1 is of the chosen model, in the last round it was asked. */
-  probability: number;
-  /** Every model it read, with its probability in the round it was read. */
-  considered: { modelId: string; probability: number }[];
+  /** One of the operation's labels, such as a topic. */
+  label?: string;
+  /** The model answered that the request is outside what it does. */
+  declined?: boolean;
 }
 
 export type Route =
-  | { kind: 'local'; release: CandidateRelease; base?: CandidateRelease; downloadBytes: number; pick?: ModelPick }
+  | { kind: 'local'; release: CandidateRelease; base?: CandidateRelease; downloadBytes: number }
   | { kind: 'remote'; provider: string; model: string }
   | { kind: 'none'; reason: string };
 
-/** Why a step is in the plan. */
+/** Why a step is in the plan, and why it runs on the model it runs on. */
 export interface Decision {
   /** How sure System 1 is that this is what was asked. */
   probability: number;
   /** 'instruction': one part of the instruction, quoted in `text`; 'request': the whole request; 'person': picked when System 1 was unsure. */
   by: 'instruction' | 'request' | 'person';
   text?: string;
+  /** When several models offer the task: System 1 picked one by its description, or the catalog order did (downloaded, then smallest). */
+  model?: { by: 'system1'; probability: number; name: string } | { by: 'catalog' };
+  /** The next likeliest tasks from the same reading, tried in turn when a model answers that the request is outside what it does. */
+  alternatives?: { id: string; probability: number }[];
+  /** The task first chosen, when its model declined and this step moved to an alternative. */
+  insteadOf?: string;
 }
 
 export interface Step {
-  intent: Intent;
+  task: Task;
   decision: Decision;
   route: Route;
   status: 'waiting' | 'running' | 'done' | 'failed' | 'declined' | 'unavailable';
@@ -68,8 +72,10 @@ export interface Step {
 export interface Reading {
   /** A part of the instruction ("Categorize"), or the whole request. */
   text: string;
+  /** A task ID. */
   choice: string;
   probability: number;
+  /** The final round's options and their probabilities. */
   probabilities: Record<string, number>;
 }
 
@@ -87,9 +93,9 @@ export interface RunResult {
   request: string;
   /** The instruction at the start of the request, when it has one. */
   instruction: string | null;
-  /** What local models work on: the request without its instruction. */
-  message: string;
   language: string;
+  /** Every task System 1 chose among. */
+  tasks: Task[];
   judgement: Judgement | null;
   steps: Step[];
   ended: Ending;
@@ -99,7 +105,7 @@ export interface RunResult {
 export interface RemoteHelp {
   provider: string;
   model: string;
-  run(intent: Intent, request: string, context: string[], signal?: AbortSignal): Promise<string>;
+  run(task: Task, request: string, context: string[], signal?: AbortSignal): Promise<string>;
 }
 
 export interface Hooks {
@@ -108,8 +114,11 @@ export interface Hooks {
   isCached(sha256: string): boolean;
   /** The base release an adapter runs on, when the catalog has it. Without this, adapters are left out. */
   baseOf?(release: CandidateRelease): CandidateRelease | null;
-  /** `base` is set when `release` is an adapter. */
-  runLocal(release: CandidateRelease, capability: string, input: string, language: string, signal?: AbortSignal, base?: CandidateRelease): Promise<StepOutput>;
+  /**
+   * Run one task of a release on the request (the release's prompt decides what part of it the model
+   * sees). `base` is set when `release` is an adapter: its own prompt runs on the base's weights.
+   */
+  runLocal(release: CandidateRelease, taskId: string, request: string, language: string, signal?: AbortSignal, base?: CandidateRelease): Promise<StepOutput>;
   /** Present only when the person allowed online help. */
   remote?: RemoteHelp | null;
   /** Ask before downloading a model; false skips the step. Without it, models download as needed. */
@@ -117,7 +126,7 @@ export interface Hooks {
   /** Download and verify a model's files (and its base's, for an adapter); false when that failed. */
   download(release: CandidateRelease, base?: CandidateRelease): Promise<boolean>;
   /** System 1 found nothing clear: offer the likeliest; null stops. */
-  clarify(options: { intent: Intent; probability: number }[]): Promise<string | null>;
+  clarify(options: { task: Task; probability: number }[]): Promise<string | null>;
   onUpdate?(steps: Step[]): void;
   signal?: AbortSignal;
 }
@@ -125,20 +134,23 @@ export interface Hooks {
 const missingBytes = (r: CandidateRelease, isCached: (s: string) => boolean, base?: CandidateRelease) =>
   [...(base?.manifest.files ?? []), ...r.manifest.files].filter((f) => !isCached(f.sha256)).reduce((n, f) => n + f.size, 0);
 
-/** Most models System 1 compares in one question; more are compared in rounds. */
-export const PICK_GROUP = 8;
+/** A model that can do a task here: a release, and its base when it is an adapter. */
+export interface LocalChoice {
+  release: CandidateRelease;
+  base?: CandidateRelease;
+}
 
 const newer = (a: CandidateRelease, b: CandidateRelease) => a.version.localeCompare(b.version, undefined, { numeric: true }) > 0;
 
 /**
- * The models on this device's catalog that can do `capability` in `language`:
- * the newest version of each, adapters with their base.
+ * The models in this device's catalog that can do a task in `language`: the
+ * newest version of each, adapters only with a base that runs here.
  */
-export function localChoices(capability: string, language: string, hooks: Pick<Hooks, 'candidates' | 'baseOf'>): { release: CandidateRelease; base?: CandidateRelease }[] {
-  const latest = new Map<string, { release: CandidateRelease; base?: CandidateRelease }>();
+export function localChoices(taskId: string, language: string, hooks: Pick<Hooks, 'candidates' | 'baseOf'>): LocalChoice[] {
+  const latest = new Map<string, LocalChoice>();
   for (const c of hooks.candidates) {
     const m = c.manifest;
-    if (!c.support.supported || !m.capabilities.includes(capability) || !c.support.executableOperations.includes(capability)) continue;
+    if (!c.support.supported || !m.capabilities.includes(taskId) || !c.support.executableOperations.includes(taskId)) continue;
     if (language !== 'und' && !m.languages.includes(language) && !m.languages.includes('und')) continue;
     let base: CandidateRelease | undefined;
     if (m.kind === 'lora') {
@@ -152,204 +164,251 @@ export function localChoices(capability: string, language: string, hooks: Pick<H
   return [...latest.values()].sort((a, b) => (a.release.eventId < b.release.eventId ? -1 : 1));
 }
 
-/** How a model presents itself to System 1: its routing hint, or else its name. */
-export function routingHint(c: CandidateRelease, capability: string): string {
-  const hint = c.manifest.operations.find((op) => op.id === capability)?.routing?.trim();
-  return hint || c.name.replace(/\s*\([^)]*\)\s*$/, '').trim() || c.modelId;
+/** Files already here first, then the smallest download, then a stable order. */
+function byCatalogOrder(choices: LocalChoice[], isCached: (s: string) => boolean): LocalChoice[] {
+  const files = (c: LocalChoice) => [...(c.base?.manifest.files ?? []), ...c.release.manifest.files];
+  const total = (c: LocalChoice) => files(c).reduce((n, f) => n + f.size, 0);
+  const ready = (c: LocalChoice) => files(c).every((f) => isCached(f.sha256));
+  return [...choices].sort((a, b) => Number(ready(b)) - Number(ready(a)) || total(a) - total(b) || (a.release.eventId < b.release.eventId ? -1 : 1));
 }
 
-/** The question that picks a model: one option per model, keyed by model_id. */
-export function modelQuestion(choices: CandidateRelease[], capability: string): ChoiceQuestion {
-  const count = new Map<string, number>();
-  for (const c of choices) count.set(c.modelId, (count.get(c.modelId) ?? 0) + 1);
+/** The question System 1 answers about a text: which of these tasks? */
+export function taskQuestion(tasks: Task[]): ChoiceQuestion {
   return {
     type: 'choice',
-    instructions: 'Which model is the right one to do `request`?',
-    criteria: Object.fromEntries(choices.map((c) => [optionKey(c, count), routingHint(c, capability)])),
+    instructions: 'What does the person mainly want done with `request`?',
+    criteria: Object.fromEntries(tasks.map((t) => [t.id, t.when])),
   };
 }
 
-const optionKey = (c: CandidateRelease, count: Map<string, number>) => ((count.get(c.modelId) ?? 0) > 1 ? `${c.modelId}@${c.pubkey.slice(0, 8)}` : c.modelId);
+/** Split a list into the fewest groups of at most `max`, as even as possible, keeping the order. */
+function groups<T>(xs: T[], max: number): T[][] {
+  const n = Math.ceil(xs.length / max);
+  const size = Math.ceil(xs.length / n);
+  return Array.from({ length: n }, (_, i) => xs.slice(i * size, (i + 1) * size)).filter((g) => g.length);
+}
+
+type Ask = (questions: Record<string, Question>) => Promise<Record<string, ChoiceAnswer>>;
 
 /**
- * System 1 picks the model for a request, among any number: groups of
- * PICK_GROUP, then the winners, until one is left.
+ * Which task does `text` ask for? Catalog tasks compete in groups (neighbours
+ * in the same category share a group) until the winners and the general
+ * requests fit one question, which decides.
  */
-export async function pickModel<T extends { release: CandidateRelease }>(
-  choices: T[],
-  capability: string,
-  request: string,
-  system1: System1,
-): Promise<{ choice: T; pick: ModelPick; latencyMs: number }> {
-  const considered: ModelPick['considered'] = [];
-  let latencyMs = 0;
-  let round = choices;
-  let probability = 1;
-  while (round.length > 1) {
-    const winners: T[] = [];
-    for (let i = 0; i < round.length; i += PICK_GROUP) {
-      const group = round.slice(i, i + PICK_GROUP);
-      if (group.length === 1) {
-        winners.push(group[0]!);
-        continue;
-      }
-      const count = new Map<string, number>();
-      for (const g of group) count.set(g.release.modelId, (count.get(g.release.modelId) ?? 0) + 1);
-      const r = await system1.predict({ request }, { pick: modelQuestion(group.map((g) => g.release), capability) });
-      latencyMs += r.latency_ms;
-      const a = r.answers.pick as ChoiceAnswer;
-      for (const g of group) considered.push({ modelId: g.release.modelId, probability: a.probabilities[optionKey(g.release, count)] ?? 0 });
-      winners.push(group.find((g) => optionKey(g.release, count) === a.choice) ?? group[0]!);
-      probability = a.probabilities[a.choice] ?? 0;
-    }
-    round = winners;
+async function chooseTask(ask: Ask, catalog: Task[], general: Task[], max: number): Promise<{ choice: string; probabilities: Record<string, number> }> {
+  let pool = catalog;
+  while (pool.length + general.length > max && pool.length > 1) {
+    const gs = groups(pool, max);
+    const answers = await ask(Object.fromEntries(gs.filter((g) => g.length > 1).map((g, i) => [`group${i}`, taskQuestion(g)])));
+    let i = 0;
+    pool = gs.map((g) => {
+      if (g.length === 1) return g[0]!;
+      const winner = answers[`group${i++}`]!.choice;
+      return g.find((t) => t.id === winner)!;
+    });
   }
-  return { choice: round[0]!, pick: { probability, considered }, latencyMs };
+  const final = (await ask({ main: taskQuestion([...pool, ...general]) })).main!;
+  return { choice: final.choice, probabilities: final.probabilities };
+}
+
+/** "Tiny summarizer (SmolLM2 360M Q8_0)" → "Tiny summarizer". */
+const shortName = (name: string) => name.replace(/\s*\([^)]*\)\s*$/, '').trim() || name;
+
+/**
+ * Of the models that can do a task here, which one? When their descriptions
+ * differ, System 1 picks the one that fits the request; when it has no clear
+ * preference, or they say the same, the catalog order decides (downloaded,
+ * then smallest).
+ */
+async function chooseModel(ask: Ask, task: Task, models: LocalChoice[], sureAbove: number, max: number): Promise<{ preferred?: LocalChoice; model: Decision['model'] }> {
+  const whenOf = (c: LocalChoice) => c.release.manifest.operations.find((o) => o.id === task.id)?.when ?? '';
+  if (models.length < 2 || new Set(models.map(whenOf)).size < 2) return { model: { by: 'catalog' } };
+  const keys = new Map<string, LocalChoice>();
+  for (const c of models) {
+    let k = shortName(c.release.name);
+    for (let n = 2; keys.has(k); n++) k = `${shortName(c.release.name)} ${n}`;
+    keys.set(k, c);
+  }
+  let pool = [...keys.keys()];
+  let answer: ChoiceAnswer | undefined;
+  while (!answer || pool.length > 1) {
+    const gs = groups(pool, max);
+    const answers = await ask(Object.fromEntries(gs.map((g, i) => [`model${i}`, { type: 'choice', instructions: `Which of these is best for \`request\`? Each one can ${task.when}.`, criteria: Object.fromEntries(g.map((k) => [k, whenOf(keys.get(k)!)])) } as ChoiceQuestion])));
+    pool = gs.map((_, i) => answers[`model${i}`]!.choice);
+    answer = gs.length === 1 ? answers.model0 : undefined;
+  }
+  // A clear preference: sure, and at least twice as likely as the runner-up (two options always give one half or more).
+  const [p = 0, second = 0] = Object.values(answer.probabilities).sort((a, b) => b - a);
+  if (p < sureAbove || p < 2 * second) return { model: { by: 'catalog' } };
+  return { preferred: keys.get(answer.choice)!, model: { by: 'system1', probability: p, name: answer.choice } };
 }
 
 /** Local first; online only when allowed; otherwise say why not. */
-export function routeFor(intent: Intent, language: string, hooks: Pick<Hooks, 'candidates' | 'isCached' | 'remote' | 'baseOf'>): Route {
-  if (intent.capability) {
-    const sel = selectRelease(intent.capability, hooks.candidates, language, {}, hooks.isCached);
-    if (sel.release) return { kind: 'local', release: sel.release, downloadBytes: missingBytes(sel.release, hooks.isCached) };
+export function routeFor(task: Task, language: string, hooks: Pick<Hooks, 'candidates' | 'isCached' | 'remote' | 'baseOf'>, preferred?: LocalChoice): Route {
+  if (task.category) {
+    const usable = localChoices(task.id, language, hooks);
+    const kept = preferred && usable.find((c) => c.release.eventId === preferred.release.eventId);
+    const pick = kept ?? byCatalogOrder(usable, hooks.isCached)[0];
+    if (pick) return { kind: 'local', release: pick.release, ...(pick.base ? { base: pick.base } : {}), downloadBytes: missingBytes(pick.release, hooks.isCached, pick.base) };
   }
   if (hooks.remote) return { kind: 'remote', provider: hooks.remote.provider, model: hooks.remote.model };
-  return { kind: 'none', reason: intent.capability ? `no model on this device can do this in this language` : 'no model on this device can do this yet' };
+  return { kind: 'none', reason: task.category ? 'no model on this device can do this in this language' : 'no model on this device can do this yet' };
 }
 
 /** What a finished step adds to the context an online model sees. */
 export function describe(step: Step): string {
-  const what = step.output?.topic ? `topic: ${step.output.topic}` : step.output?.text ? step.output.text.slice(0, 300) : step.status;
-  return `${step.intent.id}: ${what}`;
+  const what = step.output?.label ? step.output.label : step.output?.text ? step.output.text.slice(0, 300) : step.status;
+  return `${step.task.id}: ${what}`;
 }
 
-/** Longest instruction looked for at the start of a request. */
-const INSTRUCTION_MAX = 120;
 /** Most parts of an instruction read; each is one short System 1 pass. */
 const MAX_PARTS = 6;
 /**
- * A part of one or two words ("Categorize", "summarize it") is a task only
- * when System 1 is this sure. Splitting on "and" also cuts phrases apart:
- * "the pros and cons" leaves "cons", which some option always half-matches
- * (0.71 for `command`), while real one-word tasks read 0.93 or more.
+ * A part of one or two words ("summarize it") is a task only when System 1 is
+ * this sure. Splitting on "and" also cuts phrases apart: "the pros and cons"
+ * leaves "cons", which some option always half-matches, while real short task
+ * parts read 0.93 or more.
  */
 const SHORT_PART_SURE = 0.9;
 
 /**
- * Splits "Categorize and summarize this message: There is a leak." into its
- * instruction and its message. The instruction ends at a colon near the start
- * ("Translate into French: …"), or with a first sentence that is a question
- * followed by more text ("Can you sort this? There is a leak."). Without
- * either, there is no instruction and the message is the whole request.
+ * The tasks an instruction names: "Categorize, summarize and then reply" has
+ * three. A part that is a bare verb borrows what a later part acts on, so
+ * "Convert and resize this video" reads as "Convert this video" and "resize
+ * this video": alone, "Convert" could be anything.
  */
-export function splitRequest(request: string): { instruction: string | null; message: string } {
-  const text = request.trim();
-  const colon = text.search(/:(\s|$)/);
-  if (colon > 0 && colon <= INSTRUCTION_MAX) return { instruction: text.slice(0, colon).trim(), message: text.slice(colon + 1).trim() || text };
-  const question = text.indexOf('?') + 1;
-  if (question > 1 && question <= INSTRUCTION_MAX && text.slice(question).trim()) return { instruction: text.slice(0, question).trim(), message: text.slice(question).trim() };
-  return { instruction: null, message: text };
-}
-
-/** The tasks an instruction names: "Categorize, summarize and then reply" has three. */
 export function partsOf(instruction: string): string[] {
-  return instruction
+  const parts = instruction
     .split(/\s*(?:[,;&+]|\b(?:and then|then|and also|also|and)\b)\s*/i)
     .map((p) => p.trim())
     .filter(Boolean)
     .slice(0, MAX_PARTS);
-}
-
-/** The one question System 1 answers about each text. */
-export function mainQuestion(intents: Intent[]): Question {
-  return {
-    type: 'choice',
-    instructions: 'What does the person mainly want done with `request`?',
-    criteria: Object.fromEntries(intents.map((x) => [x.id, x.criterion])),
-  };
+  const objectOf = (p: string) => p.split(/\s+/).slice(1).join(' ').replace(/^(?:to|for|on|into|about|of)\s+/i, '');
+  return parts.map((p, i) => {
+    if (/\s/.test(p)) return p;
+    const object = parts.slice(i + 1).map(objectOf).find(Boolean);
+    return object ? `${p} ${object}` : p;
+  });
 }
 
 export async function route(request: string, system1: System1, hooks: Hooks, options: RouterOptions = {}): Promise<RunResult> {
   const opts = { ...DEFAULTS, ...options };
-  const intents = opts.intents ?? INTENTS;
-  const { instruction, message } = splitRequest(request);
-  const language = detectLanguage(message);
+  const all = tasksFor(hooks.candidates, opts.general ?? GENERAL_TASKS);
+  const catalog = all.filter((t) => t.category);
+  const general = all.filter((t) => !t.category);
+  const byId = new Map(all.map((t) => [t.id, t]));
+  const { instruction, text } = splitInstruction(request);
+  const language = detectLanguage(text);
   const readings: Reading[] = [];
   let latencyMs = 0;
   let device: string | undefined;
   const judgement = (): Judgement | null => (readings.length ? { readings: [...readings], latencyMs, ...(device ? { device } : {}) } : null);
-  const finish = (steps: Step[], ended: Ending): RunResult => ({ request, instruction, message, language, judgement: judgement(), steps, ended });
+  const finish = (steps: Step[], ended: Ending): RunResult => ({ request, instruction, language, tasks: all, judgement: judgement(), steps, ended });
 
-  const questions = { main: mainQuestion(intents) };
-  const read = async (text: string): Promise<Reading> => {
-    const result = await system1.predict({ request: text }, questions);
-    const a = result.answers.main as ChoiceAnswer;
-    latencyMs += result.latency_ms;
-    device ??= result.device;
-    const reading = { text, choice: a.choice, probability: a.probabilities[a.choice] ?? 0, probabilities: a.probabilities };
+  const askAbout =
+    (state: string): Ask =>
+    async (questions) => {
+      const result = await system1.predict({ request: state }, questions);
+      latencyMs += result.latency_ms;
+      device ??= result.device;
+      return result.answers as Record<string, ChoiceAnswer>;
+    };
+  const read = async (part: string): Promise<Reading> => {
+    const r = await chooseTask(askAbout(part), catalog, general, opts.maxOptions);
+    const reading = { text: part, choice: r.choice, probability: r.probabilities[r.choice] ?? 0, probabilities: r.probabilities };
     readings.push(reading);
     return reading;
   };
 
-  // Each task the instruction names, read on its own, in the order asked.
+  const alternatives = (r: Reading) =>
+    Object.entries(r.probabilities)
+      .filter(([id, p]) => id !== r.choice && p >= ALTERNATIVE_ABOVE && byId.get(id)?.category)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 2)
+      .map(([id, probability]) => ({ id, probability }));
+
+  // Each task the instruction names, read on its own, in the order asked: the
+  // message after it can mention other tasks without changing what was asked.
   const planned = new Map<string, Decision>();
   for (const part of instruction ? partsOf(instruction) : []) {
     if (hooks.signal?.aborted) return finish([], 'canceled');
     const r = await read(part);
     const sure = part.split(/\s+/).length <= 2 ? Math.max(opts.sureAbove, SHORT_PART_SURE) : opts.sureAbove;
-    if (r.probability >= sure && !planned.has(r.choice)) planned.set(r.choice, { probability: r.probability, by: 'instruction', text: part });
+    if (r.probability >= sure && !planned.has(r.choice)) planned.set(r.choice, { probability: r.probability, by: 'instruction', text: part, alternatives: alternatives(r) });
   }
   // No instruction, or none of its parts was clear: the whole request.
   if (!planned.size) {
     if (hooks.signal?.aborted) return finish([], 'canceled');
     const r = await read(request);
-    if (r.probability >= opts.sureAbove) planned.set(r.choice, { probability: r.probability, by: 'request' });
+    if (r.probability >= opts.sureAbove) planned.set(r.choice, { probability: r.probability, by: 'request', alternatives: alternatives(r) });
   }
   if (hooks.signal?.aborted) return finish([], 'canceled');
   if (!planned.size) {
     const whole = readings.at(-1)!.probabilities;
-    const offered = intents
-      .map((intent) => ({ intent, probability: whole[intent.id] ?? 0 }))
-      .sort((a, b) => b.probability - a.probability)
-      .slice(0, 3);
+    const offered = Object.entries(whole)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([id, probability]) => ({ task: byId.get(id)!, probability }));
     const picked = await hooks.clarify(offered);
     if (!picked) return finish([], 'unsure');
     planned.set(picked, { probability: whole[picked] ?? 0, by: 'person' });
   }
 
-  // The first steps asked for, when there are more than one request may take.
+  // The first steps asked for, when there are more than one request may take; for each, the model that fits best.
+  const preferred = new Map<string, LocalChoice>();
   const steps: Step[] = [];
   for (const [id, decision] of [...planned].slice(0, opts.maxSteps)) {
-    if (hooks.signal?.aborted) return finish([], 'canceled');
-    const intent = intents.find((x) => x.id === id)!;
-    const choices = intent.pickModel && intent.capability ? localChoices(intent.capability, language, hooks) : [];
-    let route = routeFor(intent, language, hooks);
-    if (choices.length) {
-      const { choice, pick, latencyMs: ms } = await pickModel(choices, intent.capability!, request, system1);
-      latencyMs += ms;
-      route = { kind: 'local', release: choice.release, ...(choice.base ? { base: choice.base } : {}), downloadBytes: missingBytes(choice.release, hooks.isCached, choice.base), pick };
+    if (hooks.signal?.aborted) return finish(steps, 'canceled');
+    const task = byId.get(id)!;
+    if (task.category) {
+      const m = await chooseModel(askAbout(request), task, localChoices(task.id, language, hooks), opts.sureAbove, opts.maxOptions);
+      if (m.preferred) preferred.set(id, m.preferred);
+      decision.model = m.model;
     }
-    steps.push({ intent, decision, route, status: 'waiting' });
+    steps.push({ task, decision, route: routeFor(task, language, hooks, preferred.get(id)), status: 'waiting' });
   }
   const update = () => hooks.onUpdate?.(steps.map((s) => ({ ...s })));
   update();
 
-  for (const step of steps) {
-    if (hooks.signal?.aborted) return finish(steps, 'canceled');
-    // Chosen again now: a model an earlier step downloaded may do this one too.
-    // A model System 1 picked stays picked; only what is left to download changes.
-    const r = step.route;
-    step.route = step.intent.pickModel && r.kind === 'local' ? { ...r, downloadBytes: missingBytes(r.release, hooks.isCached, r.base) } : routeFor(step.intent, language, hooks);
+  const attempt = async (step: Step) => {
     step.status = 'running';
+    delete step.error;
     update();
-    const t0 = Date.now();
     try {
-      step.output = await execute(step, request, message, steps.filter((s) => s.status === 'done').map(describe), hooks, language);
+      step.output = await execute(step, request, steps.filter((s) => s.status === 'done').map(describe), hooks, language);
       step.status = step.output ? 'done' : step.status;
     } catch (e) {
-      if (hooks.signal?.aborted) return finish(steps, 'canceled');
+      if (hooks.signal?.aborted) throw e;
       step.status = 'failed';
       step.error = (e as Error).message;
+    }
+    update();
+  };
+  const declined = (step: Step) => step.status === 'unavailable' && step.route.kind === 'local';
+
+  for (const step of steps) {
+    if (hooks.signal?.aborted) return finish(steps, 'canceled');
+    const t0 = Date.now();
+    const first = { task: step.task, decision: step.decision };
+    try {
+      // Chosen again now: a model an earlier step downloaded may do this one too.
+      step.route = routeFor(step.task, language, hooks, preferred.get(step.task.id));
+      await attempt(step);
+      // The model answered that this is outside what it does: the next likeliest task a model here offers, then online help.
+      for (const alt of declined(step) ? (first.decision.alternatives ?? []) : []) {
+        const task = byId.get(alt.id)!;
+        const route = routeFor(task, language, { ...hooks, remote: null });
+        if (route.kind !== 'local' || steps.some((s) => s !== step && s.task.id === task.id)) continue;
+        Object.assign(step, { task, route, decision: { ...first.decision, probability: alt.probability, insteadOf: first.task.id } });
+        await attempt(step);
+        if (!declined(step)) break;
+      }
+      if (declined(step) && hooks.remote) {
+        Object.assign(step, { ...first, route: { kind: 'remote', provider: hooks.remote.provider, model: hooks.remote.model } });
+        await attempt(step);
+      }
+    } catch {
+      return finish(steps, 'canceled');
     }
     step.ms = Date.now() - t0;
     update();
@@ -357,14 +416,15 @@ export async function route(request: string, system1: System1, hooks: Hooks, opt
   return finish(steps, planned.size > opts.maxSteps ? 'step-limit' : 'done');
 }
 
-/** Online models get the whole request (it may say which language, say); local ones get the message. */
-async function execute(step: Step, request: string, message: string, context: string[], hooks: Hooks, language: string): Promise<StepOutput | undefined> {
+/** Run one step where it was routed. A local model that answers "not something I do" hands over to online help when allowed. */
+async function execute(step: Step, request: string, context: string[], hooks: Hooks, language: string): Promise<StepOutput | undefined> {
   const r = step.route;
   if (r.kind === 'none') {
     step.status = 'unavailable';
+    step.error = r.reason;
     return undefined;
   }
-  if (r.kind === 'remote') return { text: (await hooks.remote!.run(step.intent, request, context, hooks.signal)).trim() };
+  if (r.kind === 'remote') return { text: (await hooks.remote!.run(step.task, request, context, hooks.signal)).trim() };
   if (r.downloadBytes > 0) {
     if (hooks.confirmDownload && !(await hooks.confirmDownload(r.release, r.downloadBytes))) {
       step.status = 'declined';
@@ -372,5 +432,9 @@ async function execute(step: Step, request: string, message: string, context: st
     }
     if (!(await hooks.download(r.release, r.base))) throw new Error('the model could not be downloaded');
   }
-  return hooks.runLocal(r.release, step.intent.capability!, message, language, hooks.signal, r.base);
+  const out = await hooks.runLocal(r.release, step.task.id, request, language, hooks.signal, r.base);
+  if (!out.declined) return out;
+  step.status = 'unavailable';
+  step.error = `${shortName(r.release.name)} answered that this request is outside what it does`;
+  return undefined;
 }

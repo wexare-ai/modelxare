@@ -5,7 +5,7 @@
     "model_id": "story-base",
     "name": "Bedtime story base (stories15M MoE F16)",
     "description": "Tiny story-generation model used as the exact base for the Shakespeare LoRA adapter. Completion only; not a chat model.",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "kind": "model",
     "capabilities": [
       "text-generation"
@@ -27,14 +27,24 @@
     "operations": [
       {
         "id": "text-generation",
+        "title": "Continue the text",
+        "category": "writing",
+        "when": "continue a story or a piece of text",
+        "examples": [
+          "Once upon a time, a little fox",
+          "The old lighthouse keeper"
+        ],
         "prompt": {
           "mode": "completion",
-          "template": "{{input}}"
+          "template": "{{text}}"
         },
         "generation": {
           "max_tokens": 24,
           "temperature": 0,
           "top_k": 1
+        },
+        "output": {
+          "type": "text"
         }
       }
     ],

@@ -150,35 +150,39 @@ offered tool and its arguments always parse. A few things to know:
 
 `auto` does what the app's Ask box does, behind one model id:
 
-1. System 1, the Laya router, reads the last user message, split into the tasks its instruction
-   names (as in the app; see the [README](../README.md#routing-with-system-1)).
-2. Each task with a specialist on this machine goes to that model. Sort goes to Qwen2.5 0.5B
-   (`community-assistant`), summarize to SmolLM2 360M (`tiny-summarizer`), and write to
-   `story-base`. A command goes to whichever command model System 1 picks from the releases'
-   `routing` hints (`git-commands`, `ffmpeg-commands` or `imagemagick-commands`), run on its base.
-   Each runs its catalog operation (prompt, grammar, output check), exactly as in the browser.
+1. System 1, the Laya router, reads the last user message and picks, among the tasks the catalog's
+   models offer, what it asks for (as in the app; see the
+   [README](../README.md#routing-with-system-1)). A model with a new task is routed to as soon as
+   its release is in the catalog.
+2. Each task with a specialist on this machine goes to that model. With the sample releases,
+   sorting goes to Qwen2.5 0.5B (`community-assistant`), summaries to SmolLM2 360M
+   (`tiny-summarizer`), continuing a story to `story-base`, and git, ffmpeg and ImageMagick commands
+   to `git-commands`, `ffmpeg-commands` and `imagemagick-commands`, add-ons that run on
+   `community-assistant`'s weights. Each runs its release's operation (prompt, grammar, output
+   check), exactly as in the browser.
 3. In these cases the general model (`--general`) answers the whole conversation instead, with its
    tools:
-   - a task has no specialist (reply, translate, answer);
+   - a task has no specialist (the general requests: answer a question, translate, draft a reply);
    - System 1 isn't sure;
    - the conversation continues after tool results.
 
 The response carries what was decided, in a `modelxare` field that OpenAI clients ignore. It is in
-the last chunk when streaming. A real run on a 4-core, 8 GB Linux machine, CPU only:
+the last chunk when streaming. Its shape, with the router's readings from a native run on
+2026-11-13 and the answers the models gave on a 4-core, 8 GB Linux machine, CPU only, on 2026-11-09:
 
 ```json
-"choices": [{"message": {"content": "Topic: Travel\nSummary: Your flight to Lisbon on Friday will leave two hours late at 16:40. Your seat and bags stay the same."}}],
+"choices": [{"message": {"content": "Sort by topic: Travel\nSummarize: Your flight to Lisbon on Friday will leave two hours late at 16:40. Your seat and bags stay the same."}}],
 "modelxare": {
   "answered_by": "specialists",
-  "system1": {"router": "Laya System 1 router (English, fp16)", "latency_ms": 2832,
-    "readings": [{"text": "Categorize", "choice": "sort", "probability": 0.9893},
-                 {"text": "summarize this message", "choice": "summarize", "probability": 0.9932}]},
-  "steps": [{"task": "sort", "model": "community-assistant", "output": "Travel", "ms": 8341},
-            {"task": "summarize", "model": "tiny-summarizer", "output": "Your flight to Lisbon on Friday…", "ms": 7026}]
+  "system1": {"router": "Laya System 1 router (English, fp16)", "latency_ms": 3143,
+    "readings": [{"text": "Categorize this message", "choice": "text-classification", "probability": 1},
+                 {"text": "summarize this message", "choice": "summarization", "probability": 0.9991}]},
+  "steps": [{"task": "text-classification", "model": "community-assistant", "output": "Travel", "ms": 8341},
+            {"task": "summarization", "model": "tiny-summarizer", "output": "Your flight to Lisbon on Friday…", "ms": 7026}]
 }
 ```
 
-`"What is the capital of France?"` gives a different route. System 1 reads it as `answer` (0.77),
+`"What is the capital of France?"` gives a different route. System 1 reads it as `answer`,
 no specialist does that, so the response has `"answered_by": "general"`, with the reason and
 `"general_model": "community-assistant"`.
 

@@ -5,7 +5,7 @@
 // in one transaction.
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import { CatalogStore, makeTransaction, readArchive, sourceIdFor, type SqlDatabase, type SqlValue } from '@wexare/catalog';
-import { CATALOG_TAG, RELEASE_TAG, verifyCatalogAnnouncement, verifyReleaseEvent, type NostrEvent, type VerifiedRelease } from '@wexare/protocol';
+import { CATALOG_TAG, OTHER_RELEASE_VERSION, RELEASE_TAG, verifyCatalogAnnouncement, verifyReleaseEvent, type NostrEvent, type VerifiedRelease } from '@wexare/protocol';
 import type { CatalogApi, IngestResult, StagedImport, WorkerRequest, WorkerResponse } from './catalog-api.ts';
 
 type Db = {
@@ -182,6 +182,10 @@ const api: CatalogApi = {
           continue;
         }
         const r = verifyReleaseEvent(raw);
+        if (!r.ok && r.errors[0]!.code === OTHER_RELEASE_VERSION) {
+          out.unknownProfile++;
+          continue;
+        }
         if (!r.ok) {
           out.rejected.push({ id: String((raw as NostrEvent)?.id ?? '?').slice(0, 64), code: r.errors[0]!.code, message: r.errors[0]!.message });
           continue;

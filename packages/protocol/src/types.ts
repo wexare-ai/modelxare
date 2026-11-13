@@ -13,7 +13,7 @@ export type UnsignedEventTemplate = Pick<NostrEvent, 'kind' | 'created_at' | 'ta
 
 export type FileRole = 'weights' | 'adapter' | 'tokenizer' | 'config';
 
-/** Transports recognized in protocol 0.1. Unknown transports are valid data but ignored by clients. */
+/** Transports recognized in protocol 0.2. Unknown transports are valid data but ignored by clients. */
 export type KnownTransport = 'ipfs' | 'https' | 'http' | 'torrent' | 'arweave';
 
 export interface FileLocation {
@@ -33,18 +33,46 @@ export interface ManifestFile {
 
 export type ChatTemplateConfig = { source: 'embedded' | 'none' } | { source: 'inline'; template: string };
 
+/** A text answer, optionally on one line and bounded in length. */
+export interface TextOutput {
+  type: 'text';
+  /** Longest answer accepted; default 2000. */
+  max_chars?: number;
+  single_line?: boolean;
+  /** The answer is code or a command line: apps show it as code, and remind people to read it before running it. */
+  code?: boolean;
+  /** What the model answers when the request is outside what it can do. */
+  decline?: string;
+}
+
+/** Exactly one of a fixed set of labels, such as a topic. */
+export interface LabelOutput {
+  type: 'label';
+  labels: { id: string; description?: string }[];
+  decline?: string;
+}
+
+/** Output types this client knows; others are valid data but not executed. */
+export type OutputSpec = TextOutput | LabelOutput;
+
 export interface OperationConfig {
+  /** Task ID: releases doing the same task share it, e.g. `summarization`. */
   id: string;
+  /** Short label people read, e.g. `Summarize`. */
+  title: string;
+  /** Where the router files the task, e.g. `messages`. */
+  category: string;
+  /** One plain sentence: which requests this task is for. The router reads it. */
+  when: string;
+  /** Requests people can try, shown by apps. */
+  examples?: string[];
   prompt: { mode: 'chat' | 'completion'; system?: string; template: string };
   generation?: { max_tokens?: number; temperature?: number; top_k?: number; top_p?: number; stop?: string[] };
-  /** What requests this model is the one for, in a few words, for the System 1 router (e.g. "git commands: commits, branches and history"). */
-  routing?: string;
-  input_schema: Record<string, unknown>;
-  output_schema: Record<string, unknown>;
+  output: OutputSpec | { type: string & {}; [key: string]: unknown };
 }
 
 export interface ReleaseManifest {
-  schema: 'wexare.micromodel.release/0.1';
+  schema: 'wexare.micromodel.release/0.2';
   model_id: string;
   name: string;
   description: string;

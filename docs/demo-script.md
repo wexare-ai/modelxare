@@ -122,7 +122,7 @@ Open **Playground**, which defaults to the English flight-delay sample.
    counts the hash mismatches.
 3. **Run locally** runs classification, then summarization. The result shows the category and the
    summary. The execution trace lists, per stage: release ID, publisher, manifest hash, file hashes,
-   timings, the raw output and the contract check.
+   timings, the raw output and the check against the operation's output shape.
 4. Choose the Spanish sample. Language detection switches the summarization stage to a release that
    declares `es`.
 5. LoRA: in **One-model mode**, choose "Shakespeare style adapter". This downloads the adapter and its

@@ -1,9 +1,9 @@
-# Protocol profile: `wexare.micromodel.release/0.1`
+# Protocol profile: `wexare.micromodel.release/0.2`
 
 An experimental application profile on top of Nostr NIP-01 and NIP-94. It is not an official Nostr
 standard. The JSON Schemas are normative:
 
-- [`packages/protocol/schemas/release-manifest-0.1.schema.json`](../packages/protocol/schemas/release-manifest-0.1.schema.json)
+- [`packages/protocol/schemas/release-manifest-0.2.schema.json`](../packages/protocol/schemas/release-manifest-0.2.schema.json)
 - [`packages/protocol/schemas/catalog-inventory-0.1.schema.json`](../packages/protocol/schemas/catalog-inventory-0.1.schema.json)
 
 Valid and invalid test vectors, signed with public, test-only keys, are in
@@ -28,7 +28,7 @@ are a **conflict**. Clients show both separately and never merge them.
 | Tag | Value |
 | --- | --- |
 | `t` | `wexare-micromodel` (the one tag relays are asked to match) |
-| `t` | Derived discovery tags: `task:<capability>`, `lang:<bcp47>`, `runtime:<family>`, `artifact:<model\|lora>` |
+| `t` | Derived discovery tags: `task:<capability>`, `category:<category>`, `lang:<bcp47>`, `runtime:<family>`, `artifact:<model\|lora>` |
 | `m` | `application/json` |
 | `x` | SHA-256 of the exact `wexare-manifest` string (UTF-8 bytes) |
 | `size` | Byte length of that string |
@@ -50,7 +50,8 @@ A verifier accepts a release only if every check passes. Rejection codes are lis
    `base` only for LoRAs, and so on.
 6. The derived `t` tags equal what the manifest implies (`tag_inconsistent`). Tags are an index, never
    a second source of truth.
-7. Operations claiming a bundled contract match it (`operation_contract_mismatch`).
+7. An operation whose answer shape (`output.type`) this client doesn't know stays as metadata and never
+   runs (warning `unknown_output_type`). Newer clients can add output types without breaking older ones.
 
 Events carrying `t=wexare-micromodel-catalog` are catalog announcements (`catalog_announcement`). They
 are never indexed as models.
@@ -62,13 +63,14 @@ Values inside one `#t` filter are alternatives (OR). Collectors and browsers the
 (`matchesTagQuery`). Optional narrowing requests (`narrowingRelayFilters`) send one filter per required
 tag. Their union is a superset that must still pass the local check.
 
-## Manifest (`schema: wexare.micromodel.release/0.1`)
+## Manifest (`schema: wexare.micromodel.release/0.2`)
 
 Key fields. The schema has the full definition.
 
 - `model_id`, `name`, `description`, `version` (strict semver), `kind` (`model` | `lora`), `labels`.
   `synthetic` marks generated, non-runnable test records.
-- `capabilities`: operation IDs the publisher claims. `languages`: BCP 47 tags (`und` when unknown).
+- `capabilities`: the IDs of the tasks the release does (its operations). `languages`: BCP 47 tags
+  (`und` when unknown).
 - `license`: `{id, url?, attribution?}`. The id is SPDX where possible.
 - `runtime`: `{format, family, requirement, browser_features, chat_template?}`. Clients treat unknown
   families as unsupported, and the release stays visible.
@@ -77,19 +79,29 @@ Key fields. The schema has the full definition.
     `torrent` (magnet with `xt=urn:btih:`; `path` names the file inside the torrent), and `arweave`
     (`ar://<tx>`);
   - unknown transports are ignored, and every source is checked against `sha256` and `size`.
-- `operations[]`: `{id, prompt: {mode, system?, template}, generation?, routing?, input_schema, output_schema}`.
-  `routing` (≤ 120 characters) says in a few words which requests the model is the one for, such as
-  `git commands: commits, branches, merges, stashes and history of a code repository`. The System 1
-  router reads it to choose between models whose operation isn't interchangeable (commands); a
-  short `<what>: <which inputs>` phrase picks best. Without it, the model's name is used.
-  Templates are plain text with `{{input}}`, `{{categories}}` and `{{language}}` placeholders, and are never
-  evaluated as code. `{{categories}}` lists each topic with what it covers: `family (parents, children,
-  partners and relatives), friends (…), …`. Bundled contracts: `text-classification` (one topic of
-  family, friends, work, money, shopping, travel, health, home, other), `summarization` (≤ 400
-  characters), `text-generation`, and `command-generation` (a plain-language request in, the command
-  line for one tool out, one command per line, ≤ 1000 characters, or `UNSUPPORTED`). A `text-classification` operation may still declare the first
-  version's output (one of maintenance, safety, security, noise, cleanliness, other): it runs under the
-  current contract, since the client builds the grammar and checks each answer from the bundled one.
+- `operations[]`: the tasks the release does. Each one carries everything a client needs to find it,
+  run it and check its answer, so a new task or category needs no change to any client:
+  - `id`: the task ID. Releases doing the same task share it (`summarization`, `text-classification`,
+    `git-command`): reuse an ID from the catalog when your model does the same thing.
+  - `title`: a short label people read, such as `Summarize`.
+  - `category`: where the task is filed, such as `messages`, `writing` or `command-line`; reuse a
+    category from the catalog when one fits. It becomes a `category:<slug>` discovery tag.
+  - `when`: one plain sentence, under 200 characters, saying which requests the task is for. The
+    router reads it to decide (see [Routing](#routing)). Concrete actions and nouns route best.
+  - `examples` (optional): requests apps offer people to try.
+  - `prompt: {mode, system?, template}` and `generation?`. Templates are plain text, never evaluated
+    as code, with these placeholders: `{{input}}` (the whole request), `{{text}}` (the request
+    without a leading instruction such as `Summarize this:`), `{{labels}}` and `{{language}}`.
+  - `output`: the shape of the answer, which the client enforces before anyone sees it:
+    - `{type: "text", max_chars?, single_line?, code?, decline?}`: text, at most `max_chars` (default
+      2000), on one line when `single_line`. `code` says the answer is code or a command line: apps
+      show it as code and remind people to read it before running it;
+    - `{type: "label", labels: [{id, description?}], decline?}`: exactly one label ID. The client
+      builds a grammar from the IDs so the model can answer nothing else, and `{{labels}}` lists them
+      with their descriptions: `family (parents, children, partners and relatives), friends (…), …`;
+    - `decline`: what the model answers when a request is outside what it does, such as
+      `UNSUPPORTED`. The step then goes to the next likeliest task, then to online help when the
+      person allowed it.
 - `requirements`: `{context_length, memory_mb?: {value, basis: measured|estimated, context_length},
   hardware_profiles?}`. A missing `memory_mb` means unknown, never "fits".
 - `base` (LoRA only): `{release_id, manifest_sha256, files: [{sha256, size}]}`. Clients execute an
@@ -110,6 +122,34 @@ A router decides what a request needs; it never generates text. It is published 
 the bundled `@wexare/laya-web` version. It prefers a release that is already downloaded, then the
 newest version. Clients without that runtime list router releases as unsupported, like any unknown
 family.
+
+### Routing
+
+What a request can ask for comes from the catalog, not from the client: every operation an approved
+publisher's models offer is a task, described in its own `when` sentence. System 1 (the router
+release) answers one multiple-choice question, "What does the person mainly want done with
+`request`?", whose options are those tasks plus three general requests no model is assumed to do:
+`answer`, `translation` and `reply` (a release offering a task with the same ID replaces the general
+one). A general request runs on online help when the person allowed it, and is otherwise reported as
+not possible on this device.
+
+- System 1 is calibrated for up to 10 options per question. With more tasks, they compete in groups of
+  at most 10, kept in category order, and the winners meet the general requests in a final question.
+- A request that opens with an instruction naming several tasks ("Categorize and summarize this
+  message: …") has each part read on its own; one choice finds one task, and System 1's yes/no and
+  "what else?" questions proved unreliable for finding a second one. A part that is a bare verb
+  borrows what a later part acts on ("Convert and resize this video" reads "Convert this video").
+  Without an instruction, or when no part is clear, the whole request is read.
+- A task is chosen at a probability of 0.5 or more; below that, the person picks from the three
+  likeliest.
+- When several models offer the chosen task with different `when` sentences, System 1 picks the one
+  that fits the request, if it clearly prefers one (0.5 or more, and twice the runner-up). Otherwise,
+  and when they say the same, the catalog order decides: a model already downloaded, then the smallest.
+- When a model answers its `decline`, the step moves to the next likeliest task from the same reading
+  (0.15 or more) that a model here offers, then to online help.
+
+`packages/router` implements this, and `tests/integration/router-laya.test.ts` runs it against the real
+router release.
 
 ## Catalog archive (`schema: wexare.micromodel.catalog/0.1`)
 
@@ -157,7 +197,11 @@ Tags: `t=wexare-micromodel-catalog`, `m=application/zip`, `x` (ZIP SHA-256), `si
     "languages": ["en"],
     "license": { "id": "MIT", "attribution": "…" },
     "runtime": { "format": "gguf", "family": "wllama", "requirement": ">=3.8.1 <3.9.0", "browser_features": ["wasm-simd"], "chat_template": { "source": "none" } },
-    "operations": [{ "id": "text-generation", "prompt": { "mode": "completion", "template": "{{input}}" }, "generation": { "max_tokens": 24, "temperature": 0, "top_k": 1 } }],
+    "operations": [{
+      "id": "text-generation", "title": "Continue the text", "category": "writing", "when": "continue a story or a piece of text",
+      "prompt": { "mode": "completion", "template": "{{text}}" }, "generation": { "max_tokens": 24, "temperature": 0, "top_k": 1 },
+      "output": { "type": "text" }
+    }],
     "requirements": { "context_length": 256, "hardware_profiles": ["cpu-wasm"] }
   },
   "files": [
@@ -174,8 +218,6 @@ Tags: `t=wexare-micromodel-catalog`, `m=application/zip`, `x` (ZIP SHA-256), `si
 
 - `schema`, file sizes, hashes and locations are filled in by the CLI from the real bytes. `source` is
   resolved relative to the definition file.
-- `input_schema` and `output_schema` are taken from the bundled contract when an operation ID matches
-  one.
 - `urls` (optional, per file) lists addresses that already serve the exact bytes over HTTPS, such as a
   Hugging Face `resolve/<commit>/` link (a commit, not a branch, so the bytes never change). They come
   first among the file's locations, as `https` (or loopback `http` in development). Before signing, the

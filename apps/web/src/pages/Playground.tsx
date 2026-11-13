@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { MESSAGE_CATEGORIES } from '@wexare/protocol';
 import {
   executeWorkflow,
   planWorkflow,
@@ -117,7 +116,7 @@ export function Playground() {
             <option value="es">Spanish</option>
           </select>
         </label>
-        <p className="hint">Prompts and outputs never leave this device. Categories: {MESSAGE_CATEGORIES.join(', ')}.</p>
+        <p className="hint">Prompts and outputs never leave this device.</p>
       </Section>
 
       <Section title="Plan: community-message triage (classification → summarization)">

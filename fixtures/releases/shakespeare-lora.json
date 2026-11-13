@@ -6,7 +6,7 @@
     "model_id": "shakespeare-lora",
     "name": "Shakespeare style adapter (LoRA for stories15M MoE F16)",
     "description": "LoRA adapter trained on Shakespeare paragraphs. Applies only to the exact story-base F16 release.",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "kind": "lora",
     "capabilities": [
       "text-generation"
@@ -28,14 +28,24 @@
     "operations": [
       {
         "id": "text-generation",
+        "title": "Continue the text",
+        "category": "writing",
+        "when": "continue a story or a piece of text",
+        "examples": [
+          "Look in thy glass",
+          "Shall I compare thee to a summer’s day"
+        ],
         "prompt": {
           "mode": "completion",
-          "template": "{{input}}"
+          "template": "{{text}}"
         },
         "generation": {
           "max_tokens": 24,
           "temperature": 0,
           "top_k": 1
+        },
+        "output": {
+          "type": "text"
         }
       }
     ],

@@ -2,13 +2,15 @@
 // (keys, hashes, runtimes, locations) stays in the engine; this layer only keeps
 // models this browser can actually run, and says what they do.
 import { resolveLoraDependency, type CandidateRelease } from '@wexare/orchestrator';
-import { MESSAGE_CATEGORIES, type FileLocation } from '@wexare/protocol';
+import { knownOutput, type FileLocation, type OperationConfig } from '@wexare/protocol';
 
-export type TaskId = 'summarization' | 'text-classification' | 'text-generation' | 'command-generation';
+/** An operation ID: what a model does, as its manifest names it. */
+export type TaskId = string;
 
+/** How a task reads in the app, taken from the manifest that offers it. */
 export interface Task {
   id: TaskId;
-  /** The big filter word on the home page. */
+  /** The filter word on the home page. */
   verb: string;
   /** Button label: says exactly what happens. */
   action: string;
@@ -16,92 +18,43 @@ export interface Task {
   result: string;
   placeholder: string;
   examples: string[];
-  /** Examples for models of one tool, found by a word in the model's name. */
-  examplesByTool?: { name: RegExp; examples: string[] }[];
+  /** The model continues the text: show its answer after what was typed. */
+  continues: boolean;
+  /** The answer is code or a command line: shown as code, with a reminder to read it before running it. */
+  code: boolean;
 }
 
-export const TASKS: Task[] = [
-  {
-    id: 'summarization',
-    verb: 'Summarize',
-    action: 'Summarize',
-    result: 'Summary',
-    placeholder: 'Paste or type a message to summarize',
-    examples: [
-      'Hi Sam, because of a storm your flight to Lisbon on Friday will leave two hours late, at 16:40. Your seat and bags stay the same.',
-      'Tu vuelo a Lisboa del viernes se retrasa dos horas por una tormenta. La nueva hora de salida es las 16:40.',
-      'Your electricity bill of $84.20 is due on March 3. Pay online before then to avoid a late fee.',
-    ],
-  },
-  {
-    id: 'text-classification',
-    verb: 'Sort',
-    action: 'Sort message',
-    result: 'Topic',
-    placeholder: 'Paste or type a message to sort by topic',
-    examples: [
-      'Your order of running shoes has shipped and will arrive on Wednesday.',
-      'Your electricity bill of $84.20 is due on March 3. Pay online before then to avoid a late fee.',
-      'Your train to Berlin leaves from platform 7 in 20 minutes.',
-    ],
-  },
-  {
-    id: 'text-generation',
-    verb: 'Write',
-    action: 'Write',
-    result: 'Continued text',
-    placeholder: 'Start a sentence and the model will continue it',
-    examples: ['Once upon a time, a little fox', 'Look in thy glass', 'The old lighthouse keeper'],
-  },
-  {
-    id: 'command-generation',
-    verb: 'Command',
-    action: 'Get the command',
-    result: 'Command',
-    placeholder: 'Say in plain words what you want the tool to do',
-    examples: ['Make a 200px thumbnail of photo.jpg', 'Stash my changes', 'Extract the audio from talk.mp4 as an mp3'],
-    examplesByTool: [
-      {
-        name: /ffmpeg/i,
-        examples: [
-          'Extract the audio from talk.mp4 as an mp3',
-          'Remove the sound from intro.mp4',
-          'Resize video.mp4 to 1280 wide',
-          'Convert holiday.mov to mp4 without re-encoding',
-          'Rotate video.mp4 90 degrees',
-        ],
-      },
-      {
-        name: /\bgit\b/i,
-        examples: [
-          'Undo my last commit but keep the changes',
-          'Create a branch called fix-login and switch to it',
-          'Stash my changes',
-          'Unstage README.md',
-          'List remote branches',
-        ],
-      },
-      {
-        name: /magick/i,
-        examples: [
-          'Make a 200px thumbnail of photo.jpg',
-          'Convert logo.png to a jpg with 80 quality',
-          'Make picture.jpg black and white',
-          'Convert logo.png to webp',
-        ],
-      },
-    ],
-  },
-];
+const sentence = (s: string) => (s ? `${s[0]!.toUpperCase()}${s.slice(1)}${/[.!?]$/.test(s) ? '' : '.'}` : s);
 
-/** The examples to offer for a task on a given model. */
-export const examplesFor = (task: Task, modelName: string): string[] =>
-  task.examplesByTool?.find((t) => t.name.test(modelName))?.examples ?? task.examples;
+export function taskOf(op: OperationConfig): Task {
+  const out = knownOutput(op);
+  return {
+    id: op.id,
+    verb: op.title,
+    action: op.title,
+    result: op.title,
+    placeholder: sentence(op.when),
+    examples: op.examples ?? [],
+    continues: op.prompt.mode === 'completion',
+    code: out?.type === 'text' && !!out.code,
+  };
+}
 
-export const taskById = (id: string) => TASKS.find((t) => t.id === id);
+/** Every task the listed models do, once each, by how many models do it. */
+export function tasksOf(models: Model[]): Task[] {
+  const count = new Map<TaskId, number>();
+  const tasks = new Map<TaskId, Task>();
+  for (const m of models) {
+    for (const t of m.operations) {
+      count.set(t.id, (count.get(t.id) ?? 0) + 1);
+      if (!tasks.has(t.id)) tasks.set(t.id, t);
+    }
+  }
+  return [...tasks.values()].sort((a, b) => count.get(b.id)! - count.get(a.id)! || a.verb.localeCompare(b.verb));
+}
 
-/** Topic names for the bundled message categories: "travel" → "Travel". */
-export const TOPICS: Record<string, string> = Object.fromEntries(MESSAGE_CATEGORIES.map((c) => [c, c[0]!.toUpperCase() + c.slice(1)]));
+/** A label as a person reads it: "travel" → "Travel". */
+export const labelText = (l: string) => (l ? l[0]!.toUpperCase() + l.slice(1) : l);
 
 export interface ModelFile {
   sha256: string;
@@ -115,6 +68,8 @@ export interface Model {
   name: string;
   description: string;
   tasks: TaskId[];
+  /** How each task reads, in the order of `tasks`. */
+  operations: Task[];
   languages: string[];
   license: string;
   /** Every file this model needs here, including a style add-on's base model. */
@@ -174,7 +129,8 @@ export function buildModels(candidates: CandidateRelease[], isCached: (sha256: s
       files = m.files.map((f) => ({ sha256: f.sha256, size: f.size, path: f.path, locations: f.locations }));
       runnable = c.support.executableOperations;
     }
-    const tasks = TASKS.map((t) => t.id).filter((t) => m.capabilities.includes(t) && runnable.includes(t));
+    const ops = m.operations.filter((o) => m.capabilities.includes(o.id) && runnable.includes(o.id));
+    const tasks = ops.map((o) => o.id);
     if (!tasks.length) continue;
     const totalBytes = files.reduce((n, f) => n + f.size, 0);
     models.push({
@@ -182,6 +138,7 @@ export function buildModels(candidates: CandidateRelease[], isCached: (sha256: s
       name: friendlyName(m.name),
       description: m.description,
       tasks,
+      operations: ops.map(taskOf),
       languages: m.languages,
       license: m.license.id,
       files,

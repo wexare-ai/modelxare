@@ -157,9 +157,9 @@ describe('chat history for llama.cpp', () => {
 });
 
 describe('auto answers', () => {
-  const step = (id: string, output: Step['output'], status: Step['status'] = 'done') => ({ intent: { id }, output, status }) as unknown as Step;
-  it('one step is its answer; several are labeled', () => {
-    expect(compose([step('summarize', { text: ' Short. ' })])).toBe('Short.');
-    expect(compose([step('sort', { topic: 'Security' }), step('summarize', { text: 'Door open.' })])).toBe('Topic: Security\nSummary: Door open.');
+  const step = (title: string, output: Step['output'], status: Step['status'] = 'done') => ({ task: { id: title.toLowerCase(), title }, output, status }) as unknown as Step;
+  it('one step is its answer; several are under their task titles', () => {
+    expect(compose([step('Summarize', { text: ' Short. ' })])).toBe('Short.');
+    expect(compose([step('Sort by topic', { label: 'travel' }), step('Summarize', { text: 'Door open.' })])).toBe('Sort by topic: Travel\nSummary: Door open.'.replace('Summary', 'Summarize'));
   });
 });

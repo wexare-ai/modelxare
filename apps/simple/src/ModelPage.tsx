@@ -1,15 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { noSpaceText, removeFromDevice, trust, useModels, useRun } from './engine.ts';
-import { UNSUPPORTED_COMMAND } from '@wexare/protocol';
 import { Command } from './Command.tsx';
-import { TASKS, examplesFor, languageList, size, taskById, type TaskId } from './models.ts';
-
-const DOING: Record<TaskId, string> = {
-  summarization: 'Summarizing',
-  'text-classification': 'Sorting',
-  'text-generation': 'Writing',
-  'command-generation': 'Writing the command',
-};
+import { labelText, languageList, size, type TaskId } from './models.ts';
 
 export function ModelPage(p: { id: string; preferredTask: TaskId | null; back: () => void }) {
   const { models, loaded } = useModels();
@@ -34,15 +26,15 @@ export function ModelPage(p: { id: string; preferredTask: TaskId | null; back: (
   }
 
   const taskId = chosen && model.tasks.includes(chosen) ? chosen : model.tasks[0]!;
-  const task = taskById(taskId)!;
+  const task = model.operations.find((o) => o.id === taskId)!;
   const busy = run.phase === 'downloading' || run.phase === 'preparing' || run.phase === 'working';
   const downloaded = model.downloadBytes < model.totalBytes;
   const publisher = trust.describe(model.release.pubkey);
   const answer = run.answer?.task === taskId ? run.answer : null;
 
   const tryExample = () => {
-    const examples = examplesFor(task, model.name);
-    setText(examples[example % examples.length]!);
+    if (!task.examples.length) return;
+    setText(task.examples[example % task.examples.length]!);
     setExample((n) => n + 1);
   };
   const copy = async (value: string) => {
@@ -62,9 +54,9 @@ export function ModelPage(p: { id: string; preferredTask: TaskId | null; back: (
 
       {model.tasks.length > 1 && (
         <div className="switch" role="group" aria-label="Task">
-          {model.tasks.map((t) => (
-            <button key={t} aria-pressed={t === taskId} disabled={busy} onClick={() => setChosen(t)}>
-              {taskById(t)!.verb}
+          {model.operations.map((t) => (
+            <button key={t.id} aria-pressed={t.id === taskId} disabled={busy} onClick={() => setChosen(t.id)}>
+              {t.verb}
             </button>
           ))}
         </div>
@@ -74,16 +66,18 @@ export function ModelPage(p: { id: string; preferredTask: TaskId | null; back: (
         <span className="visually-hidden">Your text</span>
         <textarea value={text} placeholder={task.placeholder} rows={5} disabled={busy} onChange={(e) => setText(e.target.value)} data-testid="input" />
       </label>
-      <button className="link" onClick={tryExample} disabled={busy}>
-        Try an example
-      </button>
+      {task.examples.length > 0 && (
+        <button className="link" onClick={tryExample} disabled={busy}>
+          Try an example
+        </button>
+      )}
 
       <div className="actions">
         {busy ? (
           <>
             <div className="progress" role="status" aria-live="polite">
               <span>
-                {run.phase === 'downloading' ? `Downloading ${Math.floor(run.progress * 100)}%` : run.phase === 'preparing' ? 'Getting the model ready' : DOING[taskId]}
+                {run.phase === 'downloading' ? `Downloading ${Math.floor(run.progress * 100)}%` : run.phase === 'preparing' ? 'Getting the model ready' : 'Working'}
               </span>
               <span className={run.phase === 'downloading' ? 'bar' : 'bar waiting'}>
                 <span style={run.phase === 'downloading' ? { width: `${Math.max(2, run.progress * 100)}%` } : undefined} />
@@ -110,35 +104,30 @@ export function ModelPage(p: { id: string; preferredTask: TaskId | null; back: (
         </section>
       )}
 
-      {answer && taskId === 'command-generation' && (
+      {answer && (
         <section className="answer" data-testid="answer">
           <h2 className="tag">{task.result}</h2>
-          {answer.text === UNSUPPORTED_COMMAND ? (
-            <p>This tool can’t do that. Try asking another way.</p>
-          ) : (
+          {answer.declined ? (
+            <p>This model answered that your request is outside what it does. Try asking another way.</p>
+          ) : answer.label ? (
+            <p className="topic">{labelText(answer.label)}</p>
+          ) : task.code ? (
             <>
               <Command text={answer.text!} />
               <p className="hint">Small models get commands wrong sometimes. Read it before you run it.</p>
             </>
-          )}
-        </section>
-      )}
-
-      {answer && taskId !== 'command-generation' && (
-        <section className="answer" data-testid="answer">
-          <h2 className="tag">{task.result}</h2>
-          {answer.topic ? (
-            <p className="topic">{answer.topic}</p>
-          ) : taskId === 'text-generation' ? (
+          ) : task.continues ? (
             <p>
               <span className="prompt">{answer.input}</span> {answer.text}
             </p>
           ) : (
             <p>{answer.text}</p>
           )}
-          <button className="link" onClick={() => copy(answer.topic ?? (taskId === 'text-generation' ? `${answer.input} ${answer.text}` : answer.text!))}>
-            {copied ? 'Copied' : 'Copy'}
-          </button>
+          {!answer.declined && !(task.code && answer.text) && (
+            <button className="link" onClick={() => copy(answer.label ? labelText(answer.label) : task.continues ? `${answer.input} ${answer.text}` : answer.text!)}>
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+          )}
         </section>
       )}
 
@@ -161,7 +150,7 @@ export function ModelPage(p: { id: string; preferredTask: TaskId | null; back: (
         <summary>About this model</summary>
         <dl>
           <dt>What it does</dt>
-          <dd>{model.tasks.map((t) => TASKS.find((x) => x.id === t)!.verb).join(', ')}</dd>
+          <dd>{model.operations.map((t) => t.verb).join(', ')}</dd>
           <dt>Size</dt>
           <dd>
             {size(model.totalBytes)}, {model.downloadBytes === 0 ? 'saved on this device' : downloaded ? 'partly saved on this device' : 'not downloaded yet'}

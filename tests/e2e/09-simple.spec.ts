@@ -21,7 +21,7 @@ test('simple app: find a model by task, then one button downloads, checks and ru
   expect(await page.locator('main').innerText()).not.toMatch(TECHNICAL);
 
   // The task words filter the list.
-  await page.getByRole('button', { name: /^Write/ }).click();
+  await page.getByRole('button', { name: /^Continue the text/ }).click();
   await expect(names.filter({ hasText: 'Tiny summarizer' })).toHaveCount(0);
   await page.locator('.model', { hasText: 'Bedtime story base' }).click();
 

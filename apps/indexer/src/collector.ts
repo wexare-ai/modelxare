@@ -1,6 +1,6 @@
 import { AbstractRelay } from 'nostr-tools/abstract-relay';
 import { CatalogStore, OperatorStore, sourceIdFor } from '@wexare/catalog';
-import { CATALOG_TAG, RELEASE_TAG, releaseRelayFilter, verifyReleaseEvent, type NostrEvent } from '@wexare/protocol';
+import { CATALOG_TAG, OTHER_RELEASE_VERSION, RELEASE_TAG, releaseRelayFilter, verifyReleaseEvent, type NostrEvent } from '@wexare/protocol';
 
 /**
  * Node's built-in WebSocket fires `error` synchronously from close() during the
@@ -86,7 +86,8 @@ export class RelayCollector {
     else if (!t.includes(RELEASE_TAG)) outcome = 'unknown_profile';
     else {
       const r = verifyReleaseEvent(raw, { maxEventBytes: this.opts.maxEventBytes });
-      if (!r.ok) {
+      if (!r.ok && r.errors[0]!.code === OTHER_RELEASE_VERSION) outcome = 'unknown_profile';
+      else if (!r.ok) {
         outcome = 'rejected';
         const id = typeof (raw as NostrEvent)?.id === 'string' ? (raw as NostrEvent).id.slice(0, 64) : 'unknown';
         this.op.recordRejection(this.url, id, r.errors[0]!.code, r.errors.map((e) => e.message).join('; '));

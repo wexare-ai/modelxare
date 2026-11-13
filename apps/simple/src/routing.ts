@@ -8,17 +8,6 @@ import { REMOTE_OFF, layaBundle, pickRouter, remoteHelp, route, routerFiles, typ
 import { capabilities } from '@wexare/web/src/lib/runtime.ts';
 import { allReleases, approvedReleases, artifacts, fetchFiles, live, noSpaceText, runTask, touch, useEvent, type Fetched } from './engine.ts';
 
-/** How each kind of step reads to a person. */
-export const STEP_WORDS: Record<string, { name: string; result: string; doing: string }> = {
-  sort: { name: 'Sort by topic', result: 'Topic', doing: 'Sorting' },
-  summarize: { name: 'Summarize', result: 'Summary', doing: 'Summarizing' },
-  write: { name: 'Continue the text', result: 'Continued text', doing: 'Writing' },
-  reply: { name: 'Draft a reply', result: 'Draft reply', doing: 'Drafting a reply' },
-  translate: { name: 'Translate', result: 'Translation', doing: 'Translating' },
-  answer: { name: 'Answer a question', result: 'Answer', doing: 'Answering' },
-  command: { name: 'Give the command', result: 'Command', doing: 'Writing the command' },
-};
-
 /** "Tiny summarizer (SmolLM2 360M Q8_0)" → "Tiny summarizer". */
 export const plainName = (name: string) => name.replace(/\s*\([^)]*\)\s*$/, '').trim() || name;
 
@@ -126,7 +115,7 @@ export function useRouterModel(): RouterModel {
 }
 
 /** The router was unsure about the first step: the person picks it. */
-export type Prompt = { kind: 'clarify'; options: { id: string; probability: number }[] };
+export type Prompt = { kind: 'clarify'; options: { id: string; title: string; probability: number }[] };
 
 export interface AskState {
   phase: 'idle' | 'working' | 'done' | 'failed';
@@ -206,9 +195,9 @@ export function useAsk() {
       isCached: artifacts.isCached,
       remote: remoteHelp(loadOnlineHelp()),
       signal: ac.signal,
-      async runLocal(release, capability, input, _language, _signal, base) {
+      async runLocal(release, task, input, _language, _signal, base) {
         setState((s) => ({ ...s, activity: 'Getting the model ready', partial: '' }));
-        const out = await runTask(release, base, capability, input, {
+        const out = await runTask(release, base, task, input, {
           signal: ac.signal,
           partial: (text) => setState((s) => ({ ...s, partial: text })),
         });
@@ -223,10 +212,10 @@ export function useAsk() {
         if (fetched.status === 'no-space') throw new Error(noSpaceText('this model', bytes, fetched.room));
         return fetched.status === 'ok';
       },
-      clarify: (options) => ask<string | null>({ kind: 'clarify', options: options.map((o) => ({ id: o.intent.id, probability: o.probability })) }),
+      clarify: (options) => ask<string | null>({ kind: 'clarify', options: options.map((o) => ({ id: o.task.id, title: o.task.title, probability: o.probability })) }),
       onUpdate: (steps) => {
         const running = steps.find((x) => x.status === 'running');
-        setState((s) => ({ ...s, steps, partial: running === undefined ? '' : s.partial, activity: running ? (STEP_WORDS[running.intent.id]?.doing ?? 'Working') : 'Working out what to do' }));
+        setState((s) => ({ ...s, steps, partial: running === undefined ? '' : s.partial, activity: running ? `Working on “${running.task.title}”` : 'Working out what to do' }));
       },
     });
     if (stopped()) return setState(IDLE);

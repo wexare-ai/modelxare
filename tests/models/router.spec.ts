@@ -31,7 +31,7 @@ async function askAndFollow(page: Page, request: string): Promise<void> {
 
 const steps = (page: Page) =>
   page.getByTestId('step').evaluateAll((els) =>
-    els.map((e) => ({ intent: e.getAttribute('data-intent'), route: e.getAttribute('data-route'), status: e.getAttribute('data-status'), text: (e as HTMLElement).innerText })),
+    els.map((e) => ({ task: e.getAttribute('data-task'), route: e.getAttribute('data-route'), status: e.getAttribute('data-status'), text: (e as HTMLElement).innerText })),
   );
 
 test('Ask: one request that asks for two things gets both, from models on this device', async () => {
@@ -49,13 +49,13 @@ test('Ask: one request that asks for two things gets both, from models on this d
   const judgement = await page.getByTestId('judgement').evaluate((e) => (e as HTMLElement).innerText);
   evidence('ROUTER-BROWSER', { steps: ran, decisions: decided, judgement, ms: Date.now() - t0, http_hosts: [...hosts].sort() });
 
-  expect(ran.map((s) => s.intent)).toEqual(['sort', 'summarize']);
+  expect(ran.map((s) => s.task)).toEqual(['text-classification', 'summarization']);
   for (const s of ran) expect([s.route, s.status]).toEqual(['local', 'done']);
   for (const h of hosts) expect(h).toMatch(/^(localhost|127\.0\.0\.1):\d+$/);
 
   // Translation: no local model, online help off, so the step is reported, not attempted.
   await askAndFollow(page, 'Translate into French: the swimming pool is closed today.');
-  const translate = (await steps(page)).find((s) => s.intent === 'translate');
+  const translate = (await steps(page)).find((s) => s.task === 'translation');
   expect(translate).toMatchObject({ route: 'none', status: 'unavailable' });
   expect(translate!.text).toContain('No model on this device can translate yet');
   await context.close();

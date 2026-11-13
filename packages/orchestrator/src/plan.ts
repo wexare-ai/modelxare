@@ -74,7 +74,7 @@ const totalBytes = (m: ReleaseManifest) => m.files.reduce((n, f) => n + f.size, 
 export function compatibility(c: CandidateRelease, stage: string, language: string): { ok: boolean; why: string } {
   if (c.manifest.kind !== 'model') return { ok: false, why: 'adapters are not selected for workflow stages' };
   if (!c.manifest.capabilities.includes(stage)) return { ok: false, why: `does not declare ${stage}` };
-  if (!c.support.executableOperations.includes(stage)) return { ok: false, why: `no executable ${stage} operation matching the bundled contract` };
+  if (!c.support.executableOperations.includes(stage)) return { ok: false, why: `its ${stage} operation answers in a shape this client doesn't know` };
   if (!c.support.supported) return { ok: false, why: c.support.reasons.join('; ') };
   if (language !== 'und' && !c.manifest.languages.includes(language) && !c.manifest.languages.includes('und')) {
     return { ok: false, why: `does not declare language ${language}` };

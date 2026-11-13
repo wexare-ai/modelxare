@@ -12,7 +12,7 @@ import { CLIENT_CONFIG } from '@wexare/web/src/lib/client-config.ts';
 import type { PublisherRole } from '@wexare/web/src/lib/client-config.ts';
 import { choiceGrammar, runtime, toCandidate } from '@wexare/web/src/lib/runtime.ts';
 import type { InitResult } from '@wexare/web/src/workers/catalog-api.ts';
-import { buildModels, size, TOPICS, type Model, type TaskId } from './models.ts';
+import { buildModels, size, type Model, type TaskId } from './models.ts';
 import { Trust } from './trust.ts';
 
 const settings = loadSettings();
@@ -101,10 +101,12 @@ export type Phase = 'idle' | 'downloading' | 'preparing' | 'working' | 'done' | 
 export interface Answer {
   task: TaskId;
   input: string;
-  /** Summary or continued text. */
+  /** Summary, command, continued text. */
   text?: string;
-  /** Topic name, for sorting. */
-  topic?: string;
+  /** One of the task's labels, such as a topic. */
+  label?: string;
+  /** The model answered that the request is outside what it does. */
+  declined?: boolean;
 }
 
 export interface RunState {
@@ -284,7 +286,7 @@ export async function runTask(
   task: string,
   input: string,
   on: { signal?: AbortSignal; working?: () => void; partial?: (text: string) => void } = {},
-): Promise<{ topic?: string; text?: string } | null> {
+): Promise<{ label?: string; text?: string; declined?: boolean } | null> {
   const deps = {
     runtime,
     choiceGrammar,
@@ -298,10 +300,9 @@ export async function runTask(
     ? await runSingle(release, task, input, deps, { ...opts, adapters: [{ candidate: release, scale: 1 }], base })
     : await runSingle(release, task, input, deps, opts);
   if (trace.state === 'canceled') throw new DOMException('canceled', 'AbortError');
-  if (trace.state !== 'completed') return null;
-  const out = trace.output ?? {};
-  if (typeof out.category === 'string') return { topic: TOPICS[out.category] ?? out.category };
-  return { text: String(out.summary ?? out.command ?? out.text ?? trace.attempts.at(-1)?.raw ?? '').trim() };
+  if (trace.state === 'declined') return { declined: true };
+  if (trace.state !== 'completed' || !trace.output) return null;
+  return 'label' in trace.output ? { label: trace.output.label } : { text: trace.output.text.trim() };
 }
 
 /** One button: download what is missing (verified), load the model, answer. */

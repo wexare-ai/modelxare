@@ -58,10 +58,10 @@ the router, decides which task each part asks for.
 
 | Check | Automated check | Latest result |
 | --- | --- | --- |
-| Routing rules | [`packages/router`](../packages/router/test/router.test.ts) (unit, 25) | ✅ The instruction is split off the message (a colon near the start, or a first question followed by more text; not times or links), and split into the tasks it names. System 1 reads each task on its own, so a request for two things runs both, in the order asked, and the message is never read. A part that isn't a task is skipped. Without an instruction, or with no clear part, the whole request is read. When nothing is clear, the person picks. Planned steps show as waiting before the first runs. Local models get the message, online help gets the whole request. Covered steps go to a local model even with online help on, and a model an earlier step downloaded is reused. A step no local model covers goes online only when allowed, otherwise it is reported unavailable and the rest still run. Models download without a question unless the host adds a confirmation step, and a failed download is explained in its step. At most three steps run, the first ones asked for. The OpenAI-compatible request has the intent as its system message, and errors never contain the key. |
+| Routing rules | [`packages/router`](../packages/router/test/router.test.ts) (unit, 31) | ✅ The tasks System 1 chooses among come from the catalog's releases (models only), each once, in its release's words, plus the general requests no release covers; a release offering a general task's ID replaces it, and a task appears the moment a release offers it, with no change to the router. Every question has at most 10 options: tasks compete in groups, the winners in a final. An instruction that names several tasks is read part by part (a bare verb borrows what a later part acts on), so a request for two things runs both, in the order asked, and the message is never read. A part that isn't a task is skipped. Without an instruction, or with no clear part, the whole request is read. When nothing is clear, the person picks. When several models do a task in different words, System 1 picks one if it clearly prefers it; otherwise the catalog order decides. A model that declines hands the step to the next likeliest task, then to online help, or the step says why it is unavailable. Planned steps show as waiting before the first runs. Local models get the whole request and their prompt picks what they read; online help gets the whole request. Covered steps go to a local model even with online help on, and a model an earlier step downloaded is reused. A step no local model covers goes online only when allowed, otherwise it is reported unavailable and the rest still run. Models download without a question unless the host adds a confirmation step, and a failed download is explained in its step. At most three steps run, the first ones asked for. The OpenAI-compatible request has the task's instruction as its system message, and errors never contain the key. |
 | Router release | `pnpm demo:prepare` / `demo:publish` | ✅ `laya-router`: four files verified against hashes pinned to `wexare/laya-onnx@2ac71766`, mirrored, pinned on Kubo A and B, and seeded as torrents. Accepted by both relays. Existing releases kept their event IDs. |
 | Ask and online-help screens | [`e2e/10`](../tests/e2e/10-ask.spec.ts) | ✅ The first request starts the router download (904 MB) without a question; **Stop** cancels it and nothing is saved. The test holds the download and blocks the router's worker, so it never loads the router itself. Online help is off by default, survives a reload in the same browser, never shows the key, changes the footer and tagline, and saving it contacts no online service. |
-| Real routing decisions | [`integration/router-laya`](../tests/integration/router-laya.test.ts) (opt-in) | ✅ **27 of 27** with native ONNX Runtime: the real router release (Laya fp16) and the real `route()` planned every request correctly. That includes "Categorize and Summarize this message: …" ("Categorize" → sort 0.99, "Summarize this message" → summarize 1.00), two requests whose message names other tasks, and one asking for three things. Last run 2026-11-09 with `WEXARE_TEST_LAYA=native`, the local runtime's own router (`apps/local/src/laya.ts`): 48 s under a 3.5 GB memory cap, with the current topics and page examples. One known miss is kept out of the test: "Classify this complaint" reads as summarize (0.78), not sort. ⏳ Not run in WebAssembly (`WEXARE_TEST_LAYA=1`): loading the router there needs more than 4.6 GB, more than the test machine can spare. |
+| Real routing decisions | [`integration/router-laya`](../tests/integration/router-laya.test.ts) (opt-in) | ✅ **39 of 39** with native ONNX Runtime: the real router release (Laya fp16) and the real `route()`, choosing among the tasks of a catalog made of the sample releases' manifests in `fixtures/releases`, the git, ffmpeg and ImageMagick command add-ons included. That includes "Categorize and Summarize this message: …", two requests whose message names other tasks, one asking for three things, the front page's example ("Categorize this message" → sort 1.00, "summarize this message" → summarize 1.00), and 11 command requests ("Convert and resize this video: clip.mov to 720p mp4" → ffmpeg). Last run 2026-11-13 with `WEXARE_TEST_LAYA=native` (`apps/local/src/laya.ts`) under a 4 GB memory cap. ⏳ Not run in WebAssembly (`WEXARE_TEST_LAYA=1`): loading the router there needs more than 4.6 GB, more than the test machine can spare. |
 | Ask end to end with real models | [`models/router`](../tests/models/router.spec.ts) (opt-in) | ⏳ **Not run automatically**, for the same memory reason. A manual run on a Mac worked (2026-11-02). |
 | Front page | [`e2e/13`](../tests/e2e/13-landing.spec.ts) | ✅ The front page (`#/`) plays the before and after as the page scrolls (today, what if, with modelXare) and plays one request through System 1 and System 2 (the router's real verdicts for it, then the two catalog models that sort and summarize), and leads to the app (`#/try`) and back. With reduced motion it shows the before and after side by side, and nothing stays hidden. Last run 2026-11-09. |
 | Space for saved models | [`packages/storage`](../packages/storage/test/eviction.test.ts) (unit, 9), [`e2e/11`](../tests/e2e/11-space.spec.ts) | ✅ The least recently used models are removed first, one model's files together, never kept files, and nothing for a download that wouldn't fit anyway. A model larger than the limit still downloads after everything else is removed. A lower limit trims saved models down to it (the rule; choosing a lower limit in Settings isn't checked in the browser). In the browser, with a 400 MB limit, the story model (73 MB) was used, then the summarizer (386 MB): the story model was removed ("73 MB download"), the summarizer stayed ready, and Settings showed "Saved models take 386 MB". A new limit survives a reload. With a real storage limit set through Chrome DevTools: when the browser overstates its room, the refused download made the least used model go and the retry succeeded. When the browser understates its room (10 MB reported), the 73 MB download still went ahead. With no model to remove, the app said how much the browser had really allowed. Out-of-space errors stop the download instead of trying the next source. |
@@ -78,8 +78,35 @@ browser):
 | 24 everyday messages, three per topic, one of them in Spanish | 12 of 24. Without the topic descriptions in the prompt, 4 to 5 of 16. |
 | Where it errs | Family, friends and health messages often come out as travel or work. |
 | The pages' examples through `auto` (real router, the published releases) | Front page: "Categorize" sort 0.99, "summarize this message" summarize 0.99, then **Travel** and "Your flight to Lisbon on Friday will leave two hours late at 16:40. Your seat and bags stay the same." Try examples: the bill → **Money** plus a summary; the shoes → **Shopping**. The Spanish flight message gets a Spanish summary. |
-| Releases that declare the earlier category list | They still run. The client accepts that declared output, then builds the grammar and checks answers from the current list (protocol unit tests). |
+| Releases whose answer shape this client doesn't know | They stay in the catalog as metadata and never run (protocol unit tests), so newer clients can add output types. |
 | Browser | e2e/01, 05, 06, 07, 09, 10, 12 and 13 pass (16 tests) against the demo catalog. Unit tests: 180 pass. |
+
+## Command add-ons (2026-11-13)
+
+The git, ffmpeg and ImageMagick command writers are LoRA add-ons (5.9 MB each) on the Message
+assistant's Qwen2.5 0.5B Q4_K_M weights, published at `wexare/command-loras`. Each was run natively
+(`apps/local`'s llama.cpp, CPU, 4 threads) through the same execution code the apps use: the
+add-on's own prompt on its base's weights, and the answer checked against its output shape. The
+requests are the first 40 of each tool's test set from the training data, which the models did not
+train on.
+
+| Add-on | Same command as expected | Same except an output file name the request never gave | Well-formed (starts with the tool) | "Can't do that" requests | Time per request |
+| --- | --- | --- | --- | --- | --- |
+| git | 31 of 40 | 31 of 40 | 39 of 40 | none in the set | 1.1 s |
+| ffmpeg | 13 of 40 | 26 of 40 | 40 of 40 | none in the set | 1.8 s |
+| ImageMagick | 25 of 40 | 26 of 40 | 39 of 40 | 1 of 2 declined | 1.2 s |
+
+- The expected commands invent output names when a request names none (`resized.jpg`, `final.mp4`),
+  while the models write `output.<ext>` as their prompts ask. That is most of the gap between the
+  first two columns.
+- Other misses are real: wrong flags (`git diff --staged` for unstaged changes, an audio map for a
+  volume change), a value off (`-crf 26` for 30), and two degenerate answers: a commit hash repeated
+  until the token limit, and a stray `!!` line in a git sequence.
+- The apps show these answers as code, with a reminder to read a command before running it.
+
+With these releases in the demo catalog (format 0.2), the browser suite passes: 33 of 34 tests in
+one run, and A09 once releases in an older format were counted apart from rejected ones (e2e/01, 02
+and 07 rerun). Unit tests: 197 pass.
 
 ## Local runtime and OpenAI-compatible API (2026-11-09)
 
@@ -98,6 +125,18 @@ browser):
 
 ## Observations
 
+- **Why tasks come from the catalog, and how they are asked about (2026-11-13).** Measured with the
+  real router over the sample tasks, three command-writing tasks and the three general requests:
+  - Yes/no questions per task or per category were unreliable: "Summarize this: …" scored 0.23 for
+    summarize, and "squash the last three commits" 0.78 for the ffmpeg task. Asking "what else?" after
+    the first choice picked the sibling task almost every time ("resize photo.png" → ffmpeg 0.99).
+    Choosing a category first, then a task, did worse than one choice over all the tasks.
+  - One choice over every task, with general requests next to them, was right for 17 of 18 one-task
+    message requests and 50 of 60 real command requests from the training data's test sets.
+  - Keys and wording matter. Options keyed by task ID read better than by title. A `when` with
+    concrete actions and file types ("for a video or audio file (mp4, mov, mkv, mp3): convert, cut,
+    compress, extract the sound or make a gif") raised the command requests to 55 of 60; the misses
+    left are typos ("show satatus") and requests that don't name the tool ("show remotes").
 - **Why the router reads each part of the instruction.** An earlier design asked the router one
   yes/no question per task about the whole request. That missed "summarize" in "Categorize and
   Summarize this message: …" (0.16), and added "continue the story" (0.67) and "answer" (0.57) to

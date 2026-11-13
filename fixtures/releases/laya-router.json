@@ -10,7 +10,7 @@
     "model_id": "laya-router",
     "name": "Laya System 1 router (English, fp16)",
     "description": "Reads a request and decides in one quick pass what should happen next, and how sure it is. Routes work to other models; it never writes text itself.",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "kind": "model",
     "capabilities": [
       "intent-routing"

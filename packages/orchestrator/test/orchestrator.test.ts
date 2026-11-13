@@ -1,20 +1,34 @@
 import { describe, expect, it } from 'vitest';
-import { MESSAGE_CATEGORIES, OPERATION_CONTRACTS, UNSUPPORTED_COMMAND, sha256Hex, type ReleaseManifest } from '@wexare/protocol';
+import { sha256Hex, type OperationConfig, type ReleaseManifest } from '@wexare/protocol';
 import type { GenerateRequest, LoadRequest } from '@wexare/runtime';
-import { detectLanguage, executeWorkflow, parseStageOutput, planWorkflow, resolveLoraDependency, runSingle, type CandidateRelease } from '../src/index.ts';
+import { detectLanguage, executeWorkflow, outputText, planWorkflow, resolveLoraDependency, runSingle, type CandidateRelease } from '../src/index.ts';
 
-const op = (id: string) => ({
-  id,
-  prompt: { mode: 'chat' as const, template: id === 'text-classification' ? 'Message: {{input}} ({{categories}})' : 'Summarize in {{language}}: {{input}}' },
-  input_schema: OPERATION_CONTRACTS[id]!.input_schema,
-  output_schema: OPERATION_CONTRACTS[id]!.output_schema,
-});
+const TOPICS = { family: 'parents and children', money: 'bills and payments', travel: 'flights, trains, hotels and trips', health: 'doctors and appointments', other: 'anything else' };
+const OPS: Record<string, OperationConfig> = {
+  'text-classification': {
+    id: 'text-classification',
+    title: 'Sort by topic',
+    category: 'messages',
+    when: 'put a message into one topic',
+    prompt: { mode: 'chat', template: 'Message: {{text}} ({{labels}})' },
+    output: { type: 'label', labels: Object.entries(TOPICS).map(([id, description]) => ({ id, description })) },
+  },
+  summarization: {
+    id: 'summarization',
+    title: 'Summarize',
+    category: 'messages',
+    when: 'shorten a message into one short sentence',
+    prompt: { mode: 'chat', template: 'Summarize in {{language}}: {{text}}' },
+    output: { type: 'text', max_chars: 400, single_line: true },
+  },
+};
+const op = (id: string) => OPS[id]!;
 let n = 0;
 function cand(p: { caps: string[]; langs?: string[]; size: number; pub?: string; family?: string; kind?: 'model' | 'lora'; base?: ReleaseManifest['base'] }): CandidateRelease {
   n++;
   const files = [{ role: (p.kind === 'lora' ? 'adapter' : 'weights') as 'weights', path: `m${n}.gguf`, size: p.size, sha256: sha256Hex(`file ${n}`), locations: [{ transport: 'http', uri: `http://127.0.0.1/x${n}` }] }];
   const manifest: ReleaseManifest = {
-    schema: 'wexare.micromodel.release/0.1',
+    schema: 'wexare.micromodel.release/0.2',
     model_id: `m${n}`,
     name: `Model ${n}`,
     description: '',
@@ -25,7 +39,7 @@ function cand(p: { caps: string[]; langs?: string[]; size: number; pub?: string;
     license: { id: 'MIT' },
     runtime: { format: 'gguf', family: p.family ?? 'wllama', requirement: '*', browser_features: [] },
     files,
-    operations: p.caps.filter((c) => OPERATION_CONTRACTS[c]).map(op),
+    operations: p.caps.filter((c) => OPS[c]).map(op),
     requirements: { context_length: 512 },
     ...(p.base ? { base: p.base } : {}),
   };
@@ -180,6 +194,8 @@ describe('execution', () => {
     expect(r.summary).toMatch(/Lisbon/);
     // Each topic is listed with what it covers.
     expect(rt.prompts[0]).toContain('travel (flights, trains, hotels and trips), health (');
+    expect(r.outputs).toEqual({ 'text-classification': { label: 'travel' }, summarization: { text: 'The Friday flight to Lisbon leaves two hours late.' } });
+    expect(r.trace.map((t) => t.title)).toEqual(['Sort by topic', 'Summarize']);
     expect(rt.loads).toHaveLength(2);
     expect(verified).toHaveLength(2);
     expect(r.trace.map((t) => t.releaseId)).toEqual([qwen.eventId, smol.eventId]);
@@ -212,41 +228,37 @@ describe('execution', () => {
     expect(rt.loaded).toBeNull();
   });
 
-  it('parses outputs against bundled contracts', () => {
-    expect(parseStageOutput('text-classification', ' Travel.\n').value).toEqual({ category: 'travel' });
-    expect(parseStageOutput('text-classification', 'other stuff').error).toBeDefined();
-    expect(parseStageOutput('summarization', 'Summary: "A delay."').value).toEqual({ summary: 'A delay.' });
-    expect(parseStageOutput('summarization', 'x'.repeat(500)).error).toBeDefined();
-    expect(MESSAGE_CATEGORIES).toHaveLength(9);
-    expect(parseStageOutput('text-classification', 'maintenance').error).toBeDefined();
-  });
-
-  it('parses command answers: fences, prompts and backticks removed, one command per line', () => {
-    expect(parseStageOutput('command-generation', '```bash\n$ ffmpeg -i in.mp4 out.mp3\n```').value).toEqual({ command: 'ffmpeg -i in.mp4 out.mp3' });
-    expect(parseStageOutput('command-generation', 'git add .\n\ngit commit -m "x"\n').value).toEqual({ command: 'git add .\ngit commit -m "x"' });
-    expect(parseStageOutput('command-generation', '`magick a.jpg -negate b.jpg`').value).toEqual({ command: 'magick a.jpg -negate b.jpg' });
-    expect(parseStageOutput('command-generation', 'unsupported_request').value).toEqual({ command: UNSUPPORTED_COMMAND });
-    expect(parseStageOutput('command-generation', '  \n').error).toBeDefined();
-    expect(parseStageOutput('command-generation', 'x'.repeat(1001)).error).toBeDefined();
+  it('marks a stage declined when the model answers that the request is outside what it does', async () => {
+    const rt = fakeRuntime({ 'text-classification': [], summarization: ['UNSUPPORTED'] });
+    const decliner = { ...smol, manifest: { ...smol.manifest, operations: [{ ...OPS.summarization!, output: { type: 'text' as const, decline: 'UNSUPPORTED' } }] } };
+    const t = await runSingle(decliner, 'summarization', MSG, deps(rt));
+    expect([t.state, t.output, t.attempts.length]).toEqual(['declined', undefined, 1]);
+    expect(outputText({ label: 'travel' })).toBe('travel');
   });
 
   it('runs an add-on with its own prompt on its base weights', async () => {
     const base = cand({ caps: ['summarization'], size: 491 });
     const addOn = cand({
-      caps: ['command-generation'],
+      caps: ['summarization'],
       size: 6,
       kind: 'lora',
       base: { release_id: base.eventId, manifest_sha256: base.manifestSha256, files: [{ sha256: base.manifest.files[0]!.sha256, size: 491 }] },
     });
-    addOn.manifest.operations[0]!.prompt = { mode: 'chat', system: 'You write one git command.', template: '{{input}}' };
-    const rt = fakeRuntime({ summarization: ['git branch -a'] });
-    const t = await runSingle(addOn, 'command-generation', 'show all branches', deps(rt), { adapters: [{ candidate: addOn, scale: 1 }], base });
+    addOn.manifest.operations = [{ ...OPS.summarization!, id: 'summarization', prompt: { mode: 'chat', system: 'You write one git command.', template: '{{input}}' }, output: { type: 'text', single_line: true, decline: 'UNSUPPORTED' } }];
+    const rt = fakeRuntime({ 'text-classification': [], summarization: ['```bash\ngit branch -a\n```'] });
+    const t = await runSingle(addOn, 'summarization', 'show all branches', deps(rt), { adapters: [{ candidate: addOn, scale: 1 }], base });
     expect(t.state).toBe('completed');
-    expect(t.output).toEqual({ command: 'git branch -a' });
+    expect(t.output).toEqual({ text: 'git branch -a' });
     expect(rt.systems).toEqual(['You write one git command.']);
     expect(rt.prompts).toEqual(['show all branches']);
     expect(rt.loads[0]).toBe(`${base.manifest.files[0]!.sha256}+lora:${addOn.manifest.files[0]!.sha256}`);
     expect(t.files.map((f) => f.sha256)).toEqual([base.manifest.files[0]!.sha256]);
+  });
+
+  it('gives the prompt the text after a leading instruction where it asks for {{text}}', async () => {
+    const rt = fakeRuntime({ 'text-classification': [], summarization: ['One sentence.'] });
+    await runSingle(smol, 'summarization', `Summarize this: ${MSG}`, deps(rt));
+    expect(rt.prompts[0]).toBe(`Summarize in the same language as the message: ${MSG}`);
   });
 
   it('runs a single release in one-model mode', async () => {

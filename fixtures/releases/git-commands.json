@@ -6,10 +6,10 @@
     "model_id": "git-commands",
     "name": "Git commands (LoRA for Qwen2.5 0.5B Q4_K_M)",
     "description": "Turns a plain-language request into the git command that does it, such as \"undo my last commit but keep the changes\". Short sequences come one command per line.",
-    "version": "1.0.1",
+    "version": "1.1.0",
     "kind": "lora",
     "capabilities": [
-      "command-generation"
+      "git-command"
     ],
     "languages": [
       "en"
@@ -27,7 +27,17 @@
     },
     "operations": [
       {
-        "id": "command-generation",
+        "id": "git-command",
+        "title": "Write a git command",
+        "category": "command-line",
+        "when": "write a git command to commit, undo, branch, merge or look at the history of a code repository",
+        "examples": [
+          "Undo my last commit but keep the changes",
+          "Create a branch called fix-login and switch to it",
+          "Stash my changes",
+          "Unstage README.md",
+          "List remote branches"
+        ],
         "prompt": {
           "mode": "chat",
           "system": "You are a Git command translator. Read the user's natural-language request and reply with ONLY the exact git CLI command(s) that fulfill it. Use a single line when one command is enough; use newlines for a short sequence. Do not wrap commands in markdown, quotes, or explanation.",
@@ -37,7 +47,11 @@
           "max_tokens": 160,
           "temperature": 0
         },
-        "routing": "git commands: commits, branches, merges, stashes and history of a code repository"
+        "output": {
+          "type": "text",
+          "max_chars": 1000,
+          "code": true
+        }
       }
     ],
     "requirements": {

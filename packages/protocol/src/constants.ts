@@ -1,5 +1,5 @@
 /** Experimental weXare application profile identifiers (not an official Nostr standard). */
-export const RELEASE_SCHEMA = 'wexare.micromodel.release/0.1';
+export const RELEASE_SCHEMA = 'wexare.micromodel.release/0.2';
 export const CATALOG_SCHEMA = 'wexare.micromodel.catalog/0.1';
 export const CATALOG_PROFILE_VERSION = '0.1';
 
@@ -28,6 +28,7 @@ export const TAG_PREFIX = {
   lang: 'lang:',
   runtime: 'runtime:',
   artifact: 'artifact:',
+  category: 'category:',
 } as const;
 
 /** Archive member names allowed in a catalog ZIP (protocol 0.1). */

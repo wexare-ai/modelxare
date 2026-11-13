@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { finalizeEvent, generateSecretKey } from 'nostr-tools/pure';
 import { CatalogStore, OperatorStore, migrateOperator } from '@wexare/catalog';
 import { openNodeDatabase } from '@wexare/catalog/node';
-import { OPERATION_CONTRACTS, buildReleaseEventTemplate, serializeManifest, sha256Hex, type NostrEvent, type ReleaseManifest } from '@wexare/protocol';
+import { buildReleaseEventTemplate, serializeManifest, sha256Hex, type NostrEvent, type ReleaseManifest } from '@wexare/protocol';
 import { DEFAULT_COLLECTOR_OPTIONS, RelayCollector } from '../src/collector.ts';
 
 const sk = generateSecretKey();
 function release(i: number, createdAt: number): NostrEvent {
   const m: ReleaseManifest = {
-    schema: 'wexare.micromodel.release/0.1',
+    schema: 'wexare.micromodel.release/0.2',
     model_id: `m-${i}`,
     name: `Model ${i}`,
     description: 'collector test',
@@ -20,7 +20,7 @@ function release(i: number, createdAt: number): NostrEvent {
     runtime: { format: 'gguf', family: 'wllama', requirement: '*', browser_features: [] },
     files: [{ role: 'weights', path: 'm.gguf', size: 1, sha256: sha256Hex(`f${i}`), locations: [] }],
     operations: [
-      { id: 'summarization', prompt: { mode: 'chat', template: '{{input}}' }, input_schema: OPERATION_CONTRACTS.summarization!.input_schema, output_schema: OPERATION_CONTRACTS.summarization!.output_schema },
+      { id: 'summarization', title: 'Summarize', category: 'messages', when: 'shorten the text into a brief summary', prompt: { mode: 'chat', template: '{{text}}' }, output: { type: 'text', max_chars: 400 } },
     ],
     requirements: { context_length: 512 },
   };

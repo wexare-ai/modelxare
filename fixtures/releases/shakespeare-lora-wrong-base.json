@@ -37,14 +37,24 @@
     "operations": [
       {
         "id": "text-generation",
+        "title": "Continue the text",
+        "category": "writing",
+        "when": "continue a story or a piece of text",
+        "examples": [
+          "Look in thy glass",
+          "Shall I compare thee to a summer’s day"
+        ],
         "prompt": {
           "mode": "completion",
-          "template": "{{input}}"
+          "template": "{{text}}"
         },
         "generation": {
           "max_tokens": 24,
           "temperature": 0,
           "top_k": 1
+        },
+        "output": {
+          "type": "text"
         }
       }
     ],

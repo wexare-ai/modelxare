@@ -33,7 +33,7 @@ test('the front page tells the story by scrolling and leads to the app', async (
     // System 1 + System 2: the router's real verdicts, then two catalog models answer.
     await page.locator('.l-browser').scrollIntoViewIfNeeded();
     await expect(page.locator('.l-model.done')).toHaveCount(2);
-    await expect(page.locator('.l-verdict-out').first()).toHaveText('Sort 0.99');
+    await expect(page.locator('.l-verdict-out').first()).toHaveText('Sort 1.00');
     await expect(page.locator('.l-model.idle .l-model-head strong')).toHaveText('Write');
 
     // The sections below land as they come into view.

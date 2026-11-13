@@ -1,12 +1,12 @@
 import { useRef, useState } from 'react';
-import { UNSUPPORTED_COMMAND } from '@wexare/protocol';
+import { knownOutput } from '@wexare/protocol';
 import type { Step } from '@wexare/router';
 import { size } from './models.ts';
 import { noSpaceText } from './engine.ts';
-import { STEP_WORDS, plainName, useAsk, useRouterModel, type Prompt } from './routing.ts';
+import { plainName, useAsk, useRouterModel, type Prompt } from './routing.ts';
+import { labelText } from './models.ts';
 
 const pct = (p: number) => `${Math.round(p * 100)}%`;
-const words = (id: string) => STEP_WORDS[id] ?? { name: id, result: id, doing: 'Working' };
 
 /** Requests the real router plans right (tests/integration/router-laya.test.ts) that models on this device can finish. */
 export const EXAMPLES = [
@@ -119,15 +119,18 @@ export function Ask({ lede }: { lede: string }) {
               {ask.result.steps.map((s, i) => (
                 <li key={i}>
                   {s.decision.by === 'person'
-                    ? `You chose “${words(s.intent.id).name}”.`
+                    ? `You chose “${s.task.title}”.`
                     : s.decision.by === 'instruction'
-                      ? `“${s.decision.text}”: ${words(s.intent.id).name} (${pct(s.decision.probability)} sure).`
-                      : `You asked to “${words(s.intent.id).name}” (${pct(s.decision.probability)} sure).`}{' '}
+                      ? `“${s.decision.text}”: ${s.task.title} (${pct(s.decision.probability)} sure).`
+                      : `You asked to “${s.task.title}” (${pct(s.decision.probability)} sure).`}{' '}
                   {s.route.kind === 'local'
-                    ? s.route.pick && s.route.pick.considered.length > 1
-                      ? `Of ${new Set(s.route.pick.considered.map((c) => c.modelId)).size} models on this device that can, ${plainName(s.route.release.name)} fits best (${pct(s.route.pick.probability)} sure).`
+                    ? s.decision.model?.by === 'system1'
+                      ? `${s.decision.model.name} fits it best (${pct(s.decision.model.probability)} sure) and runs on this device.`
                       : 'A model on this device can do that.'
-                    : s.route.kind === 'remote' ? 'No model on this device can do that, so online help was used.' : 'No model on this device can do that.'}
+                    : s.route.kind === 'remote'
+                      ? 'No model on this device can do that, so online help was used.'
+                      : 'No model on this device can do that.'}
+                  {s.decision.insteadOf && ` ${ask.result!.tasks.find((t) => t.id === s.decision.insteadOf)?.title ?? s.decision.insteadOf} came first, but its model answered that this is outside what it does.`}
                 </li>
               ))}
               <li>
@@ -148,7 +151,7 @@ export function Ask({ lede }: { lede: string }) {
                       Object.entries(r.probabilities)
                         .sort((a, b) => b[1] - a[1])
                         .slice(0, 2)
-                        .map(([id, p]) => `${words(id).name} ${pct(p)}`)
+                        .map(([id, p]) => `${ask.result!.tasks.find((t) => t.id === id)?.title ?? id} ${pct(p)}`)
                         .join(', '),
                   )
                   .join('; ')}
@@ -169,7 +172,7 @@ function PromptCard({ prompt, respond }: { prompt: Prompt; respond: (v: unknown)
       <div className="choices">
         {prompt.options.map((o) => (
           <button key={o.id} className="chip" onClick={() => respond(o.id)}>
-            {words(o.id).name}
+            {o.title}
           </button>
         ))}
         <button className="link" onClick={() => respond(null)}>
@@ -181,36 +184,36 @@ function PromptCard({ prompt, respond }: { prompt: Prompt; respond: (v: unknown)
 }
 
 function StepCard({ step, partial }: { step: Step; partial: string }) {
-  const w = words(step.intent.id);
+  const title = step.task.title;
+  // A release can say its answers are code or command lines: they show as code.
+  const op = step.route.kind === 'local' ? step.route.release.manifest.operations.find((o) => o.id === step.task.id) : undefined;
+  const out = op && knownOutput(op);
+  const code = out?.type === 'text' && !!out.code;
   const [copied, setCopied] = useState(false);
-  const value = step.output?.topic ?? step.output?.text;
+  const value = step.output?.label ? labelText(step.output.label) : step.output?.text;
   const by =
     step.route.kind === 'local'
       ? `By ${plainName(step.route.release.name)}, on this device.`
       : step.route.kind === 'remote'
         ? `By ${step.route.model} through ${step.route.provider}. Your text was sent to ${step.route.provider}.`
-        : `No model on this device can ${w.name.toLowerCase()} yet. To use your own online AI for steps like this, turn on online help in Settings.`;
+        : `No model on this device can ${title[0]!.toLowerCase()}${title.slice(1)} yet. To use your own online AI for steps like this, turn on online help in Settings.`;
   return (
-    <li className={`step ${step.status}`} data-testid="step" data-intent={step.intent.id} data-route={step.route.kind} data-status={step.status}>
-      <h2 className="tag">{w.result}</h2>
+    <li className={`step ${step.status}`} data-testid="step" data-task={step.task.id} data-route={step.route.kind} data-status={step.status}>
+      <h2 className="tag">{title}</h2>
       {step.status === 'waiting' && <p className="muted">Next.</p>}
-      {step.status === 'running' && <p className="pending-text">{partial || `${w.doing}…`}</p>}
+      {step.status === 'running' && <p className="pending-text">{partial || 'Working…'}</p>}
       {step.status === 'done' &&
-        (step.output?.topic ? (
-          <p className="topic">{step.output.topic}</p>
-        ) : step.intent.id === 'command' && step.output?.text && step.output.text !== UNSUPPORTED_COMMAND ? (
+        (step.output?.label ? (
+          <p className="topic">{labelText(step.output.label)}</p>
+        ) : code ? (
           <pre className="step-command">
-            <code>{step.output.text}</code>
+            <code>{step.output?.text}</code>
           </pre>
-        ) : step.intent.id === 'command' ? (
-          <p>This model can’t do that. Try asking another way.</p>
         ) : (
           <p>{step.output?.text}</p>
         ))}
-      {step.status === 'done' && step.intent.id === 'command' && step.output?.text !== UNSUPPORTED_COMMAND && (
-        <p className="hint">Small models get commands wrong sometimes. Read it before you run it.</p>
-      )}
-      {step.status === 'failed' && <p className="failed">{step.error}</p>}
+      {step.status === 'done' && code && <p className="hint">Small models get commands wrong sometimes. Read it before you run it.</p>}
+      {(step.status === 'failed' || (step.status === 'unavailable' && step.route.kind === 'local')) && <p className="failed">{step.error}</p>}
       {/* Which model does a step is settled when it starts. */}
       {step.status !== 'waiting' && <p className="byline">{by}</p>}
       {step.status === 'done' && value && (

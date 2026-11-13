@@ -7,6 +7,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { expect, it, vi } from 'vitest';
+import { validateManifestSchema } from '@wexare/protocol';
 import { prepareRelease, type ReleaseDefinition } from '../src/release.ts';
 
 const STARTER = new URL('../../simple/public/starter-model.json', import.meta.url);
@@ -28,7 +29,8 @@ it("the simple app's starter file makes a valid release manifest", async () => {
     def.files = def.files.map((f) => ({ ...f, source: join(dir, f.source), urls: [url] }));
     const p = await prepareRelease(def, {});
     expect(p.manifest.capabilities).toEqual(['summarization']);
-    expect(p.manifest.operations.map((o) => o.id)).toEqual(['summarization']);
+    expect(p.manifest.operations.map((o) => [o.id, o.category, o.output.type])).toEqual([['summarization', 'messages', 'text']]);
+    expect(validateManifestSchema(p.manifest)).toEqual([]);
     expect(p.manifest.files.map((f) => f.locations)).toEqual([[{ transport: 'http', uri: url }]]);
     expect(p.manifestLocations).toEqual([]);
   } finally {

@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:wexare:schema:micromodel-release:0.1",
-  "title": "weXare micro-model release manifest 0.1",
+  "$id": "urn:wexare:schema:micromodel-release:0.2",
+  "title": "weXare micro-model release manifest 0.2",
   "description": "Experimental weXare application profile. The exact UTF-8 manifest string is embedded in a NIP-94 kind:1063 event (tag `wexare-manifest`) and hashed in its `x` tag. A manifest never contains its own event ID or hash.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema", "model_id", "name", "description", "version", "kind", "capabilities", "languages", "license", "runtime", "files", "operations", "requirements"],
   "properties": {
-    "schema": { "const": "wexare.micromodel.release/0.1" },
+    "schema": { "const": "wexare.micromodel.release/0.2" },
     "model_id": {
       "description": "Stable publisher-local slug. A model family is publisher pubkey + model_id.",
       "type": "string",
@@ -23,7 +23,7 @@
     },
     "kind": { "enum": ["model", "lora"] },
     "capabilities": {
-      "description": "Operation IDs this release claims to support.",
+      "description": "Task IDs this release offers: the IDs of its operations.",
       "type": "array",
       "minItems": 1,
       "maxItems": 16,
@@ -80,7 +80,7 @@
       "items": { "$ref": "#/$defs/file" }
     },
     "operations": {
-      "description": "Executable configuration for bundled operation IDs. Each id must also appear in capabilities.",
+      "description": "The tasks this release does, each with how the router finds it, its prompt and the shape of its answer. Each id must also appear in capabilities.",
       "type": "array",
       "maxItems": 16,
       "items": { "$ref": "#/$defs/operation" }
@@ -175,7 +175,7 @@
       "additionalProperties": false,
       "required": ["transport", "uri"],
       "properties": {
-        "transport": { "description": "Protocol 0.1 recognizes ipfs, https, http (loopback, development only), torrent and arweave. Clients ignore unknown transports.", "$ref": "#/$defs/slug" },
+        "transport": { "description": "Protocol 0.2 recognizes ipfs, https, http (loopback, development only), torrent and arweave. Clients ignore unknown transports.", "$ref": "#/$defs/slug" },
         "uri": { "type": "string", "minLength": 1, "maxLength": 4096 },
         "path": { "description": "Torrent only: exact file path inside the torrent.", "type": "string", "minLength": 1, "maxLength": 400 }
       },
@@ -190,11 +190,15 @@
     "operation": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "prompt", "input_schema", "output_schema"],
+      "required": ["id", "title", "category", "when", "prompt", "output"],
       "properties": {
-        "id": { "$ref": "#/$defs/slug" },
+        "id": { "description": "Task ID. Releases that do the same task use the same ID, e.g. `summarization`.", "$ref": "#/$defs/slug" },
+        "title": { "description": "What the task does, as a short label people read, e.g. `Summarize`.", "type": "string", "minLength": 1, "maxLength": 60 },
+        "category": { "description": "Where the router files this task, e.g. `messages` or `command-line`. Reuse a category already in the catalog when one fits.", "$ref": "#/$defs/slug" },
+        "when": { "description": "One plain sentence saying which requests this task is for. The router reads it to decide; keep it short and specific.", "type": "string", "minLength": 1, "maxLength": 200 },
+        "examples": { "description": "Requests people can try, shown by apps.", "type": "array", "maxItems": 5, "items": { "type": "string", "minLength": 1, "maxLength": 400 } },
         "prompt": {
-          "description": "Prompt text only. {{input}}, {{categories}} and {{language}} placeholders are substituted as plain text by the client.",
+          "description": "Prompt text only. {{input}} (the whole request), {{text}} (the request without a leading instruction such as `Summarize this:`), {{labels}} and {{language}} are substituted as plain text by the client.",
           "type": "object",
           "additionalProperties": false,
           "required": ["mode", "template"],
@@ -215,15 +219,55 @@
             "stop": { "type": "array", "maxItems": 8, "items": { "type": "string", "minLength": 1, "maxLength": 64 } }
           }
         },
-        "routing": {
-          "description": "What requests this model is the one for, in a few words (\"git commands: commits, branches and history\"). The System 1 router reads it to choose between models that do the same operation.",
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 120
-        },
-        "input_schema": { "type": "object" },
-        "output_schema": { "type": "object" }
+        "output": {
+          "description": "The shape of the answer, which the client enforces. Clients skip operations whose output type they don't know.",
+          "type": "object",
+          "required": ["type"],
+          "properties": { "type": { "$ref": "#/$defs/slug" } },
+          "allOf": [
+            {
+              "if": { "properties": { "type": { "const": "text" } } },
+              "then": {
+                "additionalProperties": false,
+                "properties": {
+                  "type": true,
+                  "max_chars": { "description": "Longest answer accepted. Default 2000.", "type": "integer", "minimum": 1, "maximum": 8000 },
+                  "single_line": { "description": "The answer must fit on one line.", "type": "boolean" },
+                  "code": { "description": "The answer is code or a command line: apps show it as code, and remind people to read it before running it.", "type": "boolean" },
+                  "decline": { "$ref": "#/$defs/decline" }
+                }
+              }
+            },
+            {
+              "if": { "properties": { "type": { "const": "label" } } },
+              "then": {
+                "additionalProperties": false,
+                "required": ["labels"],
+                "properties": {
+                  "type": true,
+                  "labels": {
+                    "description": "The answer is exactly one of these IDs. {{labels}} lists them with their descriptions.",
+                    "type": "array",
+                    "minItems": 2,
+                    "maxItems": 64,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["id"],
+                      "properties": {
+                        "id": { "$ref": "#/$defs/slug" },
+                        "description": { "type": "string", "minLength": 1, "maxLength": 120 }
+                      }
+                    }
+                  },
+                  "decline": { "$ref": "#/$defs/decline" }
+                }
+              }
+            }
+          ]
+        }
       }
-    }
+    },
+    "decline": { "description": "What the model answers when the request is outside what it can do, e.g. `UNSUPPORTED`. The client then treats the task as not done here.", "type": "string", "minLength": 1, "maxLength": 64 }
   }
 }

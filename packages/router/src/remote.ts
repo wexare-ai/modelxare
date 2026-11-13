@@ -2,7 +2,7 @@
 // OpenAI, or any compatible endpoint). Used only for steps no local model can
 // do, and only when the person turned it on with their own key. The key goes
 // in the Authorization header and nowhere else: never into errors or logs.
-import type { Intent } from './intents.ts';
+import type { Task } from './tasks.ts';
 import type { RemoteHelp } from './router.ts';
 
 export type ProviderId = 'openrouter' | 'openai' | 'custom';
@@ -55,8 +55,8 @@ export function remoteHelp(s: RemoteSettings, fetchImpl: typeof fetch = (...a) =
   return {
     provider: label,
     model: s.model.trim(),
-    async run(intent: Intent, request: string, context: string[], signal?: AbortSignal): Promise<string> {
-      const system = context.length ? `${intent.instruction}\n\nAlready done for this request:\n${context.join('\n')}` : intent.instruction;
+    async run(task: Task, request: string, context: string[], signal?: AbortSignal): Promise<string> {
+      const system = context.length ? `${task.instruction}\n\nAlready done for this request:\n${context.join('\n')}` : task.instruction;
       let res: Response;
       try {
         res = await fetchImpl(`${base}/chat/completions`, {

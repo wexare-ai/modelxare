@@ -85,7 +85,7 @@ that shows what modelXare is for: a before and after played by scrolling, from a
 centers to small models on everyone's own laptop, then one request played through System 1 (the
 router decides) and System 2 (language models do the work) in the browser. **Try modelXare**
 (`#/try`) lists models by what they
-do (Summarize, Sort, Write, Command). Opening a model gives you a text box and one button. The first
+do, in the words their releases use (Summarize, Sort by topic, Continue the text, Write a git command). Opening a model gives you a text box and one button. The first
 press downloads and checks the model, then it runs on the device. It uses the same engine as the
 developer app but hides keys, hashes, relays and storage. It is a separate site, so it keeps its own
 downloads. Its **What do you need?** box sends a request through the System 1 router; see
@@ -151,8 +151,8 @@ pnpm modelxare --env infra/deploy/app.env.example serve       # http://127.0.0.1
   Model ids are the releases' `model_id`s (`community-assistant`, `tiny-summarizer`, `story-base`,
   `shakespeare-lora`, `git-commands`, `ffmpeg-commands`, `imagemagick-commands`), plus `auto`.
 - **`auto`: System 1 + System 2 behind one model id.**
-  - The router reads each task in the last message, as in [Routing with System 1](#routing-with-system-1),
-    and hands each to the catalog model that specializes in it.
+  - The router reads the last message, as in [Routing with System 1](#routing-with-system-1), and hands
+    each task it asks for to the catalog model that does it.
   - There is no person to ask, so a task without a specialist, or a request the router isn't sure
     about, goes to a general chat model instead.
   - A `modelxare` field in the response says which path was taken.
@@ -175,37 +175,48 @@ measured speed and memory.
 
 ## Routing with System 1
 
-**Try modelXare** (`#/try`) in the simple app opens with one box: **What do you need?** A request
-such as "Categorize and summarize this message: …" is handled like this:
+**Try modelXare** (`#/try`) in the simple app opens with one box: **What do you need?** What a request
+can ask for comes from the catalog, never from the app's code: every task the approved publishers'
+models offer, described in each release's own words (its operations' `title` and `when`, see
+[docs/protocol.md](docs/protocol.md#routing)). A release with a new task or category is routed to as
+soon as it arrives. A request such as "Categorize and summarize this message: …" is handled like this:
 
-1. The instruction is the part before a colon near the start ("Categorize and summarize this
-   message"), or a first sentence that is a question with more text after it. It is split where it
-   says "and", "then" or "also", or lists tasks with commas: "Categorize" and "summarize this
-   message".
-2. The router reads each part on its own and picks what it asks for: sort, summarize, write, reply,
-   translate, answer, or a command for a tool. It returns probabilities rather than text, and a part
-   it is at least 50 % sure of becomes a step (90 % for a part of one or two words, so "the pros and
-   cons" doesn't leave a task called "cons"). Only the instruction is read, so a message that
+1. The router (System 1) answers one multiple-choice question over those tasks, plus three general
+   requests no model is assumed to do (answer a question, translate, draft a reply), so that "none of
+   the models here" is a possible answer. It returns probabilities rather than text. With more than
+   10 tasks, they compete in groups and the winners in a final question, because the router is
+   calibrated for up to 10 options.
+2. An instruction at the start (the part before a colon, or a first sentence that is a question with
+   more text after it) that names several tasks is read part by part: "Categorize this message" and
+   "summarize this message". One choice finds one task, and the router's yes/no and "what else?"
+   questions proved unreliable for a second. A part of one or two words counts only at 90 %, so "the
+   pros and cons" doesn't leave a task called "cons". Only the instruction is read, so a message that
    mentions other tasks ("Can you translate the notice?") doesn't add them.
-3. A request without an instruction, or with no clear part, is read whole. If no task reaches 50 %,
-   the person picks from the likeliest three. At most three steps run, the first ones asked for.
-4. All planned steps show at once, then run in the order asked. A step goes to a model on the
-   device when one can do it in the message's language, preferring a model already downloaded,
-   including one an earlier step just fetched. Local models get the message without the
-   instruction. Online help gets the whole request, which may name a language, and is used only for
-   steps no local model can do, and only when the person has turned it on. Otherwise the step is
-   reported as unavailable, in plain words.
-5. **How this was decided** lists each part of the instruction, what the router took it for, and
-   how sure it was.
+3. A request without an instruction, or with no clear part, is read whole. A task at 50 % or more
+   becomes a step; if none is, the person picks from the likeliest three. At most three steps run,
+   the first ones asked for.
+4. When several models offer a task in different words, the router also picks the one that fits the
+   request best; otherwise a model already downloaded comes first, then the smallest. Add-ons run
+   their own prompt on their base's weights, so the git, ffmpeg and ImageMagick command writers, each
+   about 6 MB, share the Message assistant's 491 MB model. Each release's prompt decides what its
+   model reads: the whole request, or the text after the instruction.
+5. A model that answers that a request is outside what it does (its `decline`, such as
+   `UNSUPPORTED`) hands the step to the next likeliest task, then to online help. Online help gets
+   the whole request, which may name a language, and is used only for steps no local model can do,
+   and only when the person has turned it on. Otherwise the step is reported as unavailable, in
+   plain words.
+6. **How this was decided** lists what the router read, what it took each part for and how sure it
+   was, and which model it picked when there was a choice.
 
-Most tasks have interchangeable models: any summarizer will do, so the smallest or a downloaded one
-runs. Commands are different: a git model can't write an ffmpeg command. For those, the router asks
-a second question, built from the catalog at request time: which of the models that can do this is
-the one, as each release describes itself in its operation's `routing` hint ("ffmpeg commands: video
-and audio files such as mp4, mov, mkv, mp3 and wav"). Laya reads options as text, so a new model is
-in that question as soon as it is published, with nothing retrained or changed in the app. Laya
-fits a question and its options in 192 tokens, so more than eight models are compared in rounds of
-eight, then the winners. A release without a hint is described by its name, which picks less well.
+Against the real router release, with the sample releases in the catalog (the command add-ons
+included), this plans all 39 requests in `tests/integration/router-laya.test.ts` correctly, multi-step
+ones included.
+
+Releases share a task ID when their models can stand in for each other: any summarizer will do, so
+a downloaded one or the smallest runs, unless their `when` sentences differ and the router prefers
+one for the request. Models that can't stand in for each other take different IDs: the git, ffmpeg
+and ImageMagick command writers are `git-command`, `ffmpeg-command` and `imagemagick-command`, each
+described by its own `when`.
 
 The router is a catalog release like any model: `fixtures/releases/laya-router.json` publishes the
 ONNX export of Laya (`wexare/laya-onnx`, pinned revision) with `runtime.family: "laya"` and the
@@ -264,12 +275,12 @@ where.
 
 | Path | Contents |
 | --- | --- |
-| `packages/protocol` | Schemas, canonical JSON, event and manifest verification, tag rules, operation contracts, test vectors |
+| `packages/protocol` | Schemas, canonical JSON, event and manifest verification, tag rules, operation output shapes, test vectors |
 | `packages/catalog` | Shared SQLite schema, FTS5 queries, source membership, archive build/read, operator state |
 | `packages/storage` | Source resolution, verified downloads (Node and browser), IPFS client, mirror layout, torrents |
 | `packages/runtime` | Capability detection, wllama runtime wrapper (including the LoRA adapter path), GGUF header reader |
 | `packages/orchestrator` | Release selection, two-stage workflow planning and execution, LoRA dependency resolution |
-| `packages/router` | System 1 routing: intents, the step-by-step loop, local-first routes, online help, router release selection |
+| `packages/router` | System 1 routing: the catalog's tasks, the step-by-step loop, local-first routes, online help, router release selection |
 | `apps/cli` | `wexare`: keys, `release prepare/publish`, `archive build/verify/publish`, `demo …` |
 | `apps/indexer` | Persistent multi-relay collector with a read-only status endpoint |
 | `apps/artifacts` | Static HTTP mirror (range, CORS, immutable caching) and WebRTC torrent seeder |

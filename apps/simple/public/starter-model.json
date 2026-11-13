@@ -18,12 +18,16 @@
     "operations": [
       {
         "id": "summarization",
+        "title": "Summarize",
+        "category": "messages",
+        "when": "shorten the text into a brief summary",
         "prompt": {
           "mode": "chat",
           "system": "You summarize messages in one short sentence. Keep the key facts. Do not add anything.",
-          "template": "Summarize this message in one short sentence:\n\n{{input}}"
+          "template": "Summarize this message in one short sentence:\n\n{{text}}"
         },
-        "generation": { "max_tokens": 60, "temperature": 0, "stop": ["\n"] }
+        "generation": { "max_tokens": 60, "temperature": 0, "stop": ["\n"] },
+        "output": { "type": "text", "max_chars": 400 }
       }
     ],
     "requirements": { "context_length": 1024, "hardware_profiles": ["cpu-wasm"] }

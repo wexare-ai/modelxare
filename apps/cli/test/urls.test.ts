@@ -50,7 +50,7 @@ const definition = (urls: string[]): ReleaseDefinition => ({
     languages: ['en'],
     license: { id: 'MIT' },
     runtime: { format: 'gguf', family: 'wllama', requirement: '>=3.8.1 <3.9.0', browser_features: [], chat_template: { source: 'none' } },
-    operations: [{ id: 'text-generation', prompt: { mode: 'completion', template: '{{input}}' } }],
+    operations: [{ id: 'text-generation', title: 'Continue the text', category: 'writing', when: 'continue a piece of text', prompt: { mode: 'completion', template: '{{input}}' }, output: { type: 'text' } }],
     requirements: { context_length: 256 },
   },
   files: [{ role: 'weights', path: 'model.gguf', source: join(dir, 'model.gguf'), urls }],

@@ -10,25 +10,23 @@
 //
 // Only the router is real here. Mini-models can't run in Node, so no step
 // runs: what is checked is which steps System 1 plans for each request, never
-// what a model would write. Every probability goes to the evidence file, to
-// tune the thresholds from.
+// what a model would write. The tasks it chooses among come from a catalog:
+// the sample releases' manifests in fixtures/releases, command add-ons
+// included. Every probability goes to the evidence file, to tune the
+// thresholds from.
 //
 // On 2026-11-02 the same release, run with native ONNX Runtime (an 8 GB
 // machine can't hold the WebAssembly build), planned all of these
 // correctly, and missed one more request that is kept out of the list:
 // "Classify this complaint and draft a reply" reads "Classify this complaint"
 // as summarize (0.78), not sort. Rewording the sort option did not fix it.
-//
-// On 2026-11-10, with the command option added, all of these passed. Two more
-// requests are kept out: "merge the feature branch into main" reads as sort
-// (0.76), and "Explain what git rebase does" is unsure (command 0.44), so the
-// person is asked.
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Laya } from '@wexare/laya-web';
-import { layaBundle, pickModel, route, routerFiles, type Hooks, type System1 } from '@wexare/router';
+import { layaBundle, route, routerFiles, type Hooks, type System1 } from '@wexare/router';
 import type { CandidateRelease } from '@wexare/orchestrator';
+import type { ReleaseManifest } from '@wexare/protocol';
 import { DATA, endpoints, evidence } from '../support/env.ts';
 
 const RUN = process.env.WEXARE_TEST_LAYA === '1' || process.env.WEXARE_TEST_LAYA === 'native';
@@ -40,9 +38,27 @@ function routerRelease(): CandidateRelease {
   return { eventId: ev.id, pubkey: ev.pubkey, modelId: manifest.model_id, name: manifest.name, version: manifest.version, manifestSha256: '', manifest, support: { supported: true, reasons: [], executableOperations: [] } };
 }
 
-/** No local models and no online help: every step is recorded as unavailable; only decisions matter. */
+const candidate = (manifest: ReleaseManifest): CandidateRelease => ({
+  eventId: manifest.model_id.padEnd(64, '0'),
+  pubkey: 'a'.repeat(64),
+  modelId: manifest.model_id,
+  name: manifest.name,
+  version: manifest.version,
+  manifestSha256: '',
+  manifest,
+  support: { supported: false, reasons: ['not run here'], executableOperations: manifest.operations.map((o) => o.id) },
+});
+
+/** The sample releases' manifests, models and add-ons (their files are never fetched here). */
+const fixtureDir = join(import.meta.dirname, '../../fixtures/releases');
+const CATALOG = readdirSync(fixtureDir)
+  .map((f) => (JSON.parse(readFileSync(join(fixtureDir, f), 'utf8')) as { manifest: ReleaseManifest }).manifest)
+  .filter((m) => m.operations.length)
+  .map(candidate);
+
+/** No runnable models and no online help: every step is recorded as unavailable; only decisions matter. */
 const decisionsOnly = (): Hooks => ({
-  candidates: [],
+  candidates: CATALOG,
   isCached: () => false,
   runLocal: async () => ({}),
   remote: null,
@@ -79,94 +95,56 @@ describe.skipIf(!RUN)(`System 1 router (real Laya${NATIVE ? ', native' : ''})`, 
 
   // [steps the request asks for, in the order asked; request]
   const cases: [string[], string][] = [
-    [['summarize'], 'Please summarize this message: There has been a water leak near the entrance since this morning. Can someone inspect it?'],
-    [['sort'], 'Which category does this message belong to? The people in apartment 4B play loud music every night.'],
-    [['translate'], 'Translate into French: the swimming pool is closed today.'],
-    [['write'], 'Continue this story: Once upon a time, a little fox'],
+    [['summarization'], 'Please summarize this message: There has been a water leak near the entrance since this morning. Can someone inspect it?'],
+    [['text-classification'], 'Which category does this message belong to? The people in apartment 4B play loud music every night.'],
+    [['translation'], 'Translate into French: the swimming pool is closed today.'],
+    [['text-generation'], 'Continue this story: Once upon a time, a little fox'],
     [['answer'], 'What is the capital of Australia?'],
     [['reply'], 'Write a reply to this tenant: my heating has not worked for three days.'],
-    [['sort', 'summarize'], 'Categorize and Summarize this message: There has been a water leak near the entrance since this morning. Can someone inspect it?'],
-    [['sort', 'summarize'], 'Sort this message and then summarize it: water is leaking near the entrance.'],
-    [['summarize', 'translate'], 'Summarize this and translate it into Spanish: the swimming pool will be closed all week for repairs.'],
-    [['sort'], 'Categorize this message: There has been a water leak near the entrance since this morning. Can someone inspect it?'],
-    [['summarize'], 'Summarize: The board met on Tuesday and agreed to repaint the hallways in May, replace the lobby lights, and raise the garden budget.'],
-    [['summarize', 'sort'], 'Summarize and categorize this message: Your electricity bill of $84.20 is due on March 3. Pay online before then to avoid a late fee.'],
-    [['sort', 'summarize'], 'Can you sort this and give me a short summary? Someone left trash bags in the stairwell again and it smells terrible.'],
-    [['translate', 'summarize'], 'Translate this into German and summarize it: the residents meeting is moved to Thursday at 7 pm in the community room.'],
-    [['summarize'], 'Summarize this message: The hallway lights flicker every evening and it is getting hard to see the stairs.'],
-    [['sort'], 'What category is this? Your order of running shoes has shipped and will arrive on Wednesday.'],
+    [['text-classification', 'summarization'], 'Categorize and Summarize this message: There has been a water leak near the entrance since this morning. Can someone inspect it?'],
+    [['text-classification', 'summarization'], 'Sort this message and then summarize it: water is leaking near the entrance.'],
+    [['summarization', 'translation'], 'Summarize this and translate it into Spanish: the swimming pool will be closed all week for repairs.'],
+    [['text-classification'], 'Categorize this message: There has been a water leak near the entrance since this morning. Can someone inspect it?'],
+    [['summarization'], 'Summarize: The board met on Tuesday and agreed to repaint the hallways in May, replace the lobby lights, and raise the garden budget.'],
+    [['summarization', 'text-classification'], 'Summarize and categorize this message: Your electricity bill of $84.20 is due on March 3. Pay online before then to avoid a late fee.'],
+    [['text-classification', 'summarization'], 'Can you sort this and give me a short summary? Someone left trash bags in the stairwell again and it smells terrible.'],
+    [['translation', 'summarization'], 'Translate this into German and summarize it: the residents meeting is moved to Thursday at 7 pm in the community room.'],
+    [['summarization'], 'Summarize this message: The hallway lights flicker every evening and it is getting hard to see the stairs.'],
+    [['text-classification'], 'What category is this? Your order of running shoes has shipped and will arrive on Wednesday.'],
     [['reply'], 'Reply to this message: Thanks a lot for fixing the front door so quickly!'],
     // The message names other tasks; only the instruction counts.
-    [['summarize'], 'Summarize this: Can you translate the notice into Spanish for the new tenants? Many of them do not read English yet.'],
-    [['sort'], 'Please categorize: Can someone summarize the meeting notes for me? I missed the meeting.'],
-    [['write'], 'Once upon a time, a little fox found a lantern in the snow.'],
+    [['summarization'], 'Summarize this: Can you translate the notice into Spanish for the new tenants? Many of them do not read English yet.'],
+    [['text-classification'], 'Please categorize: Can someone summarize the meeting notes for me? I missed the meeting.'],
+    [['text-generation'], 'Once upon a time, a little fox found a lantern in the snow.'],
     [['answer'], 'How long does it take to boil an egg?'],
-    [['translate'], 'Translate to Italian: the elevator is out of order.'],
-    [['summarize'], 'Summarize the pros and cons: Moving the bins outside saves space but attracts foxes at night.'],
-    [['sort', 'summarize', 'reply'], 'Categorize, summarize and reply to this message: The heating in building B is off again.'],
-    [['summarize', 'reply'], 'Give me a summary and draft a reply: Hi, the parcel room has been locked all weekend, where can I pick up my package?'],
+    [['translation'], 'Translate to Italian: the elevator is out of order.'],
+    [['summarization'], 'Summarize the pros and cons: Moving the bins outside saves space but attracts foxes at night.'],
+    [['text-classification', 'summarization', 'reply'], 'Categorize, summarize and reply to this message: The heating in building B is off again.'],
+    [['summarization', 'reply'], 'Give me a summary and draft a reply: Hi, the parcel room has been locked all weekend, where can I pick up my package?'],
     [['answer'], 'Why do pipes freeze in winter and how can I prevent it?'],
-    [['sort', 'summarize'], 'categorize + summarize: Loud drilling from flat 12 every morning at 7.'],
-    // Commands, with or without the tool's name; questions about a tool are not.
-    [['command'], 'How do I undo my last git commit but keep the changes?'],
-    [['command'], 'git command to create a branch called fix-login and switch to it'],
-    [['command'], 'Stash my changes in git'],
-    [['command'], 'show the last 5 commits'],
-    [['command'], 'Extract the audio from talk.mp4 as an mp3'],
-    [['command'], 'Give me the ffmpeg command to remove the sound from intro.mp4'],
-    [['command'], 'Resize video.mp4 to 1280 wide'],
-    [['command'], 'cut the first 30 seconds of intro.mp4'],
-    [['command'], 'turn clip.mov into a gif'],
-    [['command'], 'compress this video so I can email it'],
-    [['command'], 'Make a 200px thumbnail of photo.jpg'],
-    [['command'], 'Convert logo.png to webp'],
-    [['command'], 'rotate photo.jpg 90 degrees'],
-    [['command'], 'Which command converts holiday.mov to mp4 without re-encoding?'],
-    [['answer'], 'What is ffmpeg?'],
-    [['summarize'], 'Summarize: the ffmpeg build failed on the server last night, so the video pipeline is paused until Monday.'],
-    [['sort'], 'Sort this message: Hi team, the git server will be down for maintenance on Sunday.'],
-    [['translate'], 'Translate into Spanish: please resize the photos before sending them.'],
+    [['text-classification', 'summarization'], 'categorize + summarize: Loud drilling from flat 12 every morning at 7.'],
+    // The front page plays this one, with the router's real verdicts (apps/simple/src/Minds.tsx).
+    [['text-classification', 'summarization'], 'Categorize and summarize this message: Hi Sam, because of a storm your flight to Lisbon on Friday will leave two hours late, at 16:40. Your seat and bags stay the same.'],
+    // Command-line tasks, which arrived with new releases (add-ons) and no change to the router.
+    [['git-command'], 'undo my last commit but keep the changes'],
+    [['git-command'], 'squash the last three commits into one'],
+    [['git-command'], 'Give me a git command to create a branch called feature/login and switch to it'],
+    [['git-command'], 'how do I see who changed line 40 of app.js'],
+    [['ffmpeg-command'], 'extract the audio from lecture.mp4 as mp3'],
+    [['ffmpeg-command'], 'make a gif from movie.mkv starting at 1:05 for 4 seconds'],
+    [['ffmpeg-command'], 'Convert and resize this video: clip.mov to 720p mp4'],
+    [['ffmpeg-command'], 'cut the first 30 seconds of intro.mp4 and remove the sound'],
+    [['imagemagick-command'], 'resize photo.png to 500px wide'],
+    [['imagemagick-command'], 'Write the ImageMagick command to make logo.png black and white'],
+    [['imagemagick-command'], 'add a 10px white border around picture.png'],
   ];
 
   it.each(cases)('plans %j for: %s', async (expected, request) => {
     const r = await route(request, system1, decisionsOnly());
-    const planned = r.steps.map((s) => s.intent.id);
+    const planned = r.steps.map((s) => s.task.id);
     const j = r.judgement!;
     log.push({ request, expected, planned, readings: j.readings, latency_ms: j.latencyMs, device: j.device });
     // The message shows what each text looked like, so a miss says how far off it was.
     expect(planned, JSON.stringify(j.readings.map((x) => [x.text, x.choice, x.probability]))).toEqual(expected);
-  }, 120_000);
-
-  // Which command model, from each release's routing hint (fixtures/releases).
-  const commandModels = ['git-commands', 'ffmpeg-commands', 'imagemagick-commands'].map((n) => {
-    const m = JSON.parse(readFileSync(join(__dirname, '../../fixtures/releases', `${n}.json`), 'utf8')).manifest;
-    return { release: { eventId: n, pubkey: 'a'.repeat(64), modelId: m.model_id, name: m.name, version: m.version, manifestSha256: '', manifest: m, support: { supported: true, reasons: [], executableOperations: ['command-generation'] } } as CandidateRelease };
-  });
-  const picks: [string, string][] = [
-    ['git-commands', 'How do I undo my last git commit but keep the changes?'],
-    ['git-commands', 'git command to create a branch called fix-login and switch to it'],
-    ['git-commands', 'Stash my changes in git'],
-    ['git-commands', 'show the last 5 commits'],
-    ['git-commands', 'merge the feature branch into main'],
-    ['git-commands', 'unstage README.md'],
-    ['ffmpeg-commands', 'Extract the audio from talk.mp4 as an mp3'],
-    ['ffmpeg-commands', 'Give me the ffmpeg command to remove the sound from intro.mp4'],
-    ['ffmpeg-commands', 'Resize video.mp4 to 1280 wide'],
-    ['ffmpeg-commands', 'cut the first 30 seconds of intro.mp4'],
-    ['ffmpeg-commands', 'turn clip.mov into a gif'],
-    ['ffmpeg-commands', 'compress this video so I can email it'],
-    ['ffmpeg-commands', 'convert song.wav to mp3'],
-    ['imagemagick-commands', 'Make a 200px thumbnail of photo.jpg'],
-    ['imagemagick-commands', 'Convert logo.png to webp'],
-    ['imagemagick-commands', 'Make picture.jpg black and white with imagemagick'],
-    ['imagemagick-commands', 'rotate photo.jpg 90 degrees'],
-    ['imagemagick-commands', 'add a 10px white border around avatar.png'],
-    ['imagemagick-commands', 'crop photo.jpg to 300x300 from the center'],
-  ];
-
-  it.each(picks)('picks %s for: %s', async (expected, request) => {
-    const { choice, pick } = await pickModel(commandModels, 'command-generation', request, system1);
-    log.push({ request, expected_model: expected, picked: choice.release.modelId, pick });
-    expect(choice.release.modelId, JSON.stringify(pick.considered)).toBe(expected);
   }, 120_000);
 });

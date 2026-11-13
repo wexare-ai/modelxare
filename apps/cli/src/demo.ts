@@ -6,7 +6,7 @@ import { pipeline } from 'node:stream/promises';
 import { spawnSync } from 'node:child_process';
 import { finalizeEvent } from 'nostr-tools/pure';
 import { buildArchive } from '@wexare/catalog';
-import { type FileRole, type NostrEvent, type ReleaseManifest } from '@wexare/protocol';
+import { type FileRole, type NostrEvent, type ReleaseManifest, RELEASE_SCHEMA } from '@wexare/protocol';
 import { ArtifactRoot, KuboClient, hashFile } from '@wexare/storage/node';
 import { publishArchive } from './archive.ts';
 import { ensureKey, type LoadedKey } from './keys.ts';
@@ -175,6 +175,9 @@ export async function loadDemoKeys(): Promise<Record<string, LoadedKey>> {
   return out;
 }
 
+/** The synthetic archive is rebuilt when the release format changes: older records would be rejected. */
+const syntheticMarker = (count: number) => `count-${count}-${RELEASE_SCHEMA.split('/').pop()}.json`;
+
 export async function demoPrepare(opts: { skipIpfs?: boolean; replicate?: boolean; syntheticCount?: number }): Promise<void> {
   step('Keys (disposable local demo credentials, stored with mode 0600 under .data/keys)');
   const keys = await loadDemoKeys();
@@ -243,7 +246,7 @@ export async function demoPrepare(opts: { skipIpfs?: boolean; replicate?: boolea
     step(`Synthetic catalog: ${count} signed, non-runnable records (A08)`);
     const synthDir = paths.synthetic;
     await mkdir(synthDir, { recursive: true });
-    const marker = join(synthDir, `count-${count}.json`);
+    const marker = join(synthDir, syntheticMarker(count));
     let info = await readJson<{ zip: string; announcement: string; event_id: string; zip_sha256: string }>(marker).catch(() => null);
     if (!info) {
       const t0 = Date.now();
@@ -293,7 +296,7 @@ export async function demoPublish(opts: { relays?: string[]; retry?: boolean }):
     const event = await loadEvent(join(paths.release('community-assistant'), 'event.json'));
     printPublishResults(`community-assistant ${event.id.slice(0, 16)}… (same event ID)`, await publishToRelays(event, relays));
   }
-  const synth = await readJson<{ announcement: string }>(join(paths.synthetic, 'count-10000.json')).catch(() => null);
+  const synth = await readJson<{ announcement: string }>(join(paths.synthetic, syntheticMarker(10_000))).catch(() => null);
   if (synth) {
     step('Synthetic catalog announcement');
     const ann = await loadEvent(synth.announcement);

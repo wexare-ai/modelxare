@@ -19,6 +19,10 @@
         ],
         [
           "t",
+          "category:messages"
+        ],
+        [
+          "t",
           "lang:en"
         ],
         [
@@ -39,11 +43,11 @@
         ],
         [
           "x",
-          "3952f085669a5bb7fe57cf2c77ffa23fa0f23fdef5b7d84eaf2d9dc44764979c"
+          "491543b566931710748ed9062a2564257e5ff196186b9905211ea909856d2950"
         ],
         [
           "size",
-          "1529"
+          "1154"
         ],
         [
           "alt",
@@ -51,13 +55,13 @@
         ],
         [
           "wexare-manifest",
-          "{\"capabilities\":[\"summarization\",\"text-classification\"],\"description\":\"Classifies community messages and writes short summaries.\",\"files\":[{\"locations\":[],\"path\":\"model.gguf\",\"role\":\"weights\",\"sha256\":\"dd70d7536ca0e4b6db03b122993b41e9ce4a1631a6f78ef25df4e48ed6d8f234\",\"size\":491000000}],\"kind\":\"model\",\"languages\":[\"en\",\"es\"],\"license\":{\"id\":\"Apache-2.0\"},\"model_id\":\"qwen-like\",\"name\":\"Community classifier\",\"operations\":[{\"id\":\"summarization\",\"input_schema\":{\"additionalProperties\":false,\"properties\":{\"text\":{\"maxLength\":4000,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"text\"],\"type\":\"object\"},\"output_schema\":{\"additionalProperties\":false,\"properties\":{\"summary\":{\"maxLength\":400,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"summary\"],\"type\":\"object\"},\"prompt\":{\"mode\":\"chat\",\"template\":\"{{input}}\"}},{\"id\":\"text-classification\",\"input_schema\":{\"additionalProperties\":false,\"properties\":{\"text\":{\"maxLength\":4000,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"text\"],\"type\":\"object\"},\"output_schema\":{\"additionalProperties\":false,\"properties\":{\"category\":{\"enum\":[\"maintenance\",\"safety\",\"security\",\"noise\",\"cleanliness\",\"other\"]}},\"required\":[\"category\"],\"type\":\"object\"},\"prompt\":{\"mode\":\"chat\",\"template\":\"{{input}}\"}}],\"requirements\":{\"context_length\":1024,\"hardware_profiles\":[\"cpu-wasm\"],\"memory_mb\":{\"basis\":\"estimated\",\"context_length\":1024,\"value\":900}},\"runtime\":{\"browser_features\":[\"wasm\"],\"family\":\"wllama\",\"format\":\"gguf\",\"requirement\":\">=3.8.1 <3.9.0\"},\"schema\":\"wexare.micromodel.release/0.1\",\"version\":\"1.0.0\"}"
+          "{\"capabilities\":[\"summarization\",\"text-classification\"],\"description\":\"Classifies community messages and writes short summaries.\",\"files\":[{\"locations\":[],\"path\":\"model.gguf\",\"role\":\"weights\",\"sha256\":\"dd70d7536ca0e4b6db03b122993b41e9ce4a1631a6f78ef25df4e48ed6d8f234\",\"size\":491000000}],\"kind\":\"model\",\"languages\":[\"en\",\"es\"],\"license\":{\"id\":\"Apache-2.0\"},\"model_id\":\"qwen-like\",\"name\":\"Community classifier\",\"operations\":[{\"category\":\"messages\",\"id\":\"summarization\",\"output\":{\"max_chars\":400,\"type\":\"text\"},\"prompt\":{\"mode\":\"chat\",\"template\":\"{{text}}\"},\"title\":\"Summarize\",\"when\":\"shorten the text into a brief summary\"},{\"category\":\"messages\",\"id\":\"text-classification\",\"output\":{\"labels\":[{\"id\":\"work\"},{\"id\":\"other\"}],\"type\":\"label\"},\"prompt\":{\"mode\":\"chat\",\"template\":\"{{text}}\"},\"title\":\"Sort by topic\",\"when\":\"put a message into one topic\"}],\"requirements\":{\"context_length\":1024,\"hardware_profiles\":[\"cpu-wasm\"],\"memory_mb\":{\"basis\":\"estimated\",\"context_length\":1024,\"value\":900}},\"runtime\":{\"browser_features\":[\"wasm\"],\"family\":\"wllama\",\"format\":\"gguf\",\"requirement\":\">=3.8.1 <3.9.0\"},\"schema\":\"wexare.micromodel.release/0.2\",\"version\":\"1.0.0\"}"
         ]
       ],
       "content": "Classifies community messages and writes short summaries.",
       "pubkey": "d20d8adc9d0e3c9aeb9ad87cfb278d0d8b9d7b4fb4972ffff9f1ba05f07ad36e",
-      "id": "c01b24e45c94ec2ccc0878fc3fec74dba05e6d025ffc2111875d3c313b3ea452",
-      "sig": "f821425fd09454679ca6b5b2b18b0cb7a60d1e9c054f972ac0ede8e1142ba40a24c85dfb39b169806dbed899eb02a3455c9edddf90df09c6575e6aa01590f38a"
+      "id": "df8451fd5cbdc5cb634e9811fdf1b9d03cc13e16e47f4963bcb89b67622da949",
+      "sig": "d91c088f5d2e885702e920dc5feaf3f9d766556e6b2b8e7e61b82020e63fbe03ec0790cb2a4e41dfca58d9f2400a915d5c5b7fd20085977d4ded1af0069470a2"
     },
     {
       "kind": 1063,
@@ -73,6 +77,10 @@
         ],
         [
           "t",
+          "category:messages"
+        ],
+        [
+          "t",
           "lang:en"
         ],
         [
@@ -89,11 +97,11 @@
         ],
         [
           "x",
-          "4516ba1a08a49928a1dfd6d7670af5756b1e7447d068bb094ba1a9faa6cbaf6a"
+          "3e6b7fb85e0dc93e1d04b1ce91ab5cc91ec94c23682723dfdf13a24d99aca771"
         ],
         [
           "size",
-          "1003"
+          "820"
         ],
         [
           "alt",
@@ -101,13 +109,13 @@
         ],
         [
           "wexare-manifest",
-          "{\"capabilities\":[\"summarization\"],\"description\":\"Short English summaries of residents’ messages.\",\"files\":[{\"locations\":[],\"path\":\"model.gguf\",\"role\":\"weights\",\"sha256\":\"a02e52a99a3e822c63321f481badd7fc22a7e545d70583eb8b25896818814ed4\",\"size\":386000000}],\"kind\":\"model\",\"languages\":[\"en\"],\"license\":{\"id\":\"Apache-2.0\"},\"model_id\":\"smol-like\",\"name\":\"Tiny summarizer\",\"operations\":[{\"id\":\"summarization\",\"input_schema\":{\"additionalProperties\":false,\"properties\":{\"text\":{\"maxLength\":4000,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"text\"],\"type\":\"object\"},\"output_schema\":{\"additionalProperties\":false,\"properties\":{\"summary\":{\"maxLength\":400,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"summary\"],\"type\":\"object\"},\"prompt\":{\"mode\":\"chat\",\"template\":\"{{input}}\"}}],\"requirements\":{\"context_length\":1024,\"hardware_profiles\":[\"cpu-wasm\"]},\"runtime\":{\"browser_features\":[\"wasm\"],\"family\":\"wllama\",\"format\":\"gguf\",\"requirement\":\">=3.8.1 <3.9.0\"},\"schema\":\"wexare.micromodel.release/0.1\",\"version\":\"1.0.0\"}"
+          "{\"capabilities\":[\"summarization\"],\"description\":\"Short English summaries of residents’ messages.\",\"files\":[{\"locations\":[],\"path\":\"model.gguf\",\"role\":\"weights\",\"sha256\":\"a02e52a99a3e822c63321f481badd7fc22a7e545d70583eb8b25896818814ed4\",\"size\":386000000}],\"kind\":\"model\",\"languages\":[\"en\"],\"license\":{\"id\":\"Apache-2.0\"},\"model_id\":\"smol-like\",\"name\":\"Tiny summarizer\",\"operations\":[{\"category\":\"messages\",\"id\":\"summarization\",\"output\":{\"max_chars\":400,\"type\":\"text\"},\"prompt\":{\"mode\":\"chat\",\"template\":\"{{text}}\"},\"title\":\"Summarize\",\"when\":\"shorten the text into a brief summary\"}],\"requirements\":{\"context_length\":1024,\"hardware_profiles\":[\"cpu-wasm\"]},\"runtime\":{\"browser_features\":[\"wasm\"],\"family\":\"wllama\",\"format\":\"gguf\",\"requirement\":\">=3.8.1 <3.9.0\"},\"schema\":\"wexare.micromodel.release/0.2\",\"version\":\"1.0.0\"}"
         ]
       ],
       "content": "Short English summaries of residents’ messages.",
       "pubkey": "d20d8adc9d0e3c9aeb9ad87cfb278d0d8b9d7b4fb4972ffff9f1ba05f07ad36e",
-      "id": "c1ddddc6dd2d153bfe3f362e42ede7bec499fe4272334e92d1d6a41df48c0293",
-      "sig": "a5d501ac8e3607b4dad3a8f6a2d727e4bb68baab48e23eff1f203709d9e407a7b4bd9e03f28dced0d71b3b60d4fb7031ce7bf37280b41c04b487879ab40fa8f7"
+      "id": "c87abdc9f0b68f0e5e54c30720a99830f28ea9f0278f0af8c9fcacbdf22f9237",
+      "sig": "3d3cccfb5c019d87fe7cd7f138018acfa3ec52d26949d0a87b194a07389b8e3634798e7e0ec224302b3075cc30bb45da46cb34a06322afc1086d6f0ec85367de"
     },
     {
       "kind": 1063,
@@ -123,6 +131,10 @@
         ],
         [
           "t",
+          "category:messages"
+        ],
+        [
+          "t",
           "lang:en"
         ],
         [
@@ -139,11 +151,11 @@
         ],
         [
           "x",
-          "7a5a0e3f5b14a6c7a384bda3b0c8dfd1437bcdb7e436779fdf7051ebc43d6377"
+          "9d992fbb9f80caab2d56e74c60e87a5a9693624c4cb68a45cc6219e32c8040f1"
         ],
         [
           "size",
-          "1036"
+          "853"
         ],
         [
           "alt",
@@ -151,13 +163,13 @@
         ],
         [
           "wexare-manifest",
-          "{\"capabilities\":[\"summarization\"],\"description\":\"A different publisher reusing the same display name.\",\"files\":[{\"locations\":[],\"path\":\"model.gguf\",\"role\":\"weights\",\"sha256\":\"5ed5ea394d1b3817ffda328f0852fbb6793ab679f07cbb2fbb5dd2d55313534c\",\"size\":120000000}],\"kind\":\"model\",\"languages\":[\"en\"],\"license\":{\"id\":\"MIT\"},\"model_id\":\"same-name-b\",\"name\":\"Tiny summarizer\",\"operations\":[{\"id\":\"summarization\",\"input_schema\":{\"additionalProperties\":false,\"properties\":{\"text\":{\"maxLength\":4000,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"text\"],\"type\":\"object\"},\"output_schema\":{\"additionalProperties\":false,\"properties\":{\"summary\":{\"maxLength\":400,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"summary\"],\"type\":\"object\"},\"prompt\":{\"mode\":\"chat\",\"template\":\"{{input}}\"}}],\"requirements\":{\"context_length\":1024,\"memory_mb\":{\"basis\":\"estimated\",\"context_length\":1024,\"value\":300}},\"runtime\":{\"browser_features\":[\"wasm\"],\"family\":\"wllama\",\"format\":\"gguf\",\"requirement\":\">=3.8.1 <3.9.0\"},\"schema\":\"wexare.micromodel.release/0.1\",\"version\":\"1.0.0\"}"
+          "{\"capabilities\":[\"summarization\"],\"description\":\"A different publisher reusing the same display name.\",\"files\":[{\"locations\":[],\"path\":\"model.gguf\",\"role\":\"weights\",\"sha256\":\"5ed5ea394d1b3817ffda328f0852fbb6793ab679f07cbb2fbb5dd2d55313534c\",\"size\":120000000}],\"kind\":\"model\",\"languages\":[\"en\"],\"license\":{\"id\":\"MIT\"},\"model_id\":\"same-name-b\",\"name\":\"Tiny summarizer\",\"operations\":[{\"category\":\"messages\",\"id\":\"summarization\",\"output\":{\"max_chars\":400,\"type\":\"text\"},\"prompt\":{\"mode\":\"chat\",\"template\":\"{{text}}\"},\"title\":\"Summarize\",\"when\":\"shorten the text into a brief summary\"}],\"requirements\":{\"context_length\":1024,\"memory_mb\":{\"basis\":\"estimated\",\"context_length\":1024,\"value\":300}},\"runtime\":{\"browser_features\":[\"wasm\"],\"family\":\"wllama\",\"format\":\"gguf\",\"requirement\":\">=3.8.1 <3.9.0\"},\"schema\":\"wexare.micromodel.release/0.2\",\"version\":\"1.0.0\"}"
         ]
       ],
       "content": "A different publisher reusing the same display name.",
       "pubkey": "a781b6f42c3017884015f85825c7928c2a9196b8e03dee7b5d6676b97d869a2d",
-      "id": "fbaa7b32466093856b10bc684fc7f407d3855bc8c7ca98f26af823dae8d75541",
-      "sig": "2940f137c8149abf37f65b790903d3f435b1568e1803755f68f927b4b708cf181f89fc620047d06e13066839feb5d247de6c8bd4ddf73e4fbefad47dd0afc814"
+      "id": "78d52b6b6830b3d16d7b61cb7e31d85d4488fb5772d120ebde1d3e321baeba09",
+      "sig": "30d7b576683d9105717835e1e4d629e36aec81b6eb8ee34741e1b228a1f3b9eae0b710d349440e2711f5488032c5615eab237d8a78e57a1030c1096f100f77c6"
     },
     {
       "kind": 1063,
@@ -170,6 +182,10 @@
         [
           "t",
           "task:text-classification"
+        ],
+        [
+          "t",
+          "category:messages"
         ],
         [
           "t",
@@ -189,11 +205,11 @@
         ],
         [
           "x",
-          "47edebf7bf073e0bddaef2dd77efb37f4e50c2dc1ecda2ec3a0af82eca2fc14a"
+          "8bc964362b63528bf9fc2e6f361320e823288bca18b6d46739552534f0d3c56f"
         ],
         [
           "size",
-          "1081"
+          "889"
         ],
         [
           "alt",
@@ -201,13 +217,13 @@
         ],
         [
           "wexare-manifest",
-          "{\"capabilities\":[\"text-classification\"],\"description\":\"Detects maintenance issues such as water leaks.\",\"files\":[{\"locations\":[],\"path\":\"model.gguf\",\"role\":\"weights\",\"sha256\":\"aa94db823f6fb890193aab3d610e3e93f231b3f13b34e177cb56a5aa403f9d0e\",\"size\":50000000}],\"kind\":\"model\",\"languages\":[\"es\"],\"license\":{\"id\":\"Apache-2.0\"},\"model_id\":\"classifier-only\",\"name\":\"Leak detector\",\"operations\":[{\"id\":\"text-classification\",\"input_schema\":{\"additionalProperties\":false,\"properties\":{\"text\":{\"maxLength\":4000,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"text\"],\"type\":\"object\"},\"output_schema\":{\"additionalProperties\":false,\"properties\":{\"category\":{\"enum\":[\"maintenance\",\"safety\",\"security\",\"noise\",\"cleanliness\",\"other\"]}},\"required\":[\"category\"],\"type\":\"object\"},\"prompt\":{\"mode\":\"chat\",\"template\":\"{{input}}\"}}],\"requirements\":{\"context_length\":1024,\"memory_mb\":{\"basis\":\"estimated\",\"context_length\":1024,\"value\":2000}},\"runtime\":{\"browser_features\":[\"wasm\"],\"family\":\"wllama\",\"format\":\"gguf\",\"requirement\":\">=3.8.1 <3.9.0\"},\"schema\":\"wexare.micromodel.release/0.1\",\"version\":\"1.0.0\"}"
+          "{\"capabilities\":[\"text-classification\"],\"description\":\"Detects maintenance issues such as water leaks.\",\"files\":[{\"locations\":[],\"path\":\"model.gguf\",\"role\":\"weights\",\"sha256\":\"aa94db823f6fb890193aab3d610e3e93f231b3f13b34e177cb56a5aa403f9d0e\",\"size\":50000000}],\"kind\":\"model\",\"languages\":[\"es\"],\"license\":{\"id\":\"Apache-2.0\"},\"model_id\":\"classifier-only\",\"name\":\"Leak detector\",\"operations\":[{\"category\":\"messages\",\"id\":\"text-classification\",\"output\":{\"labels\":[{\"id\":\"work\"},{\"id\":\"other\"}],\"type\":\"label\"},\"prompt\":{\"mode\":\"chat\",\"template\":\"{{text}}\"},\"title\":\"Sort by topic\",\"when\":\"put a message into one topic\"}],\"requirements\":{\"context_length\":1024,\"memory_mb\":{\"basis\":\"estimated\",\"context_length\":1024,\"value\":2000}},\"runtime\":{\"browser_features\":[\"wasm\"],\"family\":\"wllama\",\"format\":\"gguf\",\"requirement\":\">=3.8.1 <3.9.0\"},\"schema\":\"wexare.micromodel.release/0.2\",\"version\":\"1.0.0\"}"
         ]
       ],
       "content": "Detects maintenance issues such as water leaks.",
       "pubkey": "a781b6f42c3017884015f85825c7928c2a9196b8e03dee7b5d6676b97d869a2d",
-      "id": "5241c5496dae22c299e526846879c7d54ae1f2cae167597ae1059be52db18cdf",
-      "sig": "dfc74dc18915a0fa7e6b74cd10ff4b0ac9b724ee3ecd8e65c25b0f55f6e8d5dbf2089d09b4d37badecd62130c3ffbbca309c4e28c457c5ac40538e303815e226"
+      "id": "21ebabfee141ad74d60461017ffa3aeefd36eaaf850dff745e30a1d3c9cc3d13",
+      "sig": "cd06fcd42af1e106b246d6ace6d664b2b9aec382a9cb2ffdaa6bb6888c76157205160c9bcbc81ecd784557c1f64a02cf202071e1d4a2e0f51e6b8166bcdb50ef"
     },
     {
       "kind": 1063,
@@ -239,11 +255,11 @@
         ],
         [
           "x",
-          "5372bab9fdde212611bd5c5a169eddefbef3590695e9fef51a5c97e665a1a5cc"
+          "dcd122d5cf66c3c375d618fe67956ec5124aa588d157c9cac6fb6f93cb2cfa82"
         ],
         [
           "size",
-          "1177"
+          "829"
         ],
         [
           "alt",
@@ -251,13 +267,13 @@
         ],
         [
           "wexare-manifest",
-          "{\"base\":{\"files\":[{\"sha256\":\"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"size\":1}],\"manifest_sha256\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"release_id\":\"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\"},\"capabilities\":[\"text-generation\"],\"description\":\"Story style adapter.\",\"files\":[{\"locations\":[],\"path\":\"model.gguf\",\"role\":\"adapter\",\"sha256\":\"8ad97d4b2fc41caea97be3f8bd1d9c40bc355f00ab16d8a36964bf3ae06d0a00\",\"size\":16000000}],\"kind\":\"lora\",\"languages\":[\"en\"],\"license\":{\"id\":\"Apache-2.0\"},\"model_id\":\"lora\",\"name\":\"Shakespeare adapter\",\"operations\":[{\"id\":\"text-generation\",\"input_schema\":{\"additionalProperties\":false,\"properties\":{\"text\":{\"maxLength\":4000,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"text\"],\"type\":\"object\"},\"output_schema\":{\"additionalProperties\":false,\"properties\":{\"text\":{\"type\":\"string\"}},\"required\":[\"text\"],\"type\":\"object\"},\"prompt\":{\"mode\":\"chat\",\"template\":\"{{input}}\"}}],\"requirements\":{\"context_length\":1024},\"runtime\":{\"browser_features\":[\"wasm\"],\"family\":\"wllama\",\"format\":\"gguf\",\"requirement\":\">=3.8.1 <3.9.0\"},\"schema\":\"wexare.micromodel.release/0.1\",\"version\":\"1.0.0\"}"
+          "{\"base\":{\"files\":[{\"sha256\":\"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"size\":1}],\"manifest_sha256\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"release_id\":\"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\"},\"capabilities\":[\"text-generation\"],\"description\":\"Story style adapter.\",\"files\":[{\"locations\":[],\"path\":\"model.gguf\",\"role\":\"adapter\",\"sha256\":\"8ad97d4b2fc41caea97be3f8bd1d9c40bc355f00ab16d8a36964bf3ae06d0a00\",\"size\":16000000}],\"kind\":\"lora\",\"languages\":[\"en\"],\"license\":{\"id\":\"Apache-2.0\"},\"model_id\":\"lora\",\"name\":\"Shakespeare adapter\",\"operations\":[],\"requirements\":{\"context_length\":1024},\"runtime\":{\"browser_features\":[\"wasm\"],\"family\":\"wllama\",\"format\":\"gguf\",\"requirement\":\">=3.8.1 <3.9.0\"},\"schema\":\"wexare.micromodel.release/0.2\",\"version\":\"1.0.0\"}"
         ]
       ],
       "content": "Story style adapter.",
       "pubkey": "d20d8adc9d0e3c9aeb9ad87cfb278d0d8b9d7b4fb4972ffff9f1ba05f07ad36e",
-      "id": "e6bd1db27ec4bddcb52c2122d18d8cd0e222d0ffde013da22d724da3cbfdf4e2",
-      "sig": "b80fe216cfb5a7d90300d99eef7603ca4c659ffc856cc26aa0c172fcb222c7c403d26b8a5cb777c1f4dcb7a5e1bd280ef483bae3bd82342078c9b73311f51c25"
+      "id": "c8dd2a1b1a1669b740d494a11d64389b483ad4d5346927d95189d75a12c5e47b",
+      "sig": "6aeb808e0b21eb2cd88380fbdd9b2d74a0027dd4507fba426392ad3d724e8ac48bbf34e04d3f13c7224e4e37660ddbc1f9e128aca261f07b78a288f1b4a0f5cb"
     },
     {
       "kind": 1063,
@@ -270,6 +286,10 @@
         [
           "t",
           "task:summarization"
+        ],
+        [
+          "t",
+          "category:messages"
         ],
         [
           "t",
@@ -289,11 +309,11 @@
         ],
         [
           "x",
-          "4f2a5c6a0f7832630615caa78f8808efa9402245db823fa11be1beaa467d694f"
+          "d1bd34a5a848839b6aefe3a0b3dfddd99be8f84ab580084e0e40ba02ba2fc15e"
         ],
         [
           "size",
-          "977"
+          "794"
         ],
         [
           "alt",
@@ -301,13 +321,13 @@
         ],
         [
           "wexare-manifest",
-          "{\"capabilities\":[\"summarization\"],\"description\":\"Uses a runtime this client does not support.\",\"files\":[{\"locations\":[],\"path\":\"model.gguf\",\"role\":\"weights\",\"sha256\":\"cfa84f61f596f81de8e6044fa9a0aeda9c9f9e6ece4070d180a4ec2a2f14136e\",\"size\":10000000}],\"kind\":\"model\",\"languages\":[\"en\"],\"license\":{\"id\":\"Apache-2.0\"},\"model_id\":\"unknown-runtime\",\"name\":\"Future runtime model\",\"operations\":[{\"id\":\"summarization\",\"input_schema\":{\"additionalProperties\":false,\"properties\":{\"text\":{\"maxLength\":4000,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"text\"],\"type\":\"object\"},\"output_schema\":{\"additionalProperties\":false,\"properties\":{\"summary\":{\"maxLength\":400,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"summary\"],\"type\":\"object\"},\"prompt\":{\"mode\":\"chat\",\"template\":\"{{input}}\"}}],\"requirements\":{\"context_length\":1024},\"runtime\":{\"browser_features\":[\"wasm\"],\"family\":\"onnx-web\",\"format\":\"gguf\",\"requirement\":\">=3.8.1 <3.9.0\"},\"schema\":\"wexare.micromodel.release/0.1\",\"version\":\"1.0.0\"}"
+          "{\"capabilities\":[\"summarization\"],\"description\":\"Uses a runtime this client does not support.\",\"files\":[{\"locations\":[],\"path\":\"model.gguf\",\"role\":\"weights\",\"sha256\":\"cfa84f61f596f81de8e6044fa9a0aeda9c9f9e6ece4070d180a4ec2a2f14136e\",\"size\":10000000}],\"kind\":\"model\",\"languages\":[\"en\"],\"license\":{\"id\":\"Apache-2.0\"},\"model_id\":\"unknown-runtime\",\"name\":\"Future runtime model\",\"operations\":[{\"category\":\"messages\",\"id\":\"summarization\",\"output\":{\"max_chars\":400,\"type\":\"text\"},\"prompt\":{\"mode\":\"chat\",\"template\":\"{{text}}\"},\"title\":\"Summarize\",\"when\":\"shorten the text into a brief summary\"}],\"requirements\":{\"context_length\":1024},\"runtime\":{\"browser_features\":[\"wasm\"],\"family\":\"onnx-web\",\"format\":\"gguf\",\"requirement\":\">=3.8.1 <3.9.0\"},\"schema\":\"wexare.micromodel.release/0.2\",\"version\":\"1.0.0\"}"
         ]
       ],
       "content": "Uses a runtime this client does not support.",
       "pubkey": "a781b6f42c3017884015f85825c7928c2a9196b8e03dee7b5d6676b97d869a2d",
-      "id": "ccb2338dd8faff9ba9f62ec254c18d06e3e74e91e5a93aa3e66f3155beacfa70",
-      "sig": "c066b9df5bd1c7dc03f0944a5e33a5f0bd5efbbd1159616be6eeff5f402816882bf24da1c446cc08d0a0f3073587c5b3f0fad12ca2f2e329831d71b5cb781f55"
+      "id": "abfa514ab1b56ac0c39f2691ca56a093f1ddb0cd452e77c33c647ad450428bc7",
+      "sig": "2f29ce7e8d0927150eca9ccf6b46615340e915c953337ba89f7808de83f1001fc4306ecc9faf961390cb84f1a895fc1c7c0c7b28ad305ef809ae64f862330102"
     },
     {
       "kind": 1063,
@@ -320,6 +340,10 @@
         [
           "t",
           "task:summarization"
+        ],
+        [
+          "t",
+          "category:messages"
         ],
         [
           "t",
@@ -339,11 +363,11 @@
         ],
         [
           "x",
-          "9e8e83bb41e10b69530687ef9e1a17f87b948f3331c2da0070d6088b7ca21bb6"
+          "34f2ea4b7234830b2ea1cfebe16e15f879c54de3ef795ae10da5eea8a45e1b51"
         ],
         [
           "size",
-          "1004"
+          "821"
         ],
         [
           "alt",
@@ -351,35 +375,35 @@
         ],
         [
           "wexare-manifest",
-          "{\"capabilities\":[\"summarization\"],\"description\":\"SYNTHETIC record for scale tests. Not a runnable model.\",\"files\":[{\"locations\":[],\"path\":\"model.gguf\",\"role\":\"weights\",\"sha256\":\"9064eecde369a7cce8537201002f9c82c88931c7f5d4c683049a229b958f7352\",\"size\":1000}],\"kind\":\"model\",\"labels\":[\"synthetic\"],\"languages\":[\"en\"],\"license\":{\"id\":\"Apache-2.0\"},\"model_id\":\"synthetic\",\"name\":\"Synthetic summarizer 0001\",\"operations\":[{\"id\":\"summarization\",\"input_schema\":{\"additionalProperties\":false,\"properties\":{\"text\":{\"maxLength\":4000,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"text\"],\"type\":\"object\"},\"output_schema\":{\"additionalProperties\":false,\"properties\":{\"summary\":{\"maxLength\":400,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"summary\"],\"type\":\"object\"},\"prompt\":{\"mode\":\"chat\",\"template\":\"{{input}}\"}}],\"requirements\":{\"context_length\":1024},\"runtime\":{\"browser_features\":[\"wasm\"],\"family\":\"wllama\",\"format\":\"gguf\",\"requirement\":\">=3.8.1 <3.9.0\"},\"schema\":\"wexare.micromodel.release/0.1\",\"version\":\"1.0.0\"}"
+          "{\"capabilities\":[\"summarization\"],\"description\":\"SYNTHETIC record for scale tests. Not a runnable model.\",\"files\":[{\"locations\":[],\"path\":\"model.gguf\",\"role\":\"weights\",\"sha256\":\"9064eecde369a7cce8537201002f9c82c88931c7f5d4c683049a229b958f7352\",\"size\":1000}],\"kind\":\"model\",\"labels\":[\"synthetic\"],\"languages\":[\"en\"],\"license\":{\"id\":\"Apache-2.0\"},\"model_id\":\"synthetic\",\"name\":\"Synthetic summarizer 0001\",\"operations\":[{\"category\":\"messages\",\"id\":\"summarization\",\"output\":{\"max_chars\":400,\"type\":\"text\"},\"prompt\":{\"mode\":\"chat\",\"template\":\"{{text}}\"},\"title\":\"Summarize\",\"when\":\"shorten the text into a brief summary\"}],\"requirements\":{\"context_length\":1024},\"runtime\":{\"browser_features\":[\"wasm\"],\"family\":\"wllama\",\"format\":\"gguf\",\"requirement\":\">=3.8.1 <3.9.0\"},\"schema\":\"wexare.micromodel.release/0.2\",\"version\":\"1.0.0\"}"
         ]
       ],
       "content": "SYNTHETIC record for scale tests. Not a runnable model.",
       "pubkey": "a781b6f42c3017884015f85825c7928c2a9196b8e03dee7b5d6676b97d869a2d",
-      "id": "7c1e1be7718128ee43df72f5e685725902c46d429440613fbb8c7582ea8bacfa",
-      "sig": "3af2a9429742044094574c86ed55c7830c8af26535eeff269ad90b6305a045b609ffb6b0e54819f568c5be8ed8251b9bf5a78da70dacd7836699d9f50b45a218"
+      "id": "6f2adf3f61370f24c26ede85783eb99ef266bef7069d8ccd9cf2988ed9835f27",
+      "sig": "00a57fa1cd3bbb0a393696d72c1ae745ad7ebb455db4db64881af7e36f90cc58aef2b13d4712cfc65faa94e6f3c6627057efee28e52549818e2b178bf5fbba7d"
     }
   ],
   "labels": {
-    "qwen-like": "c01b24e45c94ec2ccc0878fc3fec74dba05e6d025ffc2111875d3c313b3ea452",
-    "smol-like": "c1ddddc6dd2d153bfe3f362e42ede7bec499fe4272334e92d1d6a41df48c0293",
-    "same-name-b": "fbaa7b32466093856b10bc684fc7f407d3855bc8c7ca98f26af823dae8d75541",
-    "classifier-only": "5241c5496dae22c299e526846879c7d54ae1f2cae167597ae1059be52db18cdf",
-    "lora": "e6bd1db27ec4bddcb52c2122d18d8cd0e222d0ffde013da22d724da3cbfdf4e2",
-    "unknown-runtime": "ccb2338dd8faff9ba9f62ec254c18d06e3e74e91e5a93aa3e66f3155beacfa70",
-    "synthetic": "7c1e1be7718128ee43df72f5e685725902c46d429440613fbb8c7582ea8bacfa"
+    "qwen-like": "df8451fd5cbdc5cb634e9811fdf1b9d03cc13e16e47f4963bcb89b67622da949",
+    "smol-like": "c87abdc9f0b68f0e5e54c30720a99830f28ea9f0278f0af8c9fcacbdf22f9237",
+    "same-name-b": "78d52b6b6830b3d16d7b61cb7e31d85d4488fb5772d120ebde1d3e321baeba09",
+    "classifier-only": "21ebabfee141ad74d60461017ffa3aeefd36eaaf850dff745e30a1d3c9cc3d13",
+    "lora": "c8dd2a1b1a1669b740d494a11d64389b483ad4d5346927d95189d75a12c5e47b",
+    "unknown-runtime": "abfa514ab1b56ac0c39f2691ca56a093f1ddb0cd452e77c33c647ad450428bc7",
+    "synthetic": "6f2adf3f61370f24c26ede85783eb99ef266bef7069d8ccd9cf2988ed9835f27"
   },
   "queries": [
     {
       "name": "all non-synthetic",
       "query": {},
       "expect": [
-        "c01b24e45c94ec2ccc0878fc3fec74dba05e6d025ffc2111875d3c313b3ea452",
-        "c1ddddc6dd2d153bfe3f362e42ede7bec499fe4272334e92d1d6a41df48c0293",
-        "fbaa7b32466093856b10bc684fc7f407d3855bc8c7ca98f26af823dae8d75541",
-        "5241c5496dae22c299e526846879c7d54ae1f2cae167597ae1059be52db18cdf",
-        "e6bd1db27ec4bddcb52c2122d18d8cd0e222d0ffde013da22d724da3cbfdf4e2",
-        "ccb2338dd8faff9ba9f62ec254c18d06e3e74e91e5a93aa3e66f3155beacfa70"
+        "df8451fd5cbdc5cb634e9811fdf1b9d03cc13e16e47f4963bcb89b67622da949",
+        "c87abdc9f0b68f0e5e54c30720a99830f28ea9f0278f0af8c9fcacbdf22f9237",
+        "78d52b6b6830b3d16d7b61cb7e31d85d4488fb5772d120ebde1d3e321baeba09",
+        "21ebabfee141ad74d60461017ffa3aeefd36eaaf850dff745e30a1d3c9cc3d13",
+        "c8dd2a1b1a1669b740d494a11d64389b483ad4d5346927d95189d75a12c5e47b",
+        "abfa514ab1b56ac0c39f2691ca56a093f1ddb0cd452e77c33c647ad450428bc7"
       ]
     },
     {
@@ -388,13 +412,13 @@
         "includeSynthetic": true
       },
       "expect": [
-        "c01b24e45c94ec2ccc0878fc3fec74dba05e6d025ffc2111875d3c313b3ea452",
-        "c1ddddc6dd2d153bfe3f362e42ede7bec499fe4272334e92d1d6a41df48c0293",
-        "fbaa7b32466093856b10bc684fc7f407d3855bc8c7ca98f26af823dae8d75541",
-        "5241c5496dae22c299e526846879c7d54ae1f2cae167597ae1059be52db18cdf",
-        "e6bd1db27ec4bddcb52c2122d18d8cd0e222d0ffde013da22d724da3cbfdf4e2",
-        "ccb2338dd8faff9ba9f62ec254c18d06e3e74e91e5a93aa3e66f3155beacfa70",
-        "7c1e1be7718128ee43df72f5e685725902c46d429440613fbb8c7582ea8bacfa"
+        "df8451fd5cbdc5cb634e9811fdf1b9d03cc13e16e47f4963bcb89b67622da949",
+        "c87abdc9f0b68f0e5e54c30720a99830f28ea9f0278f0af8c9fcacbdf22f9237",
+        "78d52b6b6830b3d16d7b61cb7e31d85d4488fb5772d120ebde1d3e321baeba09",
+        "21ebabfee141ad74d60461017ffa3aeefd36eaaf850dff745e30a1d3c9cc3d13",
+        "c8dd2a1b1a1669b740d494a11d64389b483ad4d5346927d95189d75a12c5e47b",
+        "abfa514ab1b56ac0c39f2691ca56a093f1ddb0cd452e77c33c647ad450428bc7",
+        "6f2adf3f61370f24c26ede85783eb99ef266bef7069d8ccd9cf2988ed9835f27"
       ]
     },
     {
@@ -406,7 +430,7 @@
         ]
       },
       "expect": [
-        "c01b24e45c94ec2ccc0878fc3fec74dba05e6d025ffc2111875d3c313b3ea452"
+        "df8451fd5cbdc5cb634e9811fdf1b9d03cc13e16e47f4963bcb89b67622da949"
       ]
     },
     {
@@ -417,8 +441,8 @@
         ]
       },
       "expect": [
-        "c01b24e45c94ec2ccc0878fc3fec74dba05e6d025ffc2111875d3c313b3ea452",
-        "5241c5496dae22c299e526846879c7d54ae1f2cae167597ae1059be52db18cdf"
+        "df8451fd5cbdc5cb634e9811fdf1b9d03cc13e16e47f4963bcb89b67622da949",
+        "21ebabfee141ad74d60461017ffa3aeefd36eaaf850dff745e30a1d3c9cc3d13"
       ]
     },
     {
@@ -429,8 +453,8 @@
         ]
       },
       "expect": [
-        "c01b24e45c94ec2ccc0878fc3fec74dba05e6d025ffc2111875d3c313b3ea452",
-        "5241c5496dae22c299e526846879c7d54ae1f2cae167597ae1059be52db18cdf"
+        "df8451fd5cbdc5cb634e9811fdf1b9d03cc13e16e47f4963bcb89b67622da949",
+        "21ebabfee141ad74d60461017ffa3aeefd36eaaf850dff745e30a1d3c9cc3d13"
       ]
     },
     {
@@ -439,7 +463,7 @@
         "kind": "lora"
       },
       "expect": [
-        "e6bd1db27ec4bddcb52c2122d18d8cd0e222d0ffde013da22d724da3cbfdf4e2"
+        "c8dd2a1b1a1669b740d494a11d64389b483ad4d5346927d95189d75a12c5e47b"
       ]
     },
     {
@@ -448,7 +472,7 @@
         "runtimeFamily": "onnx-web"
       },
       "expect": [
-        "ccb2338dd8faff9ba9f62ec254c18d06e3e74e91e5a93aa3e66f3155beacfa70"
+        "abfa514ab1b56ac0c39f2691ca56a093f1ddb0cd452e77c33c647ad450428bc7"
       ]
     },
     {
@@ -457,7 +481,7 @@
         "license": "MIT"
       },
       "expect": [
-        "fbaa7b32466093856b10bc684fc7f407d3855bc8c7ca98f26af823dae8d75541"
+        "78d52b6b6830b3d16d7b61cb7e31d85d4488fb5772d120ebde1d3e321baeba09"
       ]
     },
     {
@@ -466,9 +490,9 @@
         "maxDownloadBytes": 60000000
       },
       "expect": [
-        "5241c5496dae22c299e526846879c7d54ae1f2cae167597ae1059be52db18cdf",
-        "e6bd1db27ec4bddcb52c2122d18d8cd0e222d0ffde013da22d724da3cbfdf4e2",
-        "ccb2338dd8faff9ba9f62ec254c18d06e3e74e91e5a93aa3e66f3155beacfa70"
+        "21ebabfee141ad74d60461017ffa3aeefd36eaaf850dff745e30a1d3c9cc3d13",
+        "c8dd2a1b1a1669b740d494a11d64389b483ad4d5346927d95189d75a12c5e47b",
+        "abfa514ab1b56ac0c39f2691ca56a093f1ddb0cd452e77c33c647ad450428bc7"
       ]
     },
     {
@@ -477,8 +501,8 @@
         "maxMemoryMb": 1000
       },
       "expect": [
-        "c01b24e45c94ec2ccc0878fc3fec74dba05e6d025ffc2111875d3c313b3ea452",
-        "fbaa7b32466093856b10bc684fc7f407d3855bc8c7ca98f26af823dae8d75541"
+        "df8451fd5cbdc5cb634e9811fdf1b9d03cc13e16e47f4963bcb89b67622da949",
+        "78d52b6b6830b3d16d7b61cb7e31d85d4488fb5772d120ebde1d3e321baeba09"
       ]
     },
     {
@@ -488,11 +512,11 @@
         "includeUnknownMemory": true
       },
       "expect": [
-        "c01b24e45c94ec2ccc0878fc3fec74dba05e6d025ffc2111875d3c313b3ea452",
-        "c1ddddc6dd2d153bfe3f362e42ede7bec499fe4272334e92d1d6a41df48c0293",
-        "fbaa7b32466093856b10bc684fc7f407d3855bc8c7ca98f26af823dae8d75541",
-        "e6bd1db27ec4bddcb52c2122d18d8cd0e222d0ffde013da22d724da3cbfdf4e2",
-        "ccb2338dd8faff9ba9f62ec254c18d06e3e74e91e5a93aa3e66f3155beacfa70"
+        "df8451fd5cbdc5cb634e9811fdf1b9d03cc13e16e47f4963bcb89b67622da949",
+        "c87abdc9f0b68f0e5e54c30720a99830f28ea9f0278f0af8c9fcacbdf22f9237",
+        "78d52b6b6830b3d16d7b61cb7e31d85d4488fb5772d120ebde1d3e321baeba09",
+        "c8dd2a1b1a1669b740d494a11d64389b483ad4d5346927d95189d75a12c5e47b",
+        "abfa514ab1b56ac0c39f2691ca56a093f1ddb0cd452e77c33c647ad450428bc7"
       ]
     },
     {
@@ -501,8 +525,8 @@
         "hardwareProfile": "cpu-wasm"
       },
       "expect": [
-        "c01b24e45c94ec2ccc0878fc3fec74dba05e6d025ffc2111875d3c313b3ea452",
-        "c1ddddc6dd2d153bfe3f362e42ede7bec499fe4272334e92d1d6a41df48c0293"
+        "df8451fd5cbdc5cb634e9811fdf1b9d03cc13e16e47f4963bcb89b67622da949",
+        "c87abdc9f0b68f0e5e54c30720a99830f28ea9f0278f0af8c9fcacbdf22f9237"
       ]
     },
     {
@@ -511,8 +535,8 @@
         "text": "summaries"
       },
       "expect": [
-        "c01b24e45c94ec2ccc0878fc3fec74dba05e6d025ffc2111875d3c313b3ea452",
-        "c1ddddc6dd2d153bfe3f362e42ede7bec499fe4272334e92d1d6a41df48c0293"
+        "df8451fd5cbdc5cb634e9811fdf1b9d03cc13e16e47f4963bcb89b67622da949",
+        "c87abdc9f0b68f0e5e54c30720a99830f28ea9f0278f0af8c9fcacbdf22f9237"
       ]
     },
     {
@@ -521,7 +545,7 @@
         "text": "résid"
       },
       "expect": [
-        "c1ddddc6dd2d153bfe3f362e42ede7bec499fe4272334e92d1d6a41df48c0293"
+        "c87abdc9f0b68f0e5e54c30720a99830f28ea9f0278f0af8c9fcacbdf22f9237"
       ]
     },
     {
@@ -537,7 +561,7 @@
         "text": "water leaks"
       },
       "expect": [
-        "5241c5496dae22c299e526846879c7d54ae1f2cae167597ae1059be52db18cdf"
+        "21ebabfee141ad74d60461017ffa3aeefd36eaaf850dff745e30a1d3c9cc3d13"
       ]
     },
     {
@@ -546,8 +570,8 @@
         "text": "Tiny summarizer"
       },
       "expect": [
-        "c1ddddc6dd2d153bfe3f362e42ede7bec499fe4272334e92d1d6a41df48c0293",
-        "fbaa7b32466093856b10bc684fc7f407d3855bc8c7ca98f26af823dae8d75541"
+        "c87abdc9f0b68f0e5e54c30720a99830f28ea9f0278f0af8c9fcacbdf22f9237",
+        "78d52b6b6830b3d16d7b61cb7e31d85d4488fb5772d120ebde1d3e321baeba09"
       ]
     },
     {
@@ -563,8 +587,8 @@
         "runtimeFamily": "wllama"
       },
       "expect": [
-        "c1ddddc6dd2d153bfe3f362e42ede7bec499fe4272334e92d1d6a41df48c0293",
-        "fbaa7b32466093856b10bc684fc7f407d3855bc8c7ca98f26af823dae8d75541"
+        "c87abdc9f0b68f0e5e54c30720a99830f28ea9f0278f0af8c9fcacbdf22f9237",
+        "78d52b6b6830b3d16d7b61cb7e31d85d4488fb5772d120ebde1d3e321baeba09"
       ]
     },
     {
@@ -576,10 +600,10 @@
         ]
       },
       "expect": [
-        "ccb2338dd8faff9ba9f62ec254c18d06e3e74e91e5a93aa3e66f3155beacfa70",
-        "fbaa7b32466093856b10bc684fc7f407d3855bc8c7ca98f26af823dae8d75541",
-        "c1ddddc6dd2d153bfe3f362e42ede7bec499fe4272334e92d1d6a41df48c0293",
-        "c01b24e45c94ec2ccc0878fc3fec74dba05e6d025ffc2111875d3c313b3ea452"
+        "abfa514ab1b56ac0c39f2691ca56a093f1ddb0cd452e77c33c647ad450428bc7",
+        "78d52b6b6830b3d16d7b61cb7e31d85d4488fb5772d120ebde1d3e321baeba09",
+        "c87abdc9f0b68f0e5e54c30720a99830f28ea9f0278f0af8c9fcacbdf22f9237",
+        "df8451fd5cbdc5cb634e9811fdf1b9d03cc13e16e47f4963bcb89b67622da949"
       ],
       "ordered": true
     },
@@ -594,8 +618,8 @@
         "offset": 1
       },
       "expect": [
-        "fbaa7b32466093856b10bc684fc7f407d3855bc8c7ca98f26af823dae8d75541",
-        "c1ddddc6dd2d153bfe3f362e42ede7bec499fe4272334e92d1d6a41df48c0293"
+        "78d52b6b6830b3d16d7b61cb7e31d85d4488fb5772d120ebde1d3e321baeba09",
+        "c87abdc9f0b68f0e5e54c30720a99830f28ea9f0278f0af8c9fcacbdf22f9237"
       ],
       "ordered": true
     }

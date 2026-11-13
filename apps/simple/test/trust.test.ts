@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CandidateRelease } from '@wexare/orchestrator';
-import { OPERATION_CONTRACTS, sha256Hex, type ReleaseManifest } from '@wexare/protocol';
+import { sha256Hex, type ReleaseManifest } from '@wexare/protocol';
 import { buildModels } from '../src/models.ts';
 import { Trust } from '../src/trust.ts';
 
@@ -49,7 +49,7 @@ function release(pubkey: string, p: { kind?: 'model' | 'lora'; base?: CandidateR
   n++;
   const caps = p.caps ?? ['summarization'];
   const manifest: ReleaseManifest = {
-    schema: 'wexare.micromodel.release/0.1',
+    schema: 'wexare.micromodel.release/0.2',
     model_id: `m${n}`,
     name: `Model ${n}`,
     description: '',
@@ -60,7 +60,7 @@ function release(pubkey: string, p: { kind?: 'model' | 'lora'; base?: CandidateR
     license: { id: 'MIT' },
     runtime: { format: 'gguf', family: 'wllama', requirement: '*', browser_features: [] },
     files: [{ role: p.kind === 'lora' ? 'adapter' : 'weights', path: `m${n}.gguf`, size: 100, sha256: sha256Hex(`file ${n}`), locations: [{ transport: 'http', uri: `https://example.org/${n}` }] }],
-    operations: caps.map((id) => ({ id, prompt: { mode: 'chat' as const, template: '{{input}}' }, input_schema: OPERATION_CONTRACTS[id]!.input_schema, output_schema: OPERATION_CONTRACTS[id]!.output_schema })),
+    operations: caps.map((id) => ({ id, title: id, category: 'messages', when: `do ${id}`, prompt: { mode: 'chat' as const, template: '{{text}}' }, output: { type: 'text' as const } })),
     requirements: { context_length: 512 },
     ...(p.base
       ? { base: { release_id: p.base.eventId, manifest_sha256: p.base.manifestSha256, files: p.base.manifest.files.map((f) => ({ sha256: f.sha256, size: f.size })) } }
@@ -98,8 +98,8 @@ describe('the catalog shows approved publishers only', () => {
 
   it('lists an add-on under its own tasks, not its base’s', () => {
     const base = release(WEXARE, { caps: ['summarization', 'text-classification'] });
-    const addOn = release(WEXARE, { kind: 'lora', base, caps: ['command-generation'] });
+    const addOn = release(WEXARE, { kind: 'lora', base, caps: ['git-command'] });
     const models = buildModels([base, addOn], () => false, shown);
-    expect(models.find((m) => m.id === addOn.eventId)?.tasks).toEqual(['command-generation']);
+    expect(models.find((m) => m.id === addOn.eventId)?.tasks).toEqual(['git-command']);
   });
 });

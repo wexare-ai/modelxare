@@ -5,7 +5,13 @@ import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { finalizeEvent } from 'nostr-tools/pure';
 import { hexToBytes } from '@noble/hashes/utils.js';
-import { OPERATION_CONTRACTS, buildReleaseEventTemplate, serializeManifest, sha256Hex, type ReleaseManifest } from '@wexare/protocol';
+import { buildReleaseEventTemplate, serializeManifest, sha256Hex, type ReleaseManifest } from '@wexare/protocol';
+
+/** The tasks the golden releases do, as manifests describe them. */
+const OPS: Record<string, Pick<ReleaseManifest['operations'][number], 'title' | 'category' | 'when' | 'output'>> = {
+  'text-classification': { title: 'Sort by topic', category: 'messages', when: 'put a message into one topic', output: { type: 'label', labels: [{ id: 'work' }, { id: 'other' }] } },
+  summarization: { title: 'Summarize', category: 'messages', when: 'shorten the text into a brief summary', output: { type: 'text', max_chars: 400 } },
+};
 
 const key = (l: string) => hexToBytes(sha256Hex(`wexare public test vector key: ${l}`));
 const pubA = key('golden-publisher-a');
@@ -32,7 +38,7 @@ for (const s of specs) {
   const kind = s.kind ?? 'model';
   const sha = sha256Hex(`golden file ${s.label}`);
   const m: ReleaseManifest = {
-    schema: 'wexare.micromodel.release/0.1',
+    schema: 'wexare.micromodel.release/0.2',
     model_id: s.label,
     name: s.name,
     description: s.description,
@@ -43,10 +49,7 @@ for (const s of specs) {
     license: { id: s.license ?? 'Apache-2.0' },
     runtime: { format: 'gguf', family: s.family ?? 'wllama', requirement: '>=3.8.1 <3.9.0', browser_features: ['wasm'] },
     files: [{ role: kind === 'lora' ? 'adapter' : 'weights', path: 'model.gguf', size: s.size, sha256: sha, locations: [] }],
-    operations: s.caps.filter((c) => OPERATION_CONTRACTS[c]).map((c) => ({
-      id: c, prompt: { mode: 'chat' as const, template: '{{input}}' },
-      input_schema: OPERATION_CONTRACTS[c]!.input_schema, output_schema: OPERATION_CONTRACTS[c]!.output_schema,
-    })),
+    operations: s.caps.filter((c) => OPS[c]).map((c) => ({ id: c, ...OPS[c]!, prompt: { mode: 'chat' as const, template: '{{text}}' } })),
     requirements: {
       context_length: 1024,
       ...(s.memory ? { memory_mb: { value: s.memory, basis: 'estimated' as const, context_length: 1024 } } : {}),

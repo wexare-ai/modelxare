@@ -31,7 +31,7 @@ export interface GenerateRequest {
   topK?: number;
   topP?: number;
   stop?: string[];
-  /** GBNF grammar built by the client from a bundled contract (never from metadata). */
+  /** GBNF grammar the client builds from an operation's labels; never grammar text taken from metadata. */
   grammar?: string;
   /** Per-request adapter scales by adapter index; omitted adapters run at scale 0. */
   adapterScales?: number[];

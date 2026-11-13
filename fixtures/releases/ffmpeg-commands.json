@@ -6,10 +6,10 @@
     "model_id": "ffmpeg-commands",
     "name": "FFmpeg commands (LoRA for Qwen2.5 0.5B Q4_K_M)",
     "description": "Turns a plain-language request about a video, audio or image file into one ffmpeg command, such as \"extract the audio from talk.mp4 as an mp3\". Answers UNSUPPORTED when ffmpeg can't do it.",
-    "version": "1.0.1",
+    "version": "1.1.0",
     "kind": "lora",
     "capabilities": [
-      "command-generation"
+      "ffmpeg-command"
     ],
     "languages": [
       "en"
@@ -27,7 +27,17 @@
     },
     "operations": [
       {
-        "id": "command-generation",
+        "id": "ffmpeg-command",
+        "title": "Write an ffmpeg command",
+        "category": "command-line",
+        "when": "write an ffmpeg command for a video or audio file (mp4, mov, mkv, mp3): convert, cut, compress, extract the sound or make a gif",
+        "examples": [
+          "Extract the audio from talk.mp4 as an mp3",
+          "Remove the sound from intro.mp4",
+          "Resize video.mp4 to 1280 wide",
+          "Convert holiday.mov to mp4 without re-encoding",
+          "Rotate video.mp4 90 degrees"
+        ],
         "prompt": {
           "mode": "chat",
           "system": "You convert a natural-language media task into ONE ffmpeg command line.\n\nRules:\n- Output EXACTLY one line of plain text, starting with `ffmpeg`. No markdown, no code fences, no backticks, no explanation, no trailing period.\n- Always include `-i` with an input file. If the user names a file, use that exact name. Otherwise use a generic placeholder based on the media type: input.mp4 (video), input.jpg (image), input.mp3 (audio).\n- Always end with an output file name. If the user names one, use it; otherwise use output.<ext> with a sensible extension (e.g. output.mp4, output.jpg, output.mp3, output.gif, output.wav, output.png).\n- Use standard flags only: -vf, -af, -c:v, -c:a, -b:v, -b:a, -crf, -preset, -ss, -to, -t, -r, -s, -an, -vn, -map, -y, -f, -q:v, -pix_fmt, -vcodec copy / -c copy.\n- Prefer scale filters that preserve aspect ratio, e.g. -vf scale=500:-1 for \"500px wide\".\n- If a value is unspecified, choose a common sensible default rather than asking a question.\n- If the request cannot be done with ffmpeg or is unrelated to media processing, output exactly: UNSUPPORTED",
@@ -37,7 +47,13 @@
           "max_tokens": 128,
           "temperature": 0
         },
-        "routing": "ffmpeg commands: video and audio files such as mp4, mov, mkv, mp3 and wav"
+        "output": {
+          "type": "text",
+          "max_chars": 1000,
+          "single_line": true,
+          "code": true,
+          "decline": "UNSUPPORTED"
+        }
       }
     ],
     "requirements": {
