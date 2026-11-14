@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Analytics, type BeforeSend } from '@vercel/analytics/react';
 import { remoteHelp } from '@wexare/router';
 import { BrandDefs } from './Brand.tsx';
 import { useConnection, useStorage } from './engine.ts';
@@ -20,6 +21,21 @@ const trainInHash = () => location.hash === '#/xare/train';
 const tryInHash = () => location.hash === '#/try';
 const landingInHash = () => !modelInHash() && !settingsInHash() && !xareInHash() && !trainInHash() && !tryInHash();
 
+/**
+ * The page for Vercel Analytics. The app routes by hash, which the analytics
+ * script doesn't see, so each screen is reported as a path of its own. Only
+ * these fixed paths and a model's release ID are sent, never what people type.
+ */
+const pageInHash = (): { route: string; path: string } => {
+  const id = modelInHash();
+  if (id) return { route: '/model/[id]', path: `/model/${id}` };
+  const path = settingsInHash() ? '/settings' : xareInHash() ? '/xare' : trainInHash() ? '/xare/train' : tryInHash() ? '/try' : '/';
+  return { route: path, path };
+};
+
+/** Report the URL without its hash: the path above already says which screen it is. */
+const withoutHash: BeforeSend = (event) => ({ ...event, url: event.url.split('#')[0]! });
+
 const CONNECTION: Record<ReturnType<typeof useConnection>, string> = {
   connecting: 'Connecting',
   online: 'Up to date',
@@ -34,6 +50,7 @@ export function App() {
   const [xare, setXare] = useState(xareInHash);
   const [train, setTrain] = useState(trainInHash);
   const [landing, setLanding] = useState(landingInHash);
+  const [page, setPage] = useState(pageInHash);
   const help = remoteHelp(useOnlineHelp());
   const [task, setTask] = useState<TaskId | null>(null);
   const [query, setQuery] = useState('');
@@ -45,6 +62,7 @@ export function App() {
       setXare(xareInHash());
       setTrain(trainInHash());
       setLanding(landingInHash());
+      setPage(pageInHash());
       scrollTo(0, 0);
     };
     addEventListener('hashchange', onHash);
@@ -69,6 +87,7 @@ export function App() {
 
   return (
     <div className="app">
+      <Analytics route={page.route} path={page.path} beforeSend={withoutHash} />
       <BrandDefs />
       <header className="nav">
         <a className="brand" href="#/">
