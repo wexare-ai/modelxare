@@ -7,6 +7,7 @@ import { baseResolver, type CandidateRelease } from '@wexare/orchestrator';
 import { REMOTE_OFF, layaBundle, pickRouter, remoteHelp, route, routerFiles, type RemoteSettings, type RunResult, type Step, type System1 } from '@wexare/router';
 import { capabilities } from '@wexare/web/src/lib/runtime.ts';
 import { allReleases, approvedReleases, artifacts, fetchFiles, live, noSpaceText, runTask, touch, useEvent, type Fetched } from './engine.ts';
+import { trackAsk, trackDownload } from './analytics.ts';
 
 /** "Tiny summarizer (SmolLM2 360M Q8_0)" → "Tiny summarizer". */
 export const plainName = (name: string) => name.replace(/\s*\([^)]*\)\s*$/, '').trim() || name;
@@ -169,12 +170,13 @@ export function useAsk() {
 
     await routerModel.refresh();
     if (stopped()) return;
-    if (!routerModel.release) return setState({ ...IDLE, phase: 'failed', problem: 'no-router' });
+    if (!routerModel.release) return trackAsk('no-router'), setState({ ...IDLE, phase: 'failed', problem: 'no-router' });
     if (routerModel.missingBytes > 0) {
       const fetched = await download(routerModel.files, 'Downloading the router');
       if (stopped()) return setState(IDLE);
-      if (fetched.status === 'no-space') return setState({ ...IDLE, phase: 'failed', problem: 'no-space', room: fetched.room });
-      if (fetched.status !== 'ok') return setState({ ...IDLE, phase: 'failed', problem: 'router-download' });
+      if (fetched.status === 'no-space') return trackAsk('no-space'), setState({ ...IDLE, phase: 'failed', problem: 'no-space', room: fetched.room });
+      if (fetched.status !== 'ok') return trackAsk('router-download'), setState({ ...IDLE, phase: 'failed', problem: 'router-download' });
+      trackDownload(routerModel.release.name, 'ask');
       await routerModel.refresh();
     }
     setState((s) => ({ ...s, activity: 'Getting the router ready' }));
@@ -183,7 +185,7 @@ export function useAsk() {
       system1 = await routerModel.load();
     } catch (e) {
       console.warn('router', e);
-      return setState({ ...IDLE, phase: 'failed', problem: 'router-load' });
+      return trackAsk('router-load'), setState({ ...IDLE, phase: 'failed', problem: 'router-load' });
     }
     if (stopped()) return setState(IDLE);
 
@@ -210,6 +212,7 @@ export function useAsk() {
         const bytes = files.filter((f) => !artifacts.isCached(f.sha256)).reduce((n, f) => n + f.size, 0);
         const fetched = await download(files, `Downloading ${plainName(release.name)}`, routerModel.files.map((f) => f.sha256));
         if (fetched.status === 'no-space') throw new Error(noSpaceText('this model', bytes, fetched.room));
+        if (fetched.status === 'ok' && bytes > 0) trackDownload(release.name, 'ask');
         return fetched.status === 'ok';
       },
       clarify: (options) => ask<string | null>({ kind: 'clarify', options: options.map((o) => ({ id: o.task.id, title: o.task.title, probability: o.probability })) }),
@@ -219,15 +222,17 @@ export function useAsk() {
       },
     });
     if (stopped()) return setState(IDLE);
+    trackAsk(result.ended, result.steps.map((s) => s.task.id));
     setState((s) => ({ ...s, phase: 'done', activity: null, partial: '', steps: result.steps, result }));
   }, []);
 
   const cancel = useCallback(() => {
+    if (state.phase === 'working') trackAsk('canceled');
     abort.current?.abort();
     for (const d of state.downloading) artifacts.cancel(d.sha256);
     respond(false);
     setState(IDLE);
-  }, [respond, state.downloading]);
+  }, [respond, state.downloading, state.phase]);
 
   const total = state.downloading.reduce((n, f) => n + f.size, 0);
   const done = state.downloading.reduce((n, f) => n + (artifacts.isCached(f.sha256) ? f.size : (artifacts.downloads.get(f.sha256)?.bytes ?? 0)), 0);

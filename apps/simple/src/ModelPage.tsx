@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { noSpaceText, removeFromDevice, trust, useModels, useRun } from './engine.ts';
+import { trackOpenModel } from './analytics.ts';
 import { Command } from './Command.tsx';
 import { labelText, languageList, size, type TaskId } from './models.ts';
 
@@ -13,6 +14,9 @@ export function ModelPage(p: { id: string; preferredTask: TaskId | null; back: (
   const [copied, setCopied] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => heading.current?.focus(), [model?.id]);
+  // Once per model, when its name is known (the catalog may still be loading).
+  const name = model?.name;
+  useEffect(() => void (name && trackOpenModel(name)), [p.id, name]);
 
   if (!model) {
     return (

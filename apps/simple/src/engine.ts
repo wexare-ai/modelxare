@@ -13,6 +13,7 @@ import type { PublisherRole } from '@wexare/web/src/lib/client-config.ts';
 import { choiceGrammar, runtime, toCandidate } from '@wexare/web/src/lib/runtime.ts';
 import type { InitResult } from '@wexare/web/src/workers/catalog-api.ts';
 import { buildModels, size, type Model, type TaskId } from './models.ts';
+import { trackDownload } from './analytics.ts';
 import { Trust } from './trust.ts';
 
 const settings = loadSettings();
@@ -331,6 +332,7 @@ export function useRun(model: Model | undefined) {
       if (ac.signal.aborted) return setState(IDLE);
       if (fetched.status === 'no-space') return setState({ ...IDLE, phase: 'failed', problem: 'space', space: { bytes, room: fetched.room } });
       if (fetched.status !== 'ok') return setState({ ...IDLE, phase: 'failed', problem: 'download' });
+      if (bytes > 0) trackDownload(model.name, 'model page');
       setState({ ...IDLE, phase: 'preparing' });
       let out: Awaited<ReturnType<typeof runTask>>;
       try {
