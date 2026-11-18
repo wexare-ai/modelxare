@@ -4,7 +4,7 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium, expect, test } from '@playwright/test';
-import { SIMPLE, runDir } from '../support/env.ts';
+import { MAKER_SITE, SIMPLE, SOURCE_CODE, runDir } from '../support/env.ts';
 
 test('the front page tells the story by scrolling and leads to the app', async () => {
   const profile = mkdtempSync(join(runDir(), 'profile-landing-'));
@@ -17,6 +17,12 @@ test('the front page tells the story by scrolling and leads to the app', async (
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('AI, back in your hands.');
     // The front page doesn't show the app's connection state; it offers to try it.
     await expect(page.locator('.connection')).toHaveCount(0);
+    // modelXare is open source: said in the header, with GitHub's mark, linking to the code.
+    const openSource = page.getByRole('banner').getByRole('link', { name: 'Open source' });
+    await expect(openSource).toHaveAttribute('href', SOURCE_CODE);
+    await expect(openSource.locator('svg')).toBeVisible();
+    // modelXare's maker, weXare, links to its site; modelXare itself to the front page.
+    await expect(page.getByRole('banner').getByRole('link', { name: 'weXare', exact: true })).toHaveAttribute('href', MAKER_SITE);
 
     // Scrolling through the story moves it from today to the alternative.
     const story = page.locator('.l-story');
@@ -39,6 +45,7 @@ test('the front page tells the story by scrolling and leads to the app', async (
     // The sections below land as they come into view.
     await page.locator('.l-final').scrollIntoViewIfNeeded();
     await expect(page.locator('.l-final .l-h2')).toHaveClass(/\bin\b/);
+    await expect(page.locator('.l-final').getByRole('link', { name: 'Open source on GitHub' })).toHaveAttribute('href', SOURCE_CODE);
 
     // Who backs weXare, at the foot of the page, each logo loaded and linked.
     const backers = page.getByRole('region', { name: 'Backed by' });
@@ -55,7 +62,8 @@ test('the front page tells the story by scrolling and leads to the app', async (
     await page.getByRole('link', { name: 'Try modelXare' }).last().click();
     await expect(page).toHaveURL(/#\/try$/);
     await expect(page.getByTestId('ask-input')).toBeVisible();
-    await page.locator('a.brand').click();
+    await expect(page.getByRole('banner').getByRole('link', { name: 'Open source' })).toHaveAttribute('href', SOURCE_CODE);
+    await page.getByRole('banner').getByRole('link', { name: 'modelXare', exact: true }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('AI, back in your hands.');
     expect(errors).toEqual([]);
   } finally {

@@ -9,6 +9,9 @@ import { defineConfig } from '@playwright/test';
 
 const WEB = process.env.WEXARE_WEB_URL ?? 'http://localhost:4173';
 const SIMPLE = process.env.WEXARE_SIMPLE_URL ?? 'http://localhost:4174';
+/** Example links for the simple app's header (WEXARE_SOURCE_CODE, WEXARE_MAKER_SITE); tests/support/env.ts has the same. */
+const SOURCE_CODE = 'https://github.com/example/modelxare';
+const MAKER_SITE = 'https://maker.example.org';
 
 export default defineConfig({
   testDir: '.',
@@ -36,6 +39,7 @@ export default defineConfig({
     },
     {
       command: 'pnpm --dir .. --filter @wexare/simple run build && pnpm --dir .. --filter @wexare/simple exec vite preview --port 4174 --strictPort',
+      env: { WEXARE_SOURCE_CODE: SOURCE_CODE, WEXARE_MAKER_SITE: MAKER_SITE },
       url: SIMPLE,
       reuseExistingServer: !process.env.CI,
       timeout: 240_000,

@@ -29,11 +29,18 @@ export class Trust {
     return this.open || !!this.approvals.get(pubkey)?.some((a) => a.roles.includes(role));
   }
 
-  /** How to name a publisher to people: "weXare", or "Ana, approved by weXare". */
-  describe(pubkey: string): string | null {
+  /** Who a publisher is: its name, its site if it gave one, and who approved it when that's someone else. */
+  publisher(pubkey: string): { label: string; site?: string; approvedBy?: string } | null {
     const [a] = this.approvals.get(pubkey) ?? [];
     if (!a) return null;
-    return a.approvedBy === a.label ? a.label : `${a.label}, approved by ${a.approvedBy}`;
+    return { label: a.label, ...(a.site ? { site: a.site } : {}), ...(a.approvedBy !== a.label ? { approvedBy: a.approvedBy } : {}) };
+  }
+
+  /** How to name a publisher to people: "weXare", or "Ana, approved by weXare". */
+  describe(pubkey: string): string | null {
+    const p = this.publisher(pubkey);
+    if (!p) return null;
+    return p.approvedBy ? `${p.label}, approved by ${p.approvedBy}` : p.label;
   }
 
   /**

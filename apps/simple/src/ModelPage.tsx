@@ -33,7 +33,7 @@ export function ModelPage(p: { id: string; preferredTask: TaskId | null; back: (
   const task = model.operations.find((o) => o.id === taskId)!;
   const busy = run.phase === 'downloading' || run.phase === 'preparing' || run.phase === 'working';
   const downloaded = model.downloadBytes < model.totalBytes;
-  const publisher = trust.describe(model.release.pubkey);
+  const publisher = trust.publisher(model.release.pubkey);
   const answer = run.answer?.task === taskId ? run.answer : null;
 
   const tryExample = () => {
@@ -164,7 +164,16 @@ export function ModelPage(p: { id: string; preferredTask: TaskId | null; back: (
           {publisher && (
             <>
               <dt>Published by</dt>
-              <dd>{publisher}</dd>
+              <dd>
+                {publisher.site ? (
+                  <a href={publisher.site} target="_blank" rel="noopener noreferrer">
+                    {publisher.label}
+                  </a>
+                ) : (
+                  publisher.label
+                )}
+                {publisher.approvedBy && `, approved by ${publisher.approvedBy}`}
+              </dd>
             </>
           )}
           <dt>Checked</dt>

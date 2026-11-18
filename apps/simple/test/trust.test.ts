@@ -35,6 +35,16 @@ describe('Trust', () => {
     expect(approved.describe(STRANGER)).toBeNull();
   });
 
+  it('links a publisher’s name to the site it gave', () => {
+    const t = new Trust([
+      { pubkey: WEXARE, label: 'weXare', approvedBy: 'weXare', roles: ['models'], site: 'https://maker.example.org' },
+      { pubkey: ANA, label: 'Ana', approvedBy: 'weXare', roles: ['models'] },
+    ]);
+    expect(t.publisher(WEXARE)).toEqual({ label: 'weXare', site: 'https://maker.example.org' });
+    expect(t.publisher(ANA)).toEqual({ label: 'Ana', approvedBy: 'weXare' });
+    expect(t.publisher(STRANGER)).toBeNull();
+  });
+
   it('takes more approvals from another source, such as a community list', () => {
     const t = new Trust([{ pubkey: WEXARE, label: 'weXare', approvedBy: 'weXare', roles: ['models', 'router'] }]);
     t.add([{ pubkey: STRANGER, label: 'Sam', approvedBy: 'Community curators', roles: ['models'] }]);

@@ -14,6 +14,12 @@
 //   WEXARE_PUBLISHERS            approved publishers file, relative to the repo
 //                                root (default infra/publishers.json)
 // It is checked here, so a broken setting fails the build instead of shipping.
+//
+// Two links people follow, not services the app connects to, are read in
+// development too; unset, the app shows no link:
+//   WEXARE_SOURCE_CODE           https:// address of the repository the build
+//                                comes from ("Open source" in the header)
+//   WEXARE_MAKER_SITE            https:// site of who makes the app ("by weXare")
 import { readFileSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 import type { ClientConfig, PublisherApproval } from './src/lib/client-config.ts';
@@ -23,6 +29,32 @@ const ROOT = join(import.meta.dirname, '../..');
 const VARS = ['WEXARE_RELAYS', 'WEXARE_IPFS_GATEWAYS', 'WEXARE_TRACKERS', 'WEXARE_ARWEAVE_GATEWAYS', 'WEXARE_OPERATOR_STATUS_URLS', 'WEXARE_APPROVAL_REQUEST', 'WEXARE_PUBLISHERS'];
 
 const urls = (v: string | undefined) => (v ?? '').split(/[\s,]+/).filter(Boolean);
+
+const isHttps = (v: string, needsPath = false) => {
+  if (!/^https:\/\/\S+$/.test(v)) return false;
+  try {
+    const u = new URL(v);
+    return !!u.hostname && (!needsPath || u.pathname.length > 1);
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * The links the app shows, checked here so a broken one fails the build. The
+ * repository's address is kept as people open it, "https://host/owner/repo",
+ * whether it was set with a trailing slash or ".git".
+ */
+function links(env: Record<string, string | undefined>): Pick<ClientConfig, 'sourceCode' | 'makerSite'> {
+  const source = env.WEXARE_SOURCE_CODE?.trim();
+  const maker = env.WEXARE_MAKER_SITE?.trim();
+  if (source && !isHttps(source, true)) throw new Error(`WEXARE_SOURCE_CODE: ${JSON.stringify(source)} isn't the https:// address of a repository`);
+  if (maker && !isHttps(maker)) throw new Error(`WEXARE_MAKER_SITE: ${JSON.stringify(maker)} isn't an https:// link`);
+  return {
+    ...(source ? { sourceCode: source.replace(/\/+$/, '').replace(/\.git$/, '') } : {}),
+    ...(maker ? { makerSite: maker } : {}),
+  };
+}
 
 export function loadClientConfig(env: Record<string, string | undefined> = process.env): ClientConfig {
   if (!VARS.some((v) => env[v]?.trim())) {
@@ -34,6 +66,7 @@ export function loadClientConfig(env: Record<string, string | undefined> = proce
       trackers: [dev.tracker.ws],
       operatorStatusUrls: [dev.indexer.status, dev.indexer2.status],
       publishers: 'any',
+      ...links(env),
     };
   }
   const publishersFile = env.WEXARE_PUBLISHERS?.trim() || 'infra/publishers.json';
@@ -51,10 +84,11 @@ export function loadClientConfig(env: Record<string, string | undefined> = proce
     operatorStatusUrls: urls(env.WEXARE_OPERATOR_STATUS_URLS),
     publishers: publishers as PublisherApproval[],
     ...(env.WEXARE_APPROVAL_REQUEST?.trim() ? { approvalRequest: env.WEXARE_APPROVAL_REQUEST.trim() } : {}),
+    ...links(env),
   };
   const problems = checkDeployment(config, publishersFile);
   if (problems.length) throw new Error(`This build's WEXARE_* settings can't be deployed:\n${problems.map((p) => `  - ${p}`).join('\n')}`);
-  return { ...config, publishers: config.publishers.map((p) => ({ pubkey: p.pubkey, label: p.label, approvedBy: p.approvedBy, roles: p.roles })) };
+  return { ...config, publishers: config.publishers.map((p) => ({ pubkey: p.pubkey, label: p.label, approvedBy: p.approvedBy, roles: p.roles, ...(p.site ? { site: p.site } : {}) })) };
 }
 
 /** A deployed site is served over HTTPS, so every endpoint must be secure too. */
@@ -93,6 +127,7 @@ export function checkDeployment(c: Omit<ClientConfig, 'publishers'> & { publishe
     if (typeof p?.label !== 'string' || !p.label.trim()) problems.push(`${at}.label: expected the name people see`);
     if (typeof p?.approvedBy !== 'string' || !p.approvedBy.trim()) problems.push(`${at}.approvedBy: expected who vouches for this publisher`);
     if (!Array.isArray(p?.roles) || !p.roles.length || p.roles.some((r: unknown) => r !== 'models' && r !== 'router')) problems.push(`${at}.roles: expected "models" and/or "router"`);
+    if (p?.site !== undefined && (typeof p.site !== 'string' || !isHttps(p.site))) problems.push(`${at}.site: expected the publisher's https:// site`);
   }
   return problems;
 }

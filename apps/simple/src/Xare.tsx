@@ -2,15 +2,38 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { CLIENT_CONFIG } from '@wexare/web/src/lib/client-config.ts';
 import { Command } from './Command.tsx';
 import { relays, trust } from './engine.ts';
+import { CLONE_DIR, SOURCE_CODE, SOURCE_HOST, SourceMark, sourceFile } from './SourceCode.tsx';
 import { StageStrip } from './Train.tsx';
 
 // "Xare your model": how a model gets into this catalog, in a few steps on the
-// publisher's computer. The commands are the real CLI's (apps/cli); the
-// starter file is public/starter-model.json, which apps/cli/test checks the
-// CLI accepts. A deployed app lists approved publishers only, so there it
-// ends with asking for approval.
+// publisher's computer. The commands are the real CLI's (apps/cli), from
+// modelXare's open-source repository (WEXARE_SOURCE_CODE); the starter file is
+// public/starter-model.json, which apps/cli/test checks the CLI accepts. A
+// deployed app lists approved publishers only, so there it ends with asking
+// for approval.
 
-const PROTOCOL_DOC = 'https://github.com/wexare-ai/modelxare/blob/main/docs/protocol.md#publisher-definition-cli-input';
+const PROTOCOL_DOC = sourceFile('docs/protocol.md#publisher-definition-cli-input');
+
+/** Publishing runs modelXare's own command line tool: where to get it, when this build says where its code is. */
+const GET_THE_CODE = SOURCE_CODE
+  ? [
+      {
+        icon: <SourceMark />,
+        title: 'Get the code',
+        line: `modelXare is open source. Its command line tool signs and publishes your model.`,
+        body: (
+          <>
+            <Command text={`git clone ${SOURCE_CODE}.git\ncd ${CLONE_DIR}\npnpm install`} />
+            <p className="train-go">
+              <a className="secondary" href={SOURCE_CODE} target="_blank" rel="noopener noreferrer">
+                <SourceMark className="i" /> modelXare on {SOURCE_HOST} <span aria-hidden="true">↗</span>
+              </a>
+            </p>
+          </>
+        ),
+      },
+    ]
+  : [];
 
 const STEPS: { icon: ReactNode; title: string; line: string; body: ReactNode }[] = [
   {
@@ -29,6 +52,7 @@ const STEPS: { icon: ReactNode; title: string; line: string; body: ReactNode }[]
       </>
     ),
   },
+  ...GET_THE_CODE,
   {
     icon: <KeyIcon />,
     title: 'Make your key',
@@ -104,9 +128,11 @@ export function Xare({ back }: { back: () => void }) {
             <span>
               This repo, with <code>pnpm infra:up</code> and <code>pnpm dev</code> running
             </span>
+          ) : SOURCE_CODE ? (
+            <span>Node.js 22 and pnpm, for modelXare’s command line tool</span>
           ) : (
             <span>
-              This repo, after <code>pnpm install</code>
+              modelXare’s code, after <code>pnpm install</code>
             </span>
           )}
         </li>
@@ -145,11 +171,13 @@ export function Xare({ back }: { back: () => void }) {
         </p>
       </section>
 
-      <p className="xare-more">
-        <a href={PROTOCOL_DOC} target="_blank" rel="noreferrer">
-          Every field and option <span aria-hidden="true">↗</span>
-        </a>
-      </p>
+      {PROTOCOL_DOC && (
+        <p className="xare-more">
+          <a href={PROTOCOL_DOC} target="_blank" rel="noreferrer">
+            Every field and option <span aria-hidden="true">↗</span>
+          </a>
+        </p>
+      )}
     </>
   );
 }

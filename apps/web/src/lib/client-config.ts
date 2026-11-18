@@ -19,6 +19,8 @@ export interface PublisherApproval {
   /** Who vouches for this publisher, e.g. "weXare". */
   approvedBy: string;
   roles: PublisherRole[];
+  /** The publisher's own site (https://), linked from its name. */
+  site?: string;
 }
 
 export interface ClientConfig {
@@ -32,6 +34,10 @@ export interface ClientConfig {
   publishers: 'any' | PublisherApproval[];
   /** Where a new publisher asks to be approved, shown on the Xare page. */
   approvalRequest?: string;
+  /** The repository this build's code comes from (https://, no trailing slash), linked in the header and the Xare steps. */
+  sourceCode?: string;
+  /** The site of who makes this app (https://), linked from "by weXare" in the header. */
+  makerSite?: string;
 }
 
 declare const __CLIENT_CONFIG__: ClientConfig;

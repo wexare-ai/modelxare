@@ -568,6 +568,15 @@
   justify-content: center;
 }
 
+.l-code {
+  color: var(--navy);
+}
+
+.l-code-mark {
+  width: 20px;
+  height: 20px;
+}
+
 /* ───────────── Backed by ───────────── */
 .l-backers {
   display: grid;

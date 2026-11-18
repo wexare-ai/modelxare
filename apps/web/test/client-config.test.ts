@@ -35,6 +35,28 @@ describe('client config', () => {
     expect(c.publishers).toEqual([{ pubkey: KEY, label: 'Example', approvedBy: 'Example', roles: ['models', 'router'] }]);
   });
 
+  it('links to the repository the build says its code is in, in development too', () => {
+    expect(loadClientConfig(deployment()).sourceCode).toBeUndefined();
+    expect(loadClientConfig(deployment({ WEXARE_SOURCE_CODE: 'https://github.com/example/modelxare' })).sourceCode).toBe('https://github.com/example/modelxare');
+    expect(loadClientConfig(deployment({ WEXARE_SOURCE_CODE: ' https://github.com/example/modelxare.git/ ' })).sourceCode).toBe('https://github.com/example/modelxare');
+    // Setting only this doesn't make a build a deployment: it's a link, not a service.
+    const dev = loadClientConfig({ WEXARE_SOURCE_CODE: 'https://git.example.org/me/modelxare' });
+    expect(dev.publishers).toBe('any');
+    expect(dev.sourceCode).toBe('https://git.example.org/me/modelxare');
+    for (const bad of ['http://github.com/example/modelxare', 'https://github.com', 'github.com/example/modelxare', 'javascript:alert(1)']) {
+      expect(() => loadClientConfig(deployment({ WEXARE_SOURCE_CODE: bad })), bad).toThrow(/WEXARE_SOURCE_CODE/);
+    }
+  });
+
+  it('links "by weXare" to the maker’s site, and each publisher’s name to its own', () => {
+    expect(loadClientConfig(deployment({ WEXARE_MAKER_SITE: 'https://maker.example.org' })).makerSite).toBe('https://maker.example.org');
+    expect(loadClientConfig({ WEXARE_MAKER_SITE: 'https://maker.example.org' }).makerSite).toBe('https://maker.example.org');
+    expect(() => loadClientConfig(deployment({ WEXARE_MAKER_SITE: 'http://maker.example.org' }))).toThrow(/WEXARE_MAKER_SITE/);
+    const site = (s: unknown) => deployment({ WEXARE_PUBLISHERS: publishersFile([{ pubkey: KEY, label: 'Example', approvedBy: 'Example', roles: ['models'], site: s }]) });
+    expect(loadClientConfig(site('https://example.org')).publishers).toEqual([{ pubkey: KEY, label: 'Example', approvedBy: 'Example', roles: ['models'], site: 'https://example.org' }]);
+    expect(() => loadClientConfig(site('javascript:alert(1)'))).toThrow(/site: expected/);
+  });
+
   it('refuses insecure or missing addresses', () => {
     expect(() => loadClientConfig(deployment({ WEXARE_RELAYS: 'ws://relay.example.org' }))).toThrow(/WEXARE_RELAYS: "ws:\/\/relay.example.org" isn't a wss:\/\/ URL/);
     expect(() => loadClientConfig(deployment({ WEXARE_RELAYS: '' }))).toThrow(/WEXARE_RELAYS: required/);

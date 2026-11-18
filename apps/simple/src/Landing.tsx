@@ -6,6 +6,7 @@
 import { useEffect, useRef, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { BACKERS } from './backers.ts';
 import { Minds } from './Minds.tsx';
+import { SOURCE_CODE, SOURCE_HOST, SourceMark } from './SourceCode.tsx';
 import { Story } from './Story.tsx';
 import { WexareLogo } from './WexareLogo.tsx';
 import './landing.css';
@@ -324,6 +325,11 @@ function Finale() {
         <a className="pill-yellow" href="#/xare">
           Xare your model <span aria-hidden="true">↗</span>
         </a>
+        {SOURCE_CODE && (
+          <a className="secondary l-code" href={SOURCE_CODE} target="_blank" rel="noopener noreferrer">
+            <SourceMark className="l-code-mark" /> Open source on {SOURCE_HOST}
+          </a>
+        )}
       </div>
     </section>
   );

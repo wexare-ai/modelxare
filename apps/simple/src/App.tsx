@@ -7,6 +7,7 @@ import { Home } from './Home.tsx';
 import { Landing } from './Landing.tsx';
 import { ModelPage } from './ModelPage.tsx';
 import { Settings } from './Settings.tsx';
+import { MAKER_SITE, SOURCE_CODE, SOURCE_HOST, SourceMark } from './SourceCode.tsx';
 import type { TaskId } from './models.ts';
 import { useOnlineHelp } from './routing.ts';
 import { WexareLogo } from './WexareLogo.tsx';
@@ -90,20 +91,33 @@ export function App() {
       <Analytics route={page.route} path={page.path} beforeSend={withoutHash} />
       <BrandDefs />
       <header className="nav">
-        <a className="brand" href="#/">
-          <WexareLogo className="brand-mark" />
+        {/* modelXare (and its mark) go to the front page; weXare, its maker, to weXare's site. */}
+        <div className="brand">
+          <a className="brand-home" href="#/" tabIndex={-1} aria-hidden="true">
+            <WexareLogo className="brand-mark" />
+          </a>
           <span className="brand-name">
-            <span className="brand-word">modelXare</span>
+            <a className="brand-word" href="#/">
+              modelXare
+            </a>
             <span className="brand-by">
-              by <b>weXare</b>
+              by{' '}
+              {MAKER_SITE ? (
+                <a href={MAKER_SITE} target="_blank" rel="noopener noreferrer">
+                  <b>weXare</b>
+                </a>
+              ) : (
+                <b>weXare</b>
+              )}
             </span>
           </span>
-        </a>
+        </div>
         {landing ? (
           <span className="nav-right">
             <a className="nav-link nav-hide-small" href="#/xare">
               Xare your model
             </a>
+            <OpenSource />
             <a className="pill-yellow nav-try" href="#/try">
               Try it
             </a>
@@ -113,6 +127,7 @@ export function App() {
             <span className={`connection ${connection}`}>
               <span className="connection-text">{CONNECTION[connection]}</span>
             </span>
+            <OpenSource />
             <a className="nav-link" href="#/settings">
               Settings
             </a>
@@ -156,5 +171,16 @@ export function App() {
         </span>
       </footer>
     </div>
+  );
+}
+
+/** modelXare is open source, said on every page: its mark and the words, the mark alone on phones. */
+function OpenSource() {
+  if (!SOURCE_CODE) return null;
+  return (
+    <a className="nav-link nav-code" href={SOURCE_CODE} target="_blank" rel="noopener noreferrer" title={`modelXare’s code on ${SOURCE_HOST}`}>
+      <SourceMark className="nav-code-mark" />
+      <span className="nav-code-text">Open source</span>
+    </a>
   );
 }

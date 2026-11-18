@@ -77,11 +77,17 @@ point `WEXARE_PUBLISHERS` at another list.
    | `WEXARE_RELAYS` | `wss://relay.damus.io,wss://nos.lol,wss://relay.primal.net` |
    | `WEXARE_ARWEAVE_GATEWAYS` | `https://arweave.net` |
    | `WEXARE_APPROVAL_REQUEST` | an `https://` or `mailto:` link where publishers ask for approval |
+   | `WEXARE_SOURCE_CODE` | `https://github.com/wexare-ai/modelxare`: the repository the site links to as its code |
+   | `WEXARE_MAKER_SITE` | `https://wexare.com`: where "by weXare" in the header links |
    | `ENABLE_EXPERIMENTAL_COREPACK` | `1` (Vercel then uses the repository's pnpm version) |
 
-   `WEXARE_IPFS_GATEWAYS` is only needed once releases have `ipfs://` locations. The build checks every
-   setting: a non-`wss://` relay, a non-`https://` gateway, or no approved publisher stops it with a list
-   of what to fix.
+   `WEXARE_IPFS_GATEWAYS` is only needed once releases have `ipfs://` locations. With
+   `WEXARE_SOURCE_CODE` set, the header on every page says "Open source" and links to the repository
+   (with GitHub's mark when it's on GitHub), and the Xare page starts publishing with cloning it;
+   without it, the site shows no link to its code. A fork deploys with its own repository there.
+   A publisher's name on a model page links to the `site` its entry in the publishers file gives. The
+   build checks every setting: a non-`wss://` relay, a non-`https://` gateway, or no approved
+   publisher stops it with a list of what to fix.
 4. **Settings → Domains:** add your domain (weXare's is `modelxare.com`, with `modelxare.wexare.com` as
    a second address) and create the DNS records Vercel shows. Make one address the primary and have
    the others redirect to it. To a browser each address is a separate site, so models downloaded and

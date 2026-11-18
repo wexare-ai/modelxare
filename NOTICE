@@ -18,6 +18,9 @@ Investor logos in apps/simple/src/backers/, such as the Mozilla Ventures logo, b
 their owners. They are shown only to name weXare's investors and are not covered by the
 license.
 
+The GitHub mark in apps/simple/src/SourceCode.tsx (from GitHub's Octicons) belongs to GitHub.
+It is shown only to link to the repository on GitHub, and is not covered by the license.
+
 Models
 
 No model files are part of this repository. The sample models it downloads keep their

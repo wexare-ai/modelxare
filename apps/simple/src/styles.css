@@ -205,8 +205,23 @@ code {
   flex-shrink: 0;
   align-items: center;
   gap: 10px;
+}
+
+.brand a {
   color: inherit;
   text-decoration: none;
+}
+
+.brand-home {
+  display: inline-flex;
+}
+
+/* "weXare" goes to the maker's site: underlined in sun on hover, like the nav links */
+.brand-by a:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--sun);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
 }
 
 /* On load the two hearts come in from opposite corners, lock together and beat once; on hover they part a little. */
@@ -288,6 +303,24 @@ code {
   text-decoration-color: var(--sun);
   text-decoration-thickness: 3px;
   text-underline-offset: 6px;
+}
+
+/* "Open source", with the code host's mark (GitHub's Octocat), in the header on every page */
+.nav-code {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-code-mark {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  transition: transform 0.25s var(--snap);
+}
+
+.nav-code:hover .nav-code-mark {
+  transform: rotate(-8deg) scale(1.08);
 }
 
 .connection {
@@ -1067,6 +1100,13 @@ a.secondary {
 .about .hint {
   display: block;
   margin-top: 12px;
+}
+
+/* a publisher's name, linked to its site */
+.about dd a {
+  font-weight: 600;
+  color: var(--blue);
+  text-underline-offset: 4px;
 }
 
 .decisions {
@@ -2148,6 +2188,15 @@ a.secondary {
   }
   .nav-link {
     font-size: 16px;
+  }
+  /* on phones the mark alone; screen readers still hear "Open source" */
+  .nav-code-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
   .connection {
     font-size: 14px;

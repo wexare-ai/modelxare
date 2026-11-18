@@ -21,6 +21,10 @@ export const [RELAY_A, RELAY_B] = endpoints.relays;
 export const WEB = process.env.WEXARE_WEB_URL ?? 'http://localhost:4173';
 /** The plain-language app (apps/simple). */
 export const SIMPLE = process.env.WEXARE_SIMPLE_URL ?? 'http://localhost:4174';
+/** The repository the simple app's build links to as its code (WEXARE_SOURCE_CODE in playwright.config.ts). */
+export const SOURCE_CODE = 'https://github.com/example/modelxare';
+/** The maker's site the simple app's build links "by weXare" to (WEXARE_MAKER_SITE in playwright.config.ts). */
+export const MAKER_SITE = 'https://maker.example.org';
 
 /** One directory per test run, shared by global setup and every worker. */
 export function runDir(): string {
